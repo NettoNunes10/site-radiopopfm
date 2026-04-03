@@ -186,18 +186,41 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
 
   const data = await response.json();
   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  
-  if (!text) {
-    throw new Error('Resposta vazia do Gemini');
+  if (!text) throw new Error('Resposta vazia do Gemini');
+
+  // Lógica inspirada no seu projeto Python (gemini_client.py)
+  function parseRobustJSON(str) {
+    // 1. Limpeza básica e normalização de aspas/caracteres
+    let cleaned = str.trim()
+      .replace(/[\u201c\u201d]/g, '"') // Aspas inteligentes duplas
+      .replace(/[\u2018\u2019]/g, "'"); // Aspas inteligentes simples
+
+    // 2. Tentar encontrar o bloco JSON mais externo (entre { e })
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    
+    if (start !== -1 && end !== -1 && end > start) {
+      cleaned = cleaned.substring(start, end + 1);
+    }
+
+    // 3. Remover vírgulas pendentes (trailing commas) que o JS não aceita
+    // Ex: {"a": 1, } -> {"a": 1 }
+    cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      // Se falhar o parse padrão, tentamos uma última limpeza agressiva
+      // Removendo blocos de código se ainda restarem
+      cleaned = cleaned.replace(/```json\s?/, '').replace(/```\s?$/, '').trim();
+      return JSON.parse(cleaned);
+    }
   }
 
-  // Limpeza robusta: Remove possíveis blocos de código Markdown (```json ... ```)
-  text = text.replace(/```json\s?/, '').replace(/```\s?$/, '').trim();
-
   try {
-    return JSON.parse(text);
+    return parseRobustJSON(text);
   } catch (e) {
-    throw new Error(`Resposta nao e JSON valido: ${text.substring(0, 100)}...`);
+    throw new Error(`Falha ao extrair JSON. Recebido: ${text.substring(0, 150)}...`);
   }
 }
 
