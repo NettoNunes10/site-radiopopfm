@@ -107,17 +107,6 @@ function countWords(text) {
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
-function validateWordCount(notesBySection, minWords, maxWords) {
-  const errors = [];
-  for (const [sectionKey, notes] of Object.entries(notesBySection)) {
-    notes.forEach((note, idx) => {
-      if (note.word_count < minWords || note.word_count > maxWords) {
-        errors.push(`${sectionKey.toUpperCase()} ${idx + 1}: ${note.word_count} palavras`);
-      }
-    });
-  }
-  return errors;
-}
 
 async function generateNotes(sections, apiKey, instructions) {
   const maxAttempts = 2;
@@ -129,17 +118,7 @@ async function generateNotes(sections, apiKey, instructions) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const parsed = await callGemini(apiKey, instructions, buildUserPrompt(sections, retryInstruction));
-      const notesBySection = parseStructuredResponse(parsed, expectedCount);
-      
-      const invalidNotes = validateWordCount(notesBySection, WORD_LIMITS.min, WORD_LIMITS.max);
-      
-      if (invalidNotes.length > 0) {
-        lastErrorMessage = `Noticias fora do limite: ${invalidNotes.join(', ')}`;
-        retryInstruction = `Atencao: as seguintes noticias estao fora do limite (${WORD_LIMITS.min}-${WORD_LIMITS.max}): ${invalidNotes.join(', ')}. Reescreva mantendo o limite.`;
-        continue;
-      }
-      
-      return notesBySection;
+      return parseStructuredResponse(parsed, expectedCount);
     } catch (exc) {
       lastErrorMessage = exc.message;
       retryInstruction = 'Sua resposta anterior nao seguiu o JSON/schema exigido. Corrija para objeto com NACIONAL, ITAPEVA e ITAPETININGA.';
