@@ -185,16 +185,19 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   
   if (!text) {
     throw new Error('Resposta vazia do Gemini');
   }
 
+  // Limpeza robusta: Remove possíveis blocos de código Markdown (```json ... ```)
+  text = text.replace(/```json\s?/, '').replace(/```\s?$/, '').trim();
+
   try {
     return JSON.parse(text);
-  } catch {
-    throw new Error('Resposta nao e JSON valido');
+  } catch (e) {
+    throw new Error(`Resposta nao e JSON valido: ${text.substring(0, 100)}...`);
   }
 }
 
