@@ -474,14 +474,41 @@
       }
     }
 
-    function checkPassword() {
+    async function checkPassword() {
       const password = document.getElementById('passwordInput').value;
-      if (password) {
-        sessionStorage.setItem('newsmaker_password', password);
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appShell').style.display = 'block';
-        loadState();
-        initDate();
+      const btn = document.querySelector('#loginScreen button');
+      const errorLabel = document.getElementById('loginError');
+
+      if (!password) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
+      errorLabel.style.display = 'none';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${password}`
+          }
+        });
+
+        if (response.ok) {
+          sessionStorage.setItem('newsmaker_password', password);
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('appShell').style.display = 'block';
+          loadState();
+          initDate();
+        } else {
+          errorLabel.textContent = 'Senha incorreta.';
+          errorLabel.style.display = 'block';
+        }
+      } catch (error) {
+        errorLabel.textContent = 'Erro ao conectar ao servidor.';
+        errorLabel.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
       }
     }
 

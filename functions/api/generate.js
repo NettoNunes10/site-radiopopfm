@@ -1,6 +1,17 @@
 // Cloudflare Pages Function para o Gerador de Boletins (NewsMaker)
 // Respondendo em: /api/generate
 
+export async function onRequestGet(context) {
+  const { request, env } = context;
+  const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+  const expectedPassword = env.NEWSMAKER_PASSWORD;
+
+  if (expectedPassword && authHeader === `Bearer ${expectedPassword}`) {
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   return handleGenerate(request, env);
