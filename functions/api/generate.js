@@ -174,7 +174,7 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
         responseMimeType: 'application/json',
         temperature: 0.4,
         topP: 0.95,
-        maxOutputTokens: 2200,
+        maxOutputTokens: 4096, // Aumentado para evitar truncamento
       }
     })
   });
@@ -188,14 +188,14 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Resposta vazia do Gemini');
 
-  // Lógica inspirada no seu projeto Python (gemini_client.py)
   function parseRobustJSON(str) {
-    // 1. Limpeza básica e normalização de aspas/caracteres
+    // 1. Normalização de caracteres problemáticos
     let cleaned = str.trim()
       .replace(/[\u201c\u201d]/g, '"') // Aspas inteligentes duplas
-      .replace(/[\u2018\u2019]/g, "'"); // Aspas inteligentes simples
+      .replace(/[\u2018\u2019]/g, "'") // Aspas inteligentes simples
+      .replace(/\r/g, ""); // Remove carriage returns
 
-    // 2. Tentar encontrar o bloco JSON mais externo (entre { e })
+    // 2. Tentar encontrar o bloco JSON mais externo
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     
@@ -203,24 +203,27 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
       cleaned = cleaned.substring(start, end + 1);
     }
 
-    // 3. Remover vírgulas pendentes (trailing commas) que o JS não aceita
-    // Ex: {"a": 1, } -> {"a": 1 }
+    // 3. Remover vírgulas pendentes (trailing commas)
     cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
 
     try {
       return JSON.parse(cleaned);
     } catch (e) {
-      // Se falhar o parse padrão, tentamos uma última limpeza agressiva
-      // Removendo blocos de código se ainda restarem
-      cleaned = cleaned.replace(/```json\s?/, '').replace(/```\s?$/, '').trim();
-      return JSON.parse(cleaned);
+      // Tenta corrigir quebras de linha literais dentro das aspas
+      // (Alguns modelos ignoram o escape de \n em JSON)
+      try {
+        const escaped = cleaned.replace(/\n/g, "\\n");
+        return JSON.parse(escaped);
+      } catch (e2) {
+        throw new Error(`Parse error: ${e.message}. Texto original: ${cleaned}`);
+      }
     }
   }
 
   try {
     return parseRobustJSON(text);
-  } catch (e) {
-    throw new Error(`Falha ao extrair JSON. Recebido: ${text.substring(0, 150)}...`);
+  } catch (err) {
+    throw new Error(`Falha no processamento. Detalhe: ${err.message}`);
   }
 }
 
