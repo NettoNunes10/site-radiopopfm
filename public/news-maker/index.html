@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsMaker - Gerador de Boletins</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #143327;
+      --color-secondary: #1b5e45;
+      --color-accent: #e7f6ec;
+      --color-bg-start: #f3f7f3;
+      --color-bg-end: #eaf0eb;
+      --color-border: #cde0d5;
+      --color-text: #1f3b31;
+      --color-text-light: #3d5d51;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+      background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+      color: var(--color-text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 14px 30px rgba(26, 63, 50, 0.08);
+      border: 1px solid var(--color-border);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box h1 {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 800;
+      color: var(--color-primary);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .login-box input:focus {
+      outline: none;
+      border-color: var(--color-secondary);
+    }
+
+    .login-box button {
+      width: 100%;
+      padding: 12px;
+      background: #065f46;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .login-box button:hover {
+      background: var(--color-secondary);
+    }
+
+    .login-error {
+      color: #dc2626;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .app-shell {
+      display: none;
+      max-width: 1880px;
+      margin: 0 auto;
+    }
+
+    .toolbar {
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid var(--color-border);
+      box-shadow: 0 14px 30px rgba(26, 63, 50, 0.08);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .toolbar h1 {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: var(--color-primary);
+    }
+
+    .toolbar-date input {
+      padding: 8px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #065f46;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--color-secondary);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status {
+      font-size: 14px;
+      color: var(--color-text-light);
+    }
+
+    .sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid #c7d8cf;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 24px rgba(22, 58, 47, 0.08);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .section-header h2 {
+      font-family: 'Manrope', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #183b2e;
+    }
+
+    .section-chip {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-secondary);
+      background: var(--color-accent);
+      border: 1px solid #badfca;
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .news-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .news-input label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-light);
+      margin-bottom: 6px;
+    }
+
+    .news-input textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+
+    .news-input textarea:focus {
+      outline: none;
+      border-color: var(--color-secondary);
+    }
+
+    .result-area {
+      margin-top: 16px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .result-area textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 13px;
+      background: #f8fafc;
+    }
+
+    .message {
+      margin-top: 12px;
+      font-size: 14px;
+      color: var(--color-text-light);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background: #059669;
+    }
+
+    .toast.error {
+      background: #dc2626;
+    }
+
+    .generated-output {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .generated-output h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #166534;
+      margin-bottom: 8px;
+    }
+
+    .generated-output ul {
+      list-style: none;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      color: #15803d;
+    }
+
+    .generated-output li {
+      padding: 4px 0;
+      border-bottom: 1px solid #dcfce7;
+    }
+
+    .generated-output li:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-box">
+      <h1>NewsMaker</h1>
+      <div id="loginError" class="login-error" style="display: none;"></div>
+      <input type="password" id="passwordInput" placeholder="Digite a senha" />
+      <button onclick="checkPassword()">Entrar</button>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <h1>NewsMaker</h1>
+        <span style="color: var(--color-text-light); font-size: 14px;">Gerador de Boletins</span>
+        <div class="toolbar-date">
+          <input type="date" id="dateInput">
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <span id="statusLabel" class="status">Aguardando entrada.</span>
+        <button id="generateBtn" class="btn btn-primary" onclick="generate()">
+          <span>Gerar Arquivos</span>
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">Limpar Tudo</button>
+      </div>
+    </div>
+
+    <div class="sections">
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Nacional</h2>
+          <span class="section-chip">3 notícias</span>
+        </div>
+        <div class="news-grid">
+          <div class="news-input"><label>Notícia 1</label><textarea id="nacional-1" placeholder="Cole o texto da notícia..."></textarea></div>
+          <div class="news-input"><label>Notícia 2</label><textarea id="nacional-2" placeholder="Cole o texto da notícia..."></textarea></div>
+          <div class="news-input"><label>Notícia 3</label><textarea id="nacional-3" placeholder="Cole o texto da notícia..."></textarea></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Itapeva</h2>
+          <span class="section-chip">3 notícias</span>
+        </div>
+        <div class="news-grid">
+          <div class="news-input"><label>Notícia 1</label><textarea id="itapeva-1" placeholder="Cole o texto da notícia..."></textarea></div>
+          <div class="news-input"><label>Notícia 2</label><textarea id="itapeva-2" placeholder="Cole o texto da notícia..."></textarea></div>
+          <div class="news-input"><label>Notícia 3</label><textarea id="itapeva-3" placeholder="Cole o texto da notícia..."></textarea></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Itapetininga</h2>
+          <span class="section-chip">3 notícias</span>
+        </div>
+        <div class="news-grid">
+          <div class="news-input"><label>Notícia 1</label><textarea id="itapetininga-1" placeholder="Cole o texto da notícia..."></textarea></div>
+          <div class="news-input"><label>Notícia 2</label><textarea id="itapetininga-2" placeholder="Cole o texto da notícia..."></textarea></div>
+          <div class="news-input"><label>Notícia 3</label><textarea id="itapetininga-3" placeholder="Cole o texto da notícia..."></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-area">
+      <label style="font-weight: 600; display: block; margin-bottom: 8px;">Resultado</label>
+      <textarea id="resultBox" readonly placeholder="Os resultados aparecerão aqui..."></textarea>
+      <div id="generatedOutput" class="generated-output" style="display: none;">
+        <h3>Arquivos Gerados</h3>
+        <ul id="fileList"></ul>
+      </div>
+      <div id="messageLabel" class="message"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API_URL = '/.netlify/functions/generate';
+    const sections = ['nacional', 'itapeva', 'itapetininga'];
+
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.className = 'toast', 3000);
+    }
+
+    function getSavedState() {
+      try {
+        return JSON.parse(localStorage.getItem('newsmaker_state') || '{}');
+      } catch { return {}; }
+    }
+
+    function saveState() {
+      const state = {
+        date: document.getElementById('dateInput').value,
+        sections: {}
+      };
+      sections.forEach(sec => {
+        state.sections[sec] = [];
+        for (let i = 1; i <= 3; i++) {
+          state.sections[sec].push(document.getElementById(`${sec}-${i}`).value);
+        }
+      });
+      localStorage.setItem('newsmaker_state', JSON.stringify(state));
+    }
+
+    function loadState() {
+      const state = getSavedState();
+      if (state.date) document.getElementById('dateInput').value = state.date;
+      if (state.sections) {
+        sections.forEach(sec => {
+          if (state.sections[sec]) {
+            state.sections[sec].forEach((val, i) => {
+              document.getElementById(`${sec}-${i + 1}`).value = val || '';
+            });
+          }
+        });
+      }
+    }
+
+    function checkPassword() {
+      const password = document.getElementById('passwordInput').value;
+      if (password) {
+        sessionStorage.setItem('newsmaker_password', password);
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display = 'block';
+        loadState();
+        initDate();
+      }
+    }
+
+    function initDate() {
+      const today = new Date();
+      today.setDate(today.getDate() + 1);
+      const dateInput = document.getElementById('dateInput');
+      if (!dateInput.value) {
+        dateInput.value = today.toISOString().split('T')[0];
+      }
+    }
+
+    document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') checkPassword();
+    });
+
+    document.querySelectorAll('textarea').forEach(el => {
+      el.addEventListener('input', saveState);
+    });
+    document.getElementById('dateInput').addEventListener('change', saveState);
+
+    async function generate() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      if (!password) {
+        location.reload();
+        return;
+      }
+
+      const btn = document.getElementById('generateBtn');
+      const statusLabel = document.getElementById('statusLabel');
+      const resultBox = document.getElementById('resultBox');
+      const messageLabel = document.getElementById('messageLabel');
+      const generatedOutput = document.getElementById('generatedOutput');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Processando...';
+      resultBox.value = '';
+      generatedOutput.style.display = 'none';
+      messageLabel.textContent = 'Enviando para o Gemini...';
+      statusLabel.textContent = 'Executando Gemini...';
+      saveState();
+
+      const payload = {
+        nacional: [],
+        itapeva: [],
+        itapetininga: [],
+      };
+
+      let hasEmpty = false;
+      sections.forEach(sec => {
+        for (let i = 1; i <= 3; i++) {
+          const val = document.getElementById(`${sec}-${i}`).value.trim();
+          if (!val) hasEmpty = true;
+          payload[sec].push(val);
+        }
+      });
+
+      if (hasEmpty) {
+        showToast('Preencha todas as 9 notícias antes de gerar.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Gerar Arquivos</span>';
+        statusLabel.textContent = 'Aguardando entrada.';
+        messageLabel.textContent = '';
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${password}`,
+          },
+          body: JSON.stringify({
+            ...payload,
+            date: document.getElementById('dateInput').value,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro na geração');
+        }
+
+        let output = '';
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+
+        sections.forEach(sec => {
+          output += `\n=== ${sec.toUpperCase()} ===\n`;
+          data.notes[sec].forEach((note, idx) => {
+            output += `\nNotícia ${idx + 1} (${note.word_count} palavras):\n${note.text}\n`;
+            const li = document.createElement('li');
+            li.textContent = `${sec.toUpperCase()} - Notícia ${idx + 1}: ${note.word_count} palavras`;
+            fileList.appendChild(li);
+          });
+        });
+
+        resultBox.value = output.trim();
+        generatedOutput.style.display = 'block';
+        messageLabel.textContent = `Sucesso! Notas geradas para ${data.date}`;
+        statusLabel.textContent = 'Geração finalizada.';
+        showToast('Arquivos gerados com sucesso!', 'success');
+
+      } catch (error) {
+        messageLabel.textContent = `Erro: ${error.message}`;
+        statusLabel.textContent = 'Falha na geração.';
+        showToast(error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Gerar Arquivos</span>';
+      }
+    }
+
+    function clearAll() {
+      const today = new Date();
+      today.setDate(today.getDate() + 1);
+      document.getElementById('dateInput').value = today.toISOString().split('T')[0];
+      sections.forEach(sec => {
+        for (let i = 1; i <= 3; i++) {
+          document.getElementById(`${sec}-${i}`).value = '';
+        }
+      });
+      document.getElementById('resultBox').value = '';
+      document.getElementById('generatedOutput').style.display = 'none';
+      document.getElementById('messageLabel').textContent = '';
+      document.getElementById('statusLabel').textContent = 'Campos limpos.';
+      localStorage.removeItem('newsmaker_state');
+      showToast('Campos limpos.', 'success');
+    }
+  </script>
+</body>
+</html>

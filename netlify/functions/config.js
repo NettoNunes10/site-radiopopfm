@@ -1,0 +1,4 @@
+module.exports = {
+  GEMINI_API_KEY: 'SUA_CHAVE_AQUI',
+  NEWSMAKER_PASSWORD: 'SUA_SENHA_AQUI'
+};
