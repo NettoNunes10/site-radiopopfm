@@ -1,12 +1,5 @@
 {
   "name": "radiopopfm-site",
   "version": "1.0.0",
-  "description": "Site da Radio Pop FM Brasil com NewsMaker",
-  "private": true,
-  "scripts": {
-    "deploy": "wrangler pages deploy ."
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240620.0"
-  }
+  "private": true
 }

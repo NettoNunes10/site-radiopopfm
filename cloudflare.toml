@@ -1,18 +1,8 @@
-# Cloudflare Pages Functions
-# O arquivo functions/generate.js será automaticamente treated como um Worker
+compatibility_date = "2026-04-03"
+name = "site-radiopopfm"
 
-[[pages_builds]]
-  command = "echo 'No build needed'"
+[site]
+bucket = "."
 
-[[routes]]
-  pattern = "/news-maker/*"
-  handler = "rewrite"
-  middleware = ""
-
-[[functions]]
-  binding = "GEMINI_API_KEY"
-  namespace = "newsmaker"
-
-[[kv_namespaces]]
-  binding = "NEWSMAKER_CACHE"
-  id = ""
+[env.production.vars]
+ENVIRONMENT = "production"
