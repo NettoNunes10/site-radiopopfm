@@ -174,28 +174,30 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
         responseMimeType: 'application/json',
         temperature: 0.4,
         topP: 0.95,
-        maxOutputTokens: 4096, // Aumentado para evitar truncamento
+        maxOutputTokens: 8192, // Aumentado significativamente
       }
     })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error('Gemini API error: ' + errorText);
+    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
-  let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Resposta vazia do Gemini');
+  const candidate = data.candidates?.[0];
+  let text = candidate?.content?.parts?.[0]?.text;
+  const reason = candidate?.finish_reason;
+
+  if (!text) throw new Error(`Resposta vazia. Motivo da parada: ${reason}`);
 
   function parseRobustJSON(str) {
-    // 1. Normalização de caracteres problemáticos
+    // Normalização de caracteres
     let cleaned = str.trim()
-      .replace(/[\u201c\u201d]/g, '"') // Aspas inteligentes duplas
-      .replace(/[\u2018\u2019]/g, "'") // Aspas inteligentes simples
-      .replace(/\r/g, ""); // Remove carriage returns
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/\r/g, "");
 
-    // 2. Tentar encontrar o bloco JSON mais externo
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     
@@ -203,19 +205,16 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
       cleaned = cleaned.substring(start, end + 1);
     }
 
-    // 3. Remover vírgulas pendentes (trailing commas)
     cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
 
     try {
       return JSON.parse(cleaned);
     } catch (e) {
-      // Tenta corrigir quebras de linha literais dentro das aspas
-      // (Alguns modelos ignoram o escape de \n em JSON)
       try {
         const escaped = cleaned.replace(/\n/g, "\\n");
         return JSON.parse(escaped);
       } catch (e2) {
-        throw new Error(`Parse error: ${e.message}. Texto original: ${cleaned}`);
+        throw new Error(`JSON incompleto ou malformado. Motivo parada: ${reason}. Detalhe: ${e.message}. Texto: ${cleaned}`);
       }
     }
   }
@@ -223,7 +222,7 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
   try {
     return parseRobustJSON(text);
   } catch (err) {
-    throw new Error(`Falha no processamento. Detalhe: ${err.message}`);
+    throw new Error(`Falha no processamento. ${err.message}`);
   }
 }
 
