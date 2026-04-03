@@ -1,10 +1,11 @@
 {
   "name": "news-maker-web",
   "version": "1.0.0",
+  "type": "module",
   "description": "NewsMaker - Gerador de boletins de rádio (versão web)",
-  "main": "netlify/functions/generate.js",
+  "main": "functions/api/generate.js",
   "scripts": {
-    "start": "netlify dev",
+    "start": "wrangler pages dev public",
     "build": "echo 'No build step required'"
   },
   "dependencies": {
