@@ -1,13 +1,12 @@
 {
-  "name": "news-maker-web",
+  "name": "radiopopfm-site",
   "version": "1.0.0",
-  "description": "NewsMaker - Gerador de boletins de rádio (versão web)",
-  "main": "netlify/functions/generate.js",
+  "description": "Site da Radio Pop FM Brasil com NewsMaker",
+  "private": true,
   "scripts": {
-    "start": "netlify dev",
-    "build": "echo 'No build step required'"
+    "deploy": "wrangler pages deploy ."
   },
-  "dependencies": {
-    "@google/generative-ai": "^0.21.0"
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240620.0"
   }
 }

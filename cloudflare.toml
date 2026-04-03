@@ -1,0 +1,18 @@
+# Cloudflare Pages Functions
+# O arquivo functions/generate.js será automaticamente treated como um Worker
+
+[[pages_builds]]
+  command = "echo 'No build needed'"
+
+[[routes]]
+  pattern = "/news-maker/*"
+  handler = "rewrite"
+  middleware = ""
+
+[[functions]]
+  binding = "GEMINI_API_KEY"
+  namespace = "newsmaker"
+
+[[kv_namespaces]]
+  binding = "NEWSMAKER_CACHE"
+  id = ""
