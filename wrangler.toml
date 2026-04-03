@@ -1,6 +1,6 @@
-name = "site-radiopopfm"
 compatibility_date = "2026-04-03"
-pages_build_output_dir = "."
 
 [vars]
 ENVIRONMENT = "production"
+# As variáveis NEWSMAKER_PASSWORD e GEMINI_API_KEY devem ser 
+# configuradas no painel do Cloudflare Pages (Settings > Functions).
