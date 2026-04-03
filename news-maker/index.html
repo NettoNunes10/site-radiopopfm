@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
       --color-primary: #143327;
@@ -374,6 +375,9 @@
         <button id="generateBtn" class="btn btn-primary" onclick="generate()">
           <span>Gerar Arquivos</span>
         </button>
+        <button id="downloadBtn" class="btn" style="background: #27ae60; color: white; display: none;" onclick="downloadAllRTFs()">
+          <span>Baixar RTFs (.zip)</span>
+        </button>
         <button class="btn btn-secondary" onclick="clearAll()">Limpar Tudo</button>
       </div>
     </div>
@@ -594,6 +598,9 @@
           throw new Error(data.error || 'Erro na geração');
         }
 
+        window.lastGenerationData = data; // Salva para o download de RTFs
+        document.getElementById('downloadBtn').style.display = 'inline-flex';
+
         let output = '';
         const fileList = document.getElementById('fileList');
         fileList.innerHTML = '';
@@ -637,9 +644,120 @@
       document.getElementById('resultBox').value = '';
       document.getElementById('generatedOutput').style.display = 'none';
       document.getElementById('messageLabel').textContent = '';
-      document.getElementById('statusLabel').textContent = 'Campos limpos.';
+      document.getElementById('downloadBtn').style.display = 'none';
+      window.lastGenerationData = null;
       localStorage.removeItem('newsmaker_state');
       showToast('Campos limpos.', 'success');
+    }
+
+    // --- RTF GENERATION LOGIC ---
+    const RTF_CONFIG = {
+      layout: {
+        paperw: 12240, paperh: 15840,
+        margl: 1800, margr: 1800, margt: 1440, margb: 1440,
+        deftab: 708, sl: 360, sa: 200,
+        sb_time: 100, sa_time: 100,
+        fi_blank: 708, tx_blank: 8128,
+        fs_header: 44, fs_body: 44,
+        f_header: 45, f_body: 1
+      },
+      output: {
+        header_template: "NOTICIAS DA MASSA - NACIONAL - {weekday} {day_month}",
+        time_pairs: [["08H55", "14H55"], ["09H55", "15H55"], ["10H55", "16H55"]],
+        time_label_lowercase_h: true,
+        cities: {
+          itapeva: { name: "ITAPEVA" },
+          itapetininga: { name: "ITAPETININGA" }
+        }
+      }
+    };
+
+    function rtfEscape(text) {
+      if (!text) return "";
+      return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+        .split('').map(char => {
+          const code = char.charCodeAt(0);
+          if (char === '\\' || char === '{' || char === '}') return '\\' + char;
+          if (char === '\n') return ' ';
+          if (char === '\t') return '\\tab ';
+          if (code >= 32 && code <= 126) return char;
+          return `\\u${code <= 32767 ? code : code - 65536}?`;
+        }).join('');
+    }
+
+    function buildRTFDocument(header, timeLabel, regional, national) {
+      const L = RTF_CONFIG.layout;
+      const h = rtfEscape(header);
+      const t = rtfEscape(timeLabel);
+      const r = rtfEscape(regional);
+      const n = rtfEscape(national);
+
+      return [
+        `{\\rtf1\\ansi\\ansicpg1252\\deff0`,
+        `{\\fonttbl{\\f0\\froman Times New Roman;}{\\f1\\fswiss Arial;}{\\f45\\fswiss Tahoma;}}`,
+        `\\paperw${L.paperw}\\paperh${L.paperh}\\margl${L.margl}\\margr${L.margr}\\margt${L.margt}\\margb${L.margb}\\deftab${L.deftab}`,
+        `\\pard\\qc\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\b\\f${L.f_header}\\fs${L.fs_header} ${h}\\par`,
+        `\\pard\\ql\\fi${L.fi_blank}\\li0\\ri0\\sa160\\sl${L.sl}\\slmult1\\tx${L.tx_blank}\\b\\f${L.f_header}\\fs${L.fs_header} \\tab \\par`,
+        `\\pard\\qc\\li0\\ri0\\sb${L.sb_time}\\sa${L.sa_time}\\sl${L.sl}\\slmult1\\b\\f${L.f_header}\\fs${L.fs_header} ${t}\\par`,
+        `\\pard\\qj\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\b0\\f${L.f_body}\\fs${L.fs_body} ${r}\\par`,
+        `\\pard\\qc\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\f${L.f_body}\\fs${L.fs_body} ...\\par`,
+        `\\pard\\qj\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\f${L.f_body}\\fs${L.fs_body} ${n}\\par`,
+        `}`
+      ].join('\n');
+    }
+
+    async function downloadAllRTFs() {
+      if (!window.lastGenerationData) {
+        showToast('Gere os resultados primeiro!', 'error');
+        return;
+      }
+
+      const zip = new JSZip();
+      const data = window.lastGenerationData;
+      const dateVal = document.getElementById('dateInput').value;
+      const dateObj = new Date(dateVal + 'T12:00:00');
+      
+      const weekdays = ["DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO"];
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const yearFull = dateObj.getFullYear();
+      const yearShort = String(yearFull).substring(2);
+      
+      const headText = RTF_CONFIG.output.header_template
+        .replace('{weekday}', weekdays[dateObj.getDay()])
+        .replace('{day_month}', `${day}.${month}`)
+        .replace('{date}', `${day}.${month}.${yearFull}`);
+
+      const timePairs = RTF_CONFIG.output.time_pairs;
+      const lowerH = RTF_CONFIG.output.time_label_lowercase_h;
+
+      for (const cityKey in RTF_CONFIG.output.cities) {
+        if (!data.notes[cityKey]) continue;
+        const cityData = RTF_CONFIG.output.cities[cityKey];
+        const cityFolder = zip.folder(cityData.name);
+
+        for (let i = 0; i < timePairs.length; i++) {
+          const pair = timePairs[i];
+          const regional = data.notes[cityKey][i].text;
+          const national = data.notes.nacional[i].text;
+
+          pair.forEach(slot => {
+            const timeLabel = slot.replace(/H/i, lowerH ? 'h' : 'H');
+            const rtfContent = buildRTFDocument(headText, timeLabel, regional, national);
+            cityFolder.file(`${slot}.rtf`, rtfContent);
+          });
+        }
+      }
+
+      const blob = await zip.generateAsync({type:"blob"});
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BOLETINS_${yearShort}.${month}.${day}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     }
   </script>
 </body>
