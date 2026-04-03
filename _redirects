@@ -1,1 +1,2 @@
-/news-maker    /news-maker/index.html   200
+/news-maker*  /news-maker/  200
+/news-maker/*  /news-maker/index.html  200
