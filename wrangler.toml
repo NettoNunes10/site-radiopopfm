@@ -1,0 +1,6 @@
+name = "site-radiopopfm"
+compatibility_date = "2026-04-03"
+pages_build_output_dir = "."
+
+[vars]
+ENVIRONMENT = "production"

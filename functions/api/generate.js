@@ -1,22 +1,12 @@
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    
-    // Rota da API
-    if (url.pathname === '/.netlify/functions/generate') {
-      return handleGenerate(request, env);
-    }
-    
-    // Fallback - continuar para o arquivo estático
-    return fetch(request);
-  }
-};
+// Cloudflare Pages Function para o Gerador de Boletins (NewsMaker)
+// Respondendo em: /api/generate
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  return handleGenerate(request, env);
+}
 
 async function handleGenerate(request, env) {
-  if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
-
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
   const expectedPassword = env.NEWSMAKER_PASSWORD;
   
@@ -44,7 +34,6 @@ async function handleGenerate(request, env) {
       sections[key] = validItems;
     }
 
-    // Ler instructions do arquivo
     const instructions = `Voce e um experiente redator e editor de jornalismo para radio, focado em criar boletins informativos dinamicos e diretos.
 
 Sua tarefa e receber noticias em formato de texto bruto e transforma-las em notas curtas, limpas e prontas para locucao.
@@ -119,7 +108,7 @@ function validateWordCount(notesBySection, minWords, maxWords) {
   return errors;
 }
 
-async function generateNotes(parsedInputs, apiKey, instructions) {
+async function generateNotes(sections, apiKey, instructions) {
   const maxAttempts = 2;
   const expectedCount = 3;
   
@@ -128,7 +117,7 @@ async function generateNotes(parsedInputs, apiKey, instructions) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const parsed = await callGemini(apiKey, instructions, buildUserPrompt(parsedInputs, retryInstruction));
+      const parsed = await callGemini(apiKey, instructions, buildUserPrompt(sections, retryInstruction));
       const notesBySection = parseStructuredResponse(parsed, expectedCount);
       
       const invalidNotes = validateWordCount(notesBySection, WORD_LIMITS.min, WORD_LIMITS.max);
