@@ -595,10 +595,16 @@
           }),
         });
 
-        const data = await response.json();
+        let data;
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error('Erro ao processar resposta: ' + text.substring(0, 100));
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || 'Erro na geração');
+          throw new Error(data.error || `Erro ${response.status}: ${text.substring(0, 50)}`);
         }
 
         window.lastGenerationData = data; // Salva para o download de RTFs
