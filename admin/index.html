@@ -946,28 +946,38 @@
         document.getElementById('jabaId').value = file.name.split('.')[0].substring(0, 10).toUpperCase();
       }
 
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const reader = new FileReader();
-      
-      reader.onload = async (e) => {
-        try {
-          const buffer = await audioCtx.decodeAudioData(e.target.result);
-          const ms = Math.round(buffer.duration * 1000);
-          document.getElementById('jabaDuration').value = ms;
-          showToast(`Duração capturada: ${ms}ms`, 'success');
-        } catch (err) {
-          console.error('Erro ao ler áudio:', err);
-          // Fallback simple audio
-          const audio = new Audio();
-          audio.src = URL.createObjectURL(file);
-          audio.onloadedmetadata = () => {
-            const ms = Math.round(audio.duration * 1000);
-            document.getElementById('jabaDuration').value = ms;
-            URL.revokeObjectURL(audio.src);
-          };
+      showToast('Analisando arquivo...', 'info');
+
+      // Use HTMLAudioElement for best codec support (MP3/WAV/FLAC)
+      const audio = new Audio();
+      const objectUrl = URL.createObjectURL(file);
+      audio.src = objectUrl;
+
+      // Timeout safety
+      const timeout = setTimeout(() => {
+        if (document.getElementById('jabaDuration').value == 0) {
+          showToast('Tempo limite excedido na análise inicial.', 'error');
         }
+        URL.revokeObjectURL(objectUrl);
+      }, 5000);
+
+      audio.onloadedmetadata = () => {
+        clearTimeout(timeout);
+        if (audio.duration && !isNaN(audio.duration)) {
+          const ms = Math.round(audio.duration * 1000);
+          document.getElementById('jabaDuration').value = ms;
+          showToast(`Duração detectada: ${ms}ms`, 'success');
+        } else {
+          showToast('Não foi possível ler a duração (arquivo corrompido ou formato ignorado).', 'error');
+        }
+        URL.revokeObjectURL(objectUrl);
       };
-      reader.readAsArrayBuffer(file);
+
+      audio.onerror = () => {
+        clearTimeout(timeout);
+        showToast('Erro ao carregar áudio. Tente outro formato.', 'error');
+        URL.revokeObjectURL(objectUrl);
+      };
     }
 
     function deleteJaba(idx) {
@@ -1146,6 +1156,9 @@
     let editingVignetteIdx = -1;
     function editVignetteRule(idx) {
       editingVignetteIdx = idx;
+      if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
+      if (!musicConfig.vignettes.substituicoes) musicConfig.vignettes.substituicoes = [];
+
       const rule = idx === -1 
         ? { descricao: '', buscar: [], substituir_por: [], modo: 'ciclo' }
         : JSON.parse(JSON.stringify(musicConfig.vignettes.substituicoes[idx]));
@@ -1159,6 +1172,9 @@
     }
 
     function saveVignetteRule() {
+      if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
+      if (!musicConfig.vignettes.substituicoes) musicConfig.vignettes.substituicoes = [];
+
       const rule = {
         descricao: document.getElementById('vigDesc').value,
         buscar: document.getElementById('vigBuscar').value.split(',').map(s => s.trim()).filter(s => s),
@@ -1166,8 +1182,6 @@
         modo: document.getElementById('vigModo').value
       };
 
-      if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
-      
       if (editingVignetteIdx === -1) musicConfig.vignettes.substituicoes.push(rule);
       else musicConfig.vignettes.substituicoes[editingVignetteIdx] = rule;
 
