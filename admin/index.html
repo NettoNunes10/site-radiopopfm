@@ -713,11 +713,6 @@
       fileInput.value = ''; // Reset input
     }
 
-    function initMusicDate() {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      document.getElementById('musicDateInput').value = today.toISOString().split('T')[0];
-    }
 
     async function saveMusicConfig(type, data) {
       const password = sessionStorage.getItem('newsmaker_password');
@@ -740,7 +735,6 @@
 
     // Call after login
     function setupMusic() {
-      initMusicDate();
       loadMusicConfig();
     }
 
