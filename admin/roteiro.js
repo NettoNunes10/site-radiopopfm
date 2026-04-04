@@ -162,10 +162,57 @@ function buildJabaLine(jaba) {
   return `${jaba.caminho_arquivo} /m:3950 /t:${duration} /i:${intro} /s:${segue} /f:${f} /r:0 /d:0 /o:0 /n:1 /x:  /g:0`;
 }
 
-function applyJabas(blocks, jabasConfig) {
+function applySubstitutions(blocks, config, city, log) {
+  if (!config || !config.substituicoes || config.substituicoes.length === 0) return;
+  
+  const state = {}; // To track cycle indices
+  
+  blocks.forEach(block => {
+    block.items.forEach((line, i) => {
+      config.substituicoes.forEach(rule => {
+        const findList = rule.buscar || [];
+        const replaceList = rule.substituir_por || [];
+        if (findList.length === 0 || replaceList.length === 0) return;
+        
+        // Check if any "find" matches
+        const matches = findList.some(f => line.toUpperCase().includes(f.toUpperCase()));
+        if (matches) {
+          let selected = "";
+          if (rule.modo === 'ciclo') {
+            state[rule.descricao] = (state[rule.descricao] || 0) % replaceList.length;
+            selected = replaceList[state[rule.descricao]];
+            state[rule.descricao]++;
+          } else {
+            selected = replaceList[Math.floor(Math.random() * replaceList.length)];
+          }
+          
+          // Perform the replacement on the filename part (assumes it's a file path)
+          // We look for the part of the line that matches one of the 'buscar' items
+          findList.forEach(f => {
+            if (line.toUpperCase().includes(f.toUpperCase())) {
+              const regex = new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+              if (regex.test(block.items[i])) {
+                block.items[i] = block.items[i].replace(regex, selected);
+                log(`${city}: Substituição aplicada "${rule.descricao}": ${f} -> ${selected}`);
+              }
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
+function applyJabas(blocks, jabasConfig, date, city, log) {
+  const dayOfWeek = date.getDay(); // 0-6
   const usedBlocks = new Set();
   
-  jabasConfig.forEach(jaba => {
+  // Filtrar apenas jabas que rodam hoje
+  const activeJabas = jabasConfig.filter(j => 
+    !j.dias_semana || j.dias_semana.includes(dayOfWeek)
+  );
+  
+  activeJabas.forEach(jaba => {
     (jaba.programacao || []).forEach(prog => {
       const eligible = blocks.filter(b => 
         isTimeAllowed(b.time, prog.janelas_de_horario) && !usedBlocks.has(b.time)
@@ -175,20 +222,21 @@ function applyJabas(blocks, jabasConfig) {
       
       const count = Math.min(prog.quantidade_necessaria, eligible.length);
       // Random sample (Fisher-Yates style)
-      const shuffled = [...eligible].sort(() => 0.5 - Math.random());
-      const selected = shuffled.slice(0, count);
+      const selected = [...eligible].sort(() => 0.5 - Math.random()).slice(0, count);
       
       selected.forEach(block => {
         // Encontrar ponto de inserção (antes da primeira música Sertão)
         let insertIdx = block.items.length;
         for (let i = 0; i < block.items.length; i++) {
-          if (block.items[i].toUpperCase().includes("M:\\SERTAO\\") || block.items[i].toUpperCase().includes("M:\\SERTÃO\\")) {
+          const line = block.items[i].toUpperCase();
+          if (line.includes("M:\\SERTAO\\") || line.includes("M:\\SERTÃO\\")) {
             insertIdx = i;
             break;
           }
         }
         block.items.splice(insertIdx, 0, buildJabaLine(jaba));
         usedBlocks.add(block.time);
+        log(`${city}: Jabá ${jaba.id} inserido no bloco ${block.time}`);
       });
     });
   });
@@ -205,29 +253,90 @@ function buildOutput(prelude, blocks) {
 
 // --- MAIN EXPORT ---
 window.MusicEngine = {
-  process(fileContent, rules, jabas, prefixes, date) {
+  process(fileContent, rules, jabas, prefixes, substitutions, date) {
+    const logs = [];
+    const log = (msg) => logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    
     const dayType = getDayType(date);
+    log(`Iniciando processamento para ${date.toLocaleDateString('pt-BR')} (Tipo: ${dayType})`);
+    
     const { prelude, blocks: sourceBlocks } = parseBlocks(fileContent);
+    log(`Arquivo base carregado: ${sourceBlocks.length} blocos detectados.`);
+
+    const processCity = (city) => {
+      log(`--- Processando ${city} ---`);
+      
+      const removeSet = new Set(rules.remover_blocos?.[dayType] || []);
+      const renameMap = (rules.renomear_blocos?.[dayType] || {})[city] || {};
+      const includeWindows = rules.janelas_permitidas?.[dayType] || [];
+      
+      const cityBlocks = sourceBlocks
+        .filter(b => {
+          if (removeSet.has(b.time)) {
+            log(`${city}: Bloco ${b.time} removido (Regra de exclusão)`);
+            return false;
+          }
+          return true;
+        })
+        .map(b => {
+          let time = b.time;
+          let header = b.header;
+          if (renameMap[time]) {
+            const newTime = renameMap[time];
+            log(`${city}: Bloco ${time} renomeado para ${newTime}`);
+            header = header.replace(time, newTime);
+            time = newTime;
+          }
+          
+          let items = [...b.items];
+          if (!isTimeAllowed(time, includeWindows)) {
+            const res = keepOnlyCommercials(items);
+            if (res.hadCommercial) {
+              log(`${city}: Bloco ${time} fora da janela de rede. Mantendo apenas comerciais.`);
+            }
+            items = res.items;
+          }
+          return new Block(time, header, items);
+        });
+
+      // Substitutions
+      applySubstitutions(cityBlocks, substitutions, city, log);
+
+      // Prefixes
+      const prefOptions = prefixes.options_by_day?.[dayType] || prefixes.options_by_day?.['dia_semana'] || [];
+      if (prefOptions.length > 0) {
+        let idx = 0;
+        cityBlocks.forEach(b => {
+          b.items.forEach((line, i) => {
+            const match = line.match(HOUR_PREFIX_RE);
+            if (match) {
+              const selected = prefOptions[idx % prefOptions.length];
+              log(`${city}: Prefixo aplicado no bloco ${b.time} -> ${selected}`);
+              idx++;
+              b.items[i] = line.replace(match[2], selected);
+            }
+          });
+        });
+      }
+
+      // Jabas
+      applyJabas(cityBlocks, jabas, date, city, log);
+
+      return buildOutput(prelude, cityBlocks);
+    };
+
+    const itapevaOut = processCity('ITAPEVA');
+    const itapetiningaOut = processCity('ITAPETININGA');
     
-    // Process Itapeva
-    const itapevaBlocks = transformForCity(sourceBlocks, rules, 'ITAPEVA', dayType);
-    applyPrefixes(itapevaBlocks, dayType, prefixes);
-    applyJabas(itapevaBlocks, jabas);
-    const itapevaOut = buildOutput(prelude, itapevaBlocks);
-    
-    // Process Itapetininga
-    const itapetiningaBlocks = transformForCity(sourceBlocks, rules, 'ITAPETININGA', dayType);
-    applyPrefixes(itapetiningaBlocks, dayType, prefixes);
-    applyJabas(itapetiningaBlocks, jabas);
-    const itapetiningaOut = buildOutput(prelude, itapetiningaBlocks);
+    log("Processamento concluído com sucesso.");
     
     return {
       itapeva: itapevaOut,
-      itapetininga: itapetiningaOut
+      itapetininga: itapetiningaOut,
+      logs: logs
     };
   },
   
-  // Helper to download as CP1252
   download(filename, text) {
     const bytes = stringToCP1252(text);
     const blob = new Blob([bytes], { type: 'text/plain; charset=windows-1252' });

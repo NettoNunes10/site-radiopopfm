@@ -256,24 +256,43 @@
               <div class="editor-header">
                 <h4 style="display: flex; align-items: center; gap: 8px;">
                   <ion-icon name="settings-outline" style="color: var(--accent);"></ion-icon>
-                  Configurações do Roteiro
+                  Configurações
                 </h4>
-                <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal'); renderJabaList();">Gerenciar Jabás</button>
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal'); renderRulesLists();">Regras (Renomear/Remover)</button>
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal'); renderPrefixList();">Prefixos de Hora</button>
-                  <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="restoreMusicDefaults()">Restaurar Padrões</button>
+                <div style="display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px;">
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal')">
+                    <ion-icon name="options-outline"></ion-icon> Regras Cidade
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal')">
+                    <ion-icon name="musical-notes-outline"></ion-icon> Jabás
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal')">
+                    <ion-icon name="time-outline"></ion-icon> Prefixos
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('vignettesModal')">
+                    <ion-icon name="repeat-outline"></ion-icon> Substituições
+                  </button>
+                  <button class="btn btn-secondary btn-sm" style="margin-left: auto; color: #ef4444;" onclick="restoreMusicDefaults()">
+                    <ion-icon name="refresh-outline"></ion-icon> Restaurar Padrões
+                  </button>
                 </div>
               </div>
               <div style="padding: 24px;">
-                <p id="musicStatus" style="color: var(--text-light); font-size: 0.875rem;">Arraste um arquivo .BIL base da Rede para gerar os arquivos regionalizados de Itapeva e Itapetininga.</p>
-                <div id="musicResults" style="display: none; margin-top: 20px;">
-                  <div style="display: flex; gap: 12px;">
-                    <button class="btn btn-accent" onclick="downloadMusicalZip()">
-                      <ion-icon name="download-outline"></ion-icon> Baixar .BILs Gerados
-                    </button>
+                <div style="display: flex; gap: 16px; margin-bottom: 20px;">
+                  <div style="flex: 1;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px;">1. SELECIONE O DIA</label>
+                    <input type="date" id="musicDateInput" class="news-input" style="width: 100%;">
+                  </div>
+                  <div style="flex: 2;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px;">2. SUBIR ARQUIVO(S) BASE (.BIL)</label>
+                    <div style="display: flex; gap: 8px;">
+                      <input type="file" id="musicFile" accept=".bil" class="news-input" style="flex: 1; padding: 8px;" multiple>
+                      <button class="btn btn-primary" onclick="generateMusicResult()" style="white-space: nowrap;">
+                        <ion-icon name="flash-outline"></ion-icon> Gerar Tudo
+                      </button>
+                    </div>
                   </div>
                 </div>
+                <div id="processingLogs" style="display: none; background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.8125rem; max-height: 200px; overflow-y: auto;"></div>
               </div>
             </div>
           </div>
@@ -649,48 +668,56 @@
     async function loadMusicConfig() {
       const password = sessionStorage.getItem('newsmaker_password');
       try {
-        const [r, j, p] = await Promise.all([
+        const [r, j, p, v] = await Promise.all([
           fetch('/api/config?key=config_music_rules', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
           fetch('/api/config?key=config_music_jabas', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
-          fetch('/api/config?key=config_music_prefixes', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json())
+          fetch('/api/config?key=config_music_prefixes', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
+          fetch('/api/config?key=config_music_substitutions', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json())
         ]);
-        musicConfig = { rules: r, jabas: j.configuracao_jabas || [], prefixes: p };
+        musicConfig = { rules: r, jabas: j.configuracao_jabas || [], prefixes: p, vignettes: v };
+        renderVignetteList();
       } catch (e) { console.error('Failed to load music config', e); }
     }
 
-    async function handleBilUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const dateStr = document.getElementById('musicDateInput').value;
-      if (!dateStr) {
-        showToast('Selecione a data para o roteiro!', 'error');
+    async function generateMusicResult() {
+      const fileInput = document.getElementById('musicFile');
+      const dateInput = document.getElementById('musicDateInput');
+      if (!fileInput.files.length || !dateInput.value) {
+        showToast('Selecione data e pelo menos um arquivo!', 'error');
         return;
       }
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const text = e.target.result;
+      
+      const date = new Date(dateInput.value + 'T12:00:00');
+      const logCont = document.getElementById('processingLogs');
+      logCont.style.display = 'block';
+      logCont.innerHTML = `<div>[${new Date().toLocaleTimeString()}] Aguardando leitura da fila...</div>`;
+      
+      const files = Array.from(fileInput.files);
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        logCont.innerHTML += `<div style="color: white; margin-top: 8px;">> Processando ${i+1} de ${files.length}: ${file.name}</div>`;
+        
+        const content = await file.text();
         try {
-          const results = MusicEngine.process(text, musicConfig.rules, musicConfig.jabas, musicConfig.prefixes, new Date(dateStr + 'T12:00:00'));
-          window.lastMusicResults = results;
-          document.getElementById('musicStatus').innerHTML = `<strong>Sucesso!</strong> Arquivos gerados para ${dateStr}.<br>Itapeva (${results.itapeva.split('\n').length} linhas) | Itapetininga (${results.itapetininga.split('\n').length} linhas)`;
-          document.getElementById('musicResults').style.display = 'block';
-          showToast('Roteiros gerados!', 'success');
-        } catch (err) {
-          showToast('Erro ao processar: ' + err.message, 'error');
+          const result = MusicEngine.process(content, musicConfig.rules, musicConfig.jabas, musicConfig.prefixes, musicConfig.vignettes, date);
+          
+          logCont.innerHTML += result.logs.map(l => `<div>${l}</div>`).join('');
+          logCont.scrollTop = logCont.scrollHeight;
+          
+          // Naming build
+          const baseName = file.name.split('.')[0];
+          MusicEngine.download(`${baseName}_ITAPEVA.bil`, result.itapeva);
+          await new Promise(r => setTimeout(r, 600));
+          MusicEngine.download(`${baseName}_ITAPETININGA.bil`, result.itapetininga);
+          await new Promise(r => setTimeout(r, 600));
+          
+        } catch (e) {
+          logCont.innerHTML += `<div style="color: #ef4444;">Erro no arquivo ${file.name}: ${e.message}</div>`;
         }
-      };
-      reader.readAsText(file);
-    }
-
-    function downloadMusicalZip() {
-      if (!window.lastMusicResults) return;
-      const dateStr = document.getElementById('musicDateInput').value;
-      MusicEngine.download(`ITAPEVA_${dateStr}.bil`, window.lastMusicResults.itapeva);
-      setTimeout(() => {
-        MusicEngine.download(`ITAPETININGA_${dateStr}.bil`, window.lastMusicResults.itapetininga);
-      }, 500);
+      }
+      
+      showToast('Processamento em lote concluído!', 'success');
     }
 
     function initMusicDate() {
@@ -699,21 +726,10 @@
       document.getElementById('musicDateInput').value = today.toISOString().split('T')[0];
     }
 
-    function showConfigEditor(type) {
-      const raw = JSON.stringify(musicConfig[type === 'jabas' ? 'jabas' : type], null, 2);
-      const newJson = prompt(`Editor de Configuração (${type}). Cole o JSON atualizado:`, raw);
-      if (newJson) {
-        try {
-          const parsed = JSON.parse(newJson);
-          saveMusicConfig(type, parsed);
-        } catch (e) { alert('JSON Inválido!'); }
-      }
-    }
-
     async function saveMusicConfig(type, data) {
       const password = sessionStorage.getItem('newsmaker_password');
-      const key = type === 'jabas' ? 'config_music_jabas' : (type === 'rules' ? 'config_music_rules' : 'config_music_prefixes');
-      const payload = type === 'jabas' ? { configuracao_jabas: data } : data;
+      const key = type === 'jabas' ? 'config_music_jabas' : (type === 'rules' ? 'config_music_rules' : (type === 'prefixes' ? 'config_music_prefixes' : 'config_music_substitutions'));
+      const payload = type === 'jabas' ? { configuracao_jabas: data } : (type === 'vignettes' ? data : data);
       
       const res = await fetch(`/api/config?key=${key}`, {
         method: 'POST',
@@ -773,6 +789,10 @@
       document.getElementById('jabaIntro').value = tempJaba.cue_intro_ms || 0;
       document.getElementById('jabaSegue').value = tempJaba.cue_segue_ms || 0;
       
+      const dayChecks = document.querySelectorAll('.jaba-day-check');
+      const dias = tempJaba.dias_semana || [0,1,2,3,4,5,6];
+      dayChecks.forEach(c => c.checked = dias.includes(parseInt(c.value)));
+
       renderJabaProg();
       openModal('jabaModal');
     }
@@ -821,6 +841,9 @@
       tempJaba.duracao_ms = parseInt(document.getElementById('jabaDuration').value);
       tempJaba.cue_intro_ms = parseInt(document.getElementById('jabaIntro').value);
       tempJaba.cue_segue_ms = parseInt(document.getElementById('jabaSegue').value);
+      
+      const dayChecks = document.querySelectorAll('.jaba-day-check');
+      tempJaba.dias_semana = Array.from(dayChecks).filter(c => c.checked).map(c => parseInt(c.value));
 
       if (editingJabaIdx === -1) musicConfig.jabas.push(tempJaba);
       else musicConfig.jabas[editingJabaIdx] = tempJaba;
@@ -1002,15 +1025,40 @@
       `;
     }
 
-    function addPrefixRule() {
-      const input = document.getElementById('newPrefixInput');
-      const val = input.value.trim();
-      if (!val) return;
-      if (!musicConfig.prefixes.options_by_day) musicConfig.prefixes.options_by_day = {};
-      if (!musicConfig.prefixes.options_by_day[currentRuleDay]) musicConfig.prefixes.options_by_day[currentRuleDay] = [];
-      musicConfig.prefixes.options_by_day[currentRuleDay].push(val);
-      saveMusicConfig('prefixes', musicConfig.prefixes);
-      renderPrefixList();
+    // --- VIGNETTE EDITOR ---
+    function renderVignetteList() {
+      const cont = document.getElementById('vignetteList');
+      const sub = musicConfig.vignettes?.substituicoes || [];
+      cont.innerHTML = sub.map((rule, idx) => `
+        <div class="config-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div style="display: flex; width: 100%; justify-content: space-between;">
+             <strong>${rule.descricao}</strong>
+             <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="removeVignetteRule(${idx})">Remover</button>
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b;">
+             Modo: ${rule.modo} | ${rule.buscar.length} padrões → ${rule.substituir_por.length} opções
+          </div>
+        </div>
+      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma regra configurada.</p>';
+    }
+
+    function addVignetteRule() {
+      const desc = prompt("Descrição da regra (Ex: Estação Verão para Outono):");
+      if (!desc) return;
+      const buscar = prompt("Arquivos para buscar (separe por vírgula):", "VERÃO_01.wav").split(',').map(s => s.trim());
+      const trocar = prompt("Arquivos para substituir (separe por vírgula):", "OUTONO_01.wav").split(',').map(s => s.trim());
+      const modo = confirm("Usar modo CICLO? (OK = CICLO, Cancel = ALEATÓRIO)") ? 'ciclo' : 'aleatorio';
+
+      if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
+      musicConfig.vignettes.substituicoes.push({ descricao: desc, buscar, substituir_por: trocar, modo });
+      saveMusicConfig('vignettes', musicConfig.vignettes);
+    }
+
+    function removeVignetteRule(idx) {
+      if (confirm('Remover esta regra?')) {
+        musicConfig.vignettes.substituicoes.splice(idx, 1);
+        saveMusicConfig('vignettes', musicConfig.vignettes);
+      }
     }
 
     function removePrefixRule(idx) {
@@ -1055,20 +1103,43 @@
       };
 
       const defaultJabas = [
-        { id: "JRVILLA", caminho_arquivo: "M:\\Jabás\\Junior Villa - Buena Vibra.wav", total_insercoes: 1, duracao_ms: 180000, programacao: [{ quantidade_necessaria: 1, janelas_de_horario: [{ inicio: "14:00", fim: "18:00" }] }] }
+        { id: "JRVILLA", caminho_arquivo: "M:\\Jabás\\Junior Villa - Buena Vibra.wav", total_insercoes: 1, duracao_ms: 180000, dias_semana: [0,1,2,3,4,5,6], programacao: [{ quantidade_necessaria: 1, janelas_de_horario: [{ inicio: "14:00", fim: "18:00" }] }] }
       ];
+
+      const defaultVignettes = {
+        substituicoes: [{
+          descricao: "Vinheta Verão → Outono",
+          buscar: ["VH - ESTAÇÃO VERÃO_01(1).wav", "VH - ESTAÇÃO VERÃO_01(2).wav", "VH - ESTAÇÃO VERÃO_01.wav", "VH - ESTAÇÃO VERÃO_02(1).wav", "VH - ESTAÇÃO VERÃO_02.wav"],
+          substituir_por: ["VH - ESTAÇÃO OUTONO(1).wav", "VH - ESTAÇÃO OUTONO(2).wav", "VH - ESTAÇÃO OUTONO.wav"],
+          modo: "ciclo"
+        }]
+      };
 
       Promise.all([
         saveMusicConfig('rules', defaultRules),
         saveMusicConfig('prefixes', defaultPrefixes),
-        saveMusicConfig('jabas', defaultJabas)
+        saveMusicConfig('jabas', defaultJabas),
+        saveMusicConfig('vignettes', defaultVignettes)
       ]).then(() => {
         showToast('Padrões restaurados com sucesso!', 'success');
       });
     }
   </script>
 
-  <!-- Modals -->
+  <div id="vignettesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Substituições de Vinhetas</h3>
+        <button class="btn btn-secondary" onclick="closeModal('vignettesModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="addVignetteRule()">+ Nova Regra de Substituição</button>
+        <div id="vignetteList" class="config-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jaba Editor Modal (Higher z-index to appear over manager) -->
   <div id="prefixesModal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -1152,6 +1223,16 @@
                </button>
                <input type="file" id="jabaAudioFile" style="display: none;" accept="audio/*" onchange="extractAudioData(event)">
             </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dias da Semana</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            ${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, i) => `
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+                <input type="checkbox" class="jaba-day-check" value="${i}" style="width: auto;"> ${label}
+              </label>
+            `).join('')}
           </div>
         </div>
         <div class="form-group">
