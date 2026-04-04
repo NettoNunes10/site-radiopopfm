@@ -6,10 +6,26 @@ export async function onRequestGet(context) {
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
   const expectedPassword = env.NEWSMAKER_PASSWORD;
 
-  if (expectedPassword && authHeader === `Bearer ${expectedPassword}`) {
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  // Se a senha esperada não estiver configurada no Cloudflare, bloqueia por padrão
+  if (!expectedPassword || expectedPassword.trim() === '') {
+    return new Response(JSON.stringify({ error: 'System error: password not configured in Cloudflare' }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+    });
   }
-  return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+
+  if (authHeader === `Bearer ${expectedPassword}`) {
+    return new Response(JSON.stringify({ success: true }), { 
+      status: 200, 
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+    });
+  }
+
+  // Senha incorreta ou ausente
+  return new Response(JSON.stringify({ error: 'Unauthorized: senha incorreta' }), { 
+    status: 401, 
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+  });
 }
 
 export async function onRequestPost(context) {
@@ -21,8 +37,11 @@ async function handleGenerate(request, env) {
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
   const expectedPassword = env.NEWSMAKER_PASSWORD;
   
-  if (!expectedPassword || authHeader !== `Bearer ${expectedPassword}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  if (!expectedPassword || expectedPassword.trim() === '' || authHeader !== `Bearer ${expectedPassword}`) {
+    return new Response(JSON.stringify({ error: 'Unauthorized: senha incorreta' }), { 
+      status: 401, 
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+    });
   }
 
   const apiKey = env.GEMINI_API_KEY;

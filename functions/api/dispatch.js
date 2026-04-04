@@ -10,17 +10,23 @@ const CORS_HEADERS = {
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Cache-Control': 'no-store',
+      ...CORS_HEADERS 
+    },
   });
 }
 
 function authorize(request, env) {
-  const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+  const authHeader = (request.headers.get('authorization') || request.headers.get('Authorization') || '').trim();
   const expectedPassword = env.NEWSMAKER_PASSWORD;
-  if (!expectedPassword || authHeader !== `Bearer ${expectedPassword}`) {
+  
+  if (!expectedPassword || expectedPassword.trim() === '') {
     return false;
   }
-  return true;
+  
+  return authHeader === `Bearer ${expectedPassword}`;
 }
 
 // OPTIONS - CORS preflight
