@@ -239,90 +239,47 @@
 
         <!-- Tab: Music / Roteiros -->
         <div id="tab-music" class="tab-content">
-          <div class="page-header">
-            <div>
-              <h2>Configuração Musical</h2>
-              <p style="font-size: 0.875rem; color: #64748b;">Gere roteiros e gerencie jabás, prefixos e vinhetas.</p>
+          <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+            
+            <div class="card" style="padding: 32px; text-align: center; border: 2px dashed var(--border); background: #f8fafc; cursor: pointer;" onclick="document.getElementById('musicFile').click()">
+              <div style="font-size: 3rem; color: var(--primary); margin-bottom: 16px;">
+                <ion-icon name="cloud-upload-outline"></ion-icon>
+              </div>
+              <h3 style="margin-bottom: 8px;">Subir Roteiros .BIL</h3>
+              <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 24px;">Extraímos a data automaticamente do nome do arquivo (ex: 20260404_BASE.bil)</p>
+              
+              <div style="display: flex; gap: 8px; justify-content: center;">
+                <input type="file" id="musicFile" accept=".bil" style="display: none;" multiple onchange="generateMusicResult()">
+                <button class="btn btn-primary" style="padding: 12px 32px; font-weight: 600;">
+                  Selecionar Arquivos da Rede
+                </button>
+              </div>
             </div>
-            <div class="editor-toolbar">
-              <button class="btn btn-secondary" style="color: #ef4444;" onclick="restoreMusicDefaults()">
-                <ion-icon name="refresh-outline"></ion-icon> Restaurar Padrões
+
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal'); renderJabaList();" title="Jabás">
+                <ion-icon name="musical-notes"></ion-icon> Jabás
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal'); renderRulesLists();" title="Regras">
+                <ion-icon name="options"></ion-icon> Regras
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('vignettesModal'); renderVignetteList();" title="Substituições">
+                <ion-icon name="repeat"></ion-icon> Substituições
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal'); renderPrefixList();" title="Prefixos">
+                <ion-icon name="time"></ion-icon> Prefixos
+              </button>
+              <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="restoreMusicDefaults()" title="Reset">
+                <ion-icon name="refresh-outline"></ion-icon> Reset
               </button>
             </div>
-          </div>
-          
-          <div class="stat-grid" style="grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
-            <!-- Left: Generation & Logs -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-              <div class="card" style="padding: 0; overflow: hidden; border: 2px solid var(--primary-light);">
-                <div style="background: var(--primary); color: white; padding: 16px 24px;">
-                  <h4 style="display: flex; align-items: center; gap: 8px; margin:0; font-size: 1rem;">
-                    <ion-icon name="flash"></ion-icon> 1. Gerar Novos Roteiros
-                  </h4>
-                </div>
-                <div style="padding: 24px;">
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                    <div>
-                      <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: block;">DATA DO ROTEIRO</label>
-                      <input type="date" id="musicDateInput" class="news-input" style="width: 100%;">
-                    </div>
-                    <div>
-                      <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: block;">ARQUIVO(S) .BIL DA REDE</label>
-                      <input type="file" id="musicFile" accept=".bil" class="news-input" style="width: 100%; padding: 7px;" multiple>
-                    </div>
-                  </div>
-                  <button class="btn btn-primary" onclick="generateMusicResult()" style="width: 100%; justify-content: center; padding: 14px; font-weight: 600;">
-                    <ion-icon name="rocket-outline"></ion-icon> INICIAR PROCESSAMENTO EM LOTE
-                  </button>
-                </div>
-              </div>
 
-              <!-- Terminal Logs -->
-              <div class="card" id="processingLogsContainer" style="display: none; padding: 0; background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);">
-                <div style="background: #1e293b; padding: 8px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #334155;">
-                  <div style="display: flex; gap: 6px;">
-                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
-                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #fbbf24;"></div>
-                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></div>
-                  </div>
-                  <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; margin-left: 8px;">music-engine.log</span>
-                </div>
-                <div id="processingLogs" style="padding: 16px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; max-height: 400px; overflow-y: auto;">
-                </div>
+            <div id="processingLogsContainer" style="display: none; background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+              <div style="background: #1e293b; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155;">
+                <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">TERMINAL DE PROCESSAMENTO</span>
+                <button onclick="document.getElementById('processingLogsContainer').style.display='none'" style="background: none; border: none; color: #94a3b8; cursor: pointer;"><ion-icon name="close"></ion-icon></button>
               </div>
-            </div>
-
-            <!-- Right: Config Selection -->
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-              <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Acesso Rápido</h4>
-              <div class="card config-card-btn" onclick="openModal('jabasManagerModal'); renderJabaList();">
-                <div class="icon-wrap" style="background: #e0f2fe; color: #0ea5e9;"><ion-icon name="musical-notes"></ion-icon></div>
-                <div>
-                   <h5>Gerenciar Jabás</h5>
-                   <p>Músicas pagas e janelas.</p>
-                </div>
-              </div>
-              <div class="card config-card-btn" onclick="openModal('rulesModal'); renderRulesLists();">
-                <div class="icon-wrap" style="background: #fef3c7; color: #d97706;"><ion-icon name="options"></ion-icon></div>
-                <div>
-                   <h5>Regras por Cidade</h5>
-                   <p>Remover e renomear blocos.</p>
-                </div>
-              </div>
-              <div class="card config-card-btn" onclick="openModal('vignettesModal'); renderVignetteList();">
-                <div class="icon-wrap" style="background: #f0fdf4; color: #16a34a;"><ion-icon name="repeat"></ion-icon></div>
-                <div>
-                   <h5>Substituições</h5>
-                   <p>Temporadas (Verão/Outono).</p>
-                </div>
-              </div>
-              <div class="card config-card-btn" onclick="openModal('prefixesModal'); renderPrefixList();">
-                <div class="icon-wrap" style="background: #faf5ff; color: #9333ea;"><ion-icon name="time"></ion-icon></div>
-                <div>
-                   <h5>Prefixos Hora Cheia</h5>
-                   <p>Escala de aberturas.</p>
-                </div>
-              </div>
+              <div id="processingLogs" style="padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; max-height: 400px; overflow-y: auto; line-height: 1.6;"></div>
             </div>
           </div>
         </div>
@@ -710,23 +667,29 @@
 
     async function generateMusicResult() {
       const fileInput = document.getElementById('musicFile');
-      const dateInput = document.getElementById('musicDateInput');
-      if (!fileInput.files.length || !dateInput.value) {
-        showToast('Selecione data e pelo menos um arquivo!', 'error');
-        return;
-      }
+      if (!fileInput.files.length) return;
       
-      const date = new Date(dateInput.value + 'T12:00:00');
       const logCont = document.getElementById('processingLogs');
       const logBox = document.getElementById('processingLogsContainer');
       logBox.style.display = 'block';
-      logCont.innerHTML = `<div>[${new Date().toLocaleTimeString()}] <span style="color: #fbbf24;">>>> Fila de processamento iniciada...</span></div>`;
+      logCont.innerHTML = `<div>[${new Date().toLocaleTimeString()}] <span style="color: #fbbf24;">>>> Lote de arquivos detectado. Iniciando...</span></div>`;
       
       const files = Array.from(fileInput.files);
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        logCont.innerHTML += `<div style="color: white; margin-top: 8px;">> Processando ${i+1} de ${files.length}: ${file.name}</div>`;
+        
+        // Auto-detect Date from FileName (YYYYMMDD)
+        const dateMatch = file.name.match(/(\d{8})/);
+        if (!dateMatch) {
+          logCont.innerHTML += `<div style="color: #ef4444; margin-top: 8px;">! Erro no arquivo ${file.name}: Data não encontrada no nome (padrão YYYYMMDD necessário).</div>`;
+          continue;
+        }
+        
+        const dateStr = dateMatch[1];
+        const date = new Date(`${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}T12:00:00`);
+        
+        logCont.innerHTML += `<div style="color: white; margin-top: 12px; border-top: 1px solid #334155; padding-top: 8px;">> Processando ${i+1}/${files.length}: <b>${file.name}</b> (Data: ${date.toLocaleDateString('pt-BR')})</div>`;
         
         const content = await file.text();
         try {
@@ -735,19 +698,19 @@
           logCont.innerHTML += result.logs.map(l => `<div>${l}</div>`).join('');
           logCont.scrollTop = logCont.scrollHeight;
           
-          // Naming build
-          const baseName = file.name.split('.')[0];
-          MusicEngine.download(`${baseName}_ITAPEVA.bil`, result.itapeva);
+          const baseNameWithoutExt = file.name.split('.')[0];
+          MusicEngine.download(`${baseNameWithoutExt}_ITAPEVA.bil`, result.itapeva);
           await new Promise(r => setTimeout(r, 600));
-          MusicEngine.download(`${baseName}_ITAPETININGA.bil`, result.itapetininga);
+          MusicEngine.download(`${baseNameWithoutExt}_ITAPETININGA.bil`, result.itapetininga);
           await new Promise(r => setTimeout(r, 600));
           
         } catch (e) {
-          logCont.innerHTML += `<div style="color: #ef4444;">Erro no arquivo ${file.name}: ${e.message}</div>`;
+          logCont.innerHTML += `<div style="color: #ef4444;">Erro interno: ${e.message}</div>`;
         }
       }
       
-      showToast('Processamento em lote concluído!', 'success');
+      showToast('Processamento concluído!', 'success');
+      fileInput.value = ''; // Reset input
     }
 
     function initMusicDate() {
@@ -893,14 +856,28 @@
         document.getElementById('jabaId').value = file.name.split('.')[0].substring(0, 10).toUpperCase();
       }
 
-      const audio = new Audio();
-      audio.src = URL.createObjectURL(file);
-      audio.onloadedmetadata = () => {
-        const ms = Math.round(audio.duration * 1000);
-        document.getElementById('jabaDuration').value = ms;
-        showToast(`Duração capturada: ${ms}ms`, 'success');
-        URL.revokeObjectURL(audio.src);
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const buffer = await audioCtx.decodeAudioData(e.target.result);
+          const ms = Math.round(buffer.duration * 1000);
+          document.getElementById('jabaDuration').value = ms;
+          showToast(`Duração capturada: ${ms}ms`, 'success');
+        } catch (err) {
+          console.error('Erro ao ler áudio:', err);
+          // Fallback simple audio
+          const audio = new Audio();
+          audio.src = URL.createObjectURL(file);
+          audio.onloadedmetadata = () => {
+            const ms = Math.round(audio.duration * 1000);
+            document.getElementById('jabaDuration').value = ms;
+            URL.revokeObjectURL(audio.src);
+          };
+        }
       };
+      reader.readAsArrayBuffer(file);
     }
 
     function deleteJaba(idx) {
@@ -1311,7 +1288,7 @@
                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jabaAudioFile').click()">
                  <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
                </button>
-               <input type="file" id="jabaAudioFile" style="display: none;" accept="audio/*" onchange="extractAudioData(event)">
+               <input type="file" id="jabaAudioFile" style="display: none;" accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/x-flac" onchange="extractAudioData(event)">
             </div>
           </div>
         </div>

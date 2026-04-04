@@ -10,20 +10,8 @@ function toMinutes(hhmm) {
 }
 
 function normalizeHHMM(hhmm) {
-  const total = toMinutes(hhmm);
-  return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
-}
-
-function inWindow(timeMin, window) {
-  const start = toMinutes(window.inicio);
-  const end = toMinutes(window.fim);
-  if (start <= end) return timeMin >= start && timeMin <= end;
-  return timeMin >= start || timeMin <= end;
-}
-
-function isTimeAllowed(hhmm, windows) {
-  const minutes = toMinutes(hhmm);
-  return windows.some(w => inWindow(minutes, w));
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
 function getDayType(date) {
@@ -33,24 +21,23 @@ function getDayType(date) {
   return 'dia_semana';
 }
 
-// --- ANSI ENCODING (CP1252) ---
+// --- ANSI ENCODING (CP1252) PRO ---
 function stringToCP1252(str) {
+  const map = {
+    'Á': 0xC1, 'À': 0xC0, 'Â': 0xC2, 'Ã': 0xC3, 'É': 0xC9, 'Ê': 0xCA, 'Í': 0xCD, 'Ó': 0xD3, 'Ô': 0xD4, 'Õ': 0xD5, 'Ú': 0xDA, 'Ç': 0xC7,
+    'á': 0xE1, 'à': 0xE0, 'â': 0xE2, 'ã': 0xE3, 'é': 0xE9, 'ê': 0xEA, 'í': 0xED, 'ó': 0xF3, 'ô': 0xF4, 'õ': 0xF5, 'ú': 0xFA, 'ç': 0xE7,
+    'º': 0xBA, 'ª': 0xAA
+  };
   const buf = new Uint8Array(str.length);
   for (let i = 0; i < str.length; i++) {
+    const char = str[i];
     const charCode = str.charCodeAt(i);
-    if (charCode < 128) {
+    if (map[char]) {
+      buf[i] = map[char];
+    } else if (charCode < 128) {
       buf[i] = charCode;
     } else {
-      // Common Portuguese CP1252 mappings
-      const map = {
-        0xc0: 0xc0, 0xc1: 0xc1, 0xc2: 0xc2, 0xc3: 0xc3, 0xc7: 0xc7,
-        0xc8: 0xc8, 0xc9: 0xc9, 0xca: 0xca, 0xcd: 0xcd, 0xd2: 0xd2,
-        0xd3: 0xd3, 0xd4: 0xd4, 0xd5: 0xd5, 0xda: 0xda, 0xe0: 0xe0,
-        0xe1: 0xe1, 0xe2: 0xe2, 0xe3: 0xe3, 0xe7: 0xe7, 0xe8: 0xe8,
-        0xe9: 0xe9, 0xea: 0xea, 0xed: 0xed, 0xf2: 0xf2, 0xf3: 0xf3,
-        0xf4: 0xf4, 0xf5: 0xf5, 0xfa: 0xfa
-      };
-      buf[i] = map[charCode] || 63; // '?'
+      buf[i] = 63; // '?'
     }
   }
   return buf;
@@ -153,6 +140,19 @@ function applyPrefixes(blocks, dayType, config) {
   });
 }
 
+function inWindow(timeMin, window) {
+  const start = toMinutes(window.inicio);
+  const end = toMinutes(window.fim);
+  if (start <= end) return timeMin >= start && timeMin <= end;
+  return timeMin >= start || timeMin <= end;
+}
+
+function isTimeAllowed(hhmm, windows) {
+  if (!windows || windows.length === 0) return true;
+  const minutes = toMinutes(hhmm);
+  return windows.some(w => inWindow(minutes, w));
+}
+
 function buildJabaLine(jaba) {
   const duration = jaba.duracao_ms || 0;
   const intro = jaba.cue_intro_ms || 0;
@@ -229,7 +229,7 @@ function applyJabas(blocks, jabasConfig, date, city, log) {
         let insertIdx = block.items.length;
         for (let i = 0; i < block.items.length; i++) {
           const line = block.items[i].toUpperCase();
-          if (line.includes("M:\\SERTAO\\") || line.includes("M:\\SERTÃO\\")) {
+          if (line.startsWith("M:\\SERTAO\\") || line.startsWith("M:\\SERTÃO\\")) {
             insertIdx = i;
             break;
           }
