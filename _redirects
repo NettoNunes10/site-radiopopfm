@@ -1,2 +1,3 @@
-/news-maker*  /news-maker/  200
-/news-maker/*  /news-maker/index.html  200
+/admin*  /admin/  200
+/admin/*  /admin/index.html  200
+/news-maker*  /admin/  301

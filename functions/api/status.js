@@ -50,26 +50,41 @@ export async function onRequestGet(context) {
 
   try {
     const url = new URL(request.url);
-    const city = url.searchParams.get('city');
+    const city = url.searchParams.get('city')?.toLowerCase();
 
     if (!city) {
       return jsonResponse({ error: 'Missing "city" query parameter.' }, 400);
     }
 
-    const key = `status_${city.toLowerCase()}`;
-    const raw = await kv.get(key);
+    // Keys for News and Playlist heartbeats
+    const newsKey = `status_${city}`;
+    const playlistKey = `status_playlist_${city}`;
 
-    if (!raw) {
-      return jsonResponse({ online: false, message: 'Status unknown' });
-    }
+    const [newsRaw, playlistRaw] = await Promise.all([
+      kv.get(newsKey),
+      kv.get(playlistKey)
+    ]);
 
-    const data = JSON.parse(raw);
-    const lastSeen = data.lastSeen || 0;
-    const isOnline = (Date.now() - lastSeen) < 120000; // 2 minutes threshold
+    const now = Date.now();
+    const threshold = 120000; // 2 minutes
+
+    const newsStatus = newsRaw ? JSON.parse(newsRaw) : null;
+    const playlistStatus = playlistRaw ? JSON.parse(playlistRaw) : null;
 
     return jsonResponse({
-      online: isOnline,
-      ...data
+      city,
+      news: newsStatus ? {
+        online: (now - (newsStatus.lastSeen || 0)) < threshold,
+        ...newsStatus
+      } : { online: false, message: 'Status unknown' },
+      playlist: playlistStatus ? {
+        online: (now - (playlistStatus.lastSeen || 0) < threshold),
+        ...playlistStatus
+      } : { online: false, message: 'Status unknown' },
+      // Backward compatibility for old NewsMaker if needed during transition
+      online: newsStatus ? (now - (newsStatus.lastSeen || 0)) < threshold : false,
+      host: newsStatus?.host || 'Desconhecido',
+      lastSeen: newsStatus?.lastSeen || 0
     });
 
   } catch (error) {
