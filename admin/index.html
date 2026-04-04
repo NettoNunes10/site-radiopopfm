@@ -940,44 +940,65 @@
       const file = event.target.files[0];
       if (!file) return;
 
+      const durField = document.getElementById('jabaDuration');
+      const pathField = document.getElementById('jabaPath');
+      const idField = document.getElementById('jabaId');
+
       // Prefill path and ID
-      document.getElementById('jabaPath').value = `M:\\Jabás\\${file.name}`;
-      if (!document.getElementById('jabaId').value) {
-        document.getElementById('jabaId').value = file.name.split('.')[0].substring(0, 10).toUpperCase();
+      pathField.value = `M:\\Jabás\\${file.name}`;
+      if (!idField.value) {
+        idField.value = file.name.split('.')[0].substring(0, 10).toUpperCase();
       }
 
       showToast('Analisando arquivo...', 'info');
 
-      // Use HTMLAudioElement for best codec support (MP3/WAV/FLAC)
+      // Use HTMLAudioElement with explicit loading for best compatibility
       const audio = new Audio();
       const objectUrl = URL.createObjectURL(file);
-      audio.src = objectUrl;
-
-      // Timeout safety
+      
+      // Safety timeout
       const timeout = setTimeout(() => {
-        if (document.getElementById('jabaDuration').value == 0) {
-          showToast('Tempo limite excedido na análise inicial.', 'error');
+        if (durField.value == 0 || durField.value == "0") {
+          showToast('Tempo limite excedido. Tente novamente ou insira manualmente.', 'error');
         }
         URL.revokeObjectURL(objectUrl);
-      }, 5000);
+      }, 8000);
 
-      audio.onloadedmetadata = () => {
+      const handleMetadata = () => {
         clearTimeout(timeout);
-        if (audio.duration && !isNaN(audio.duration)) {
+        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
           const ms = Math.round(audio.duration * 1000);
-          document.getElementById('jabaDuration').value = ms;
+          durField.value = ms;
           showToast(`Duração detectada: ${ms}ms`, 'success');
         } else {
-          showToast('Não foi possível ler a duração (arquivo corrompido ou formato ignorado).', 'error');
+          // If duration is still not available, wait a bit more or fail
+          setTimeout(() => {
+            if (audio.duration && !isNaN(audio.duration)) {
+              const ms = Math.round(audio.duration * 1000);
+              durField.value = ms;
+              showToast(`Duração detectada (atrasada): ${ms}ms`, 'success');
+            } else {
+              showToast('Não foi possível ler a duração deste formato.', 'error');
+            }
+            URL.revokeObjectURL(objectUrl);
+          }, 500);
+          return;
         }
         URL.revokeObjectURL(objectUrl);
       };
 
+      audio.onloadedmetadata = handleMetadata;
+      audio.onloadeddata = handleMetadata; // Backup event
+      
       audio.onerror = () => {
         clearTimeout(timeout);
-        showToast('Erro ao carregar áudio. Tente outro formato.', 'error');
+        showToast('Erro ao carregar o codec deste áudio.', 'error');
         URL.revokeObjectURL(objectUrl);
       };
+
+      audio.preload = 'metadata';
+      audio.src = objectUrl;
+      audio.load(); // Explicitly start loading
     }
 
     function deleteJaba(idx) {
@@ -990,10 +1011,12 @@
 
     // --- RULES EDITOR ---
     let currentRuleDay = 'dia_semana';
-    function showRulesTab(day) {
+    function showRulesTab(day, event) {
       currentRuleDay = day;
-      document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
+      if (typeof event !== 'undefined' && event.target) {
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+      }
       renderRulesLists();
     }
 
@@ -1172,22 +1195,37 @@
     }
 
     function saveVignetteRule() {
-      if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
-      if (!musicConfig.vignettes.substituicoes) musicConfig.vignettes.substituicoes = [];
+      try {
+        if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
+        if (!musicConfig.vignettes.substituicoes) musicConfig.vignettes.substituicoes = [];
 
-      const rule = {
-        descricao: document.getElementById('vigDesc').value,
-        buscar: document.getElementById('vigBuscar').value.split(',').map(s => s.trim()).filter(s => s),
-        substituir_por: document.getElementById('vigTrocar').value.split(',').map(s => s.trim()).filter(s => s),
-        modo: document.getElementById('vigModo').value
-      };
+        const desc = document.getElementById('vigDesc').value;
+        const buscarRaw = document.getElementById('vigBuscar').value;
+        const trocarRaw = document.getElementById('vigTrocar').value;
+        const modo = document.getElementById('vigModo').value;
 
-      if (editingVignetteIdx === -1) musicConfig.vignettes.substituicoes.push(rule);
-      else musicConfig.vignettes.substituicoes[editingVignetteIdx] = rule;
+        if (!desc || !buscarRaw || !trocarRaw) {
+          showToast('Preencha todos os campos da regra!', 'error');
+          return;
+        }
 
-      saveMusicConfig('vignettes', musicConfig.vignettes);
-      closeModal('vignetteEditModal');
-      renderVignetteList();
+        const rule = {
+          descricao: desc,
+          buscar: buscarRaw.split(',').map(s => s.trim()).filter(s => s),
+          substituir_por: trocarRaw.split(',').map(s => s.trim()).filter(s => s),
+          modo: modo
+        };
+
+        if (editingVignetteIdx === -1) musicConfig.vignettes.substituicoes.push(rule);
+        else musicConfig.vignettes.substituicoes[editingVignetteIdx] = rule;
+
+        saveMusicConfig('vignettes', musicConfig.vignettes);
+        closeModal('vignetteEditModal');
+        renderVignetteList();
+      } catch (err) {
+        console.error('Save Vignette Rule Error:', err);
+        alert('Erro ao salvar regra: ' + err.message);
+      }
     }
 
     function removeVignetteRule(idx) {
@@ -1319,9 +1357,9 @@
       </div>
       <div class="modal-body">
          <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
-          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana'); renderPrefixList();">Dia Semana</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado'); renderPrefixList();">Sábado</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo'); renderPrefixList();">Domingo</button>
+          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana', event); renderPrefixList();">Dia Semana</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado', event); renderPrefixList();">Sábado</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo', event); renderPrefixList();">Domingo</button>
         </div>
         <div id="rulesPrefixList"></div>
       </div>
@@ -1349,9 +1387,9 @@
       </div>
       <div class="modal-body">
         <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
-          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana')">Dia Semana</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado')">Sábado</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo')">Domingo</button>
+          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana', event)">Dia Semana</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado', event)">Sábado</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo', event)">Domingo</button>
         </div>
         
         <div class="sections-container" style="padding: 0;">
