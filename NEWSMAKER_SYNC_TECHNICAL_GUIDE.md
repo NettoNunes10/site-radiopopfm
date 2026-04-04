@@ -80,8 +80,9 @@ O Sync deve gerar os arquivos utilizando a estrutura exata esperada pelo sistema
 
 ### Variáveis do Cabeçalho
 O cabeçalho deve ser gerado usando o template: `NOTICIAS DA MASSA - NACIONAL - {weekday} {day_month}`
-- `{weekday}`: Nome do dia da semana em português (ex: SEGUNDA-FEIRA).
-- `{day_month}`: Dia e mês (ex: 04.04).
+- **IMPORTANTE**: O Sync **não** deve utilizar a data atual do computador. Ele deve utilizar a data contida no campo `"date"` do JSON retornado pela API (Ex: `2026-04-03`) para calcular as variáveis abaixo:
+    - `{weekday}`: Nome do dia da semana em português (ex: SEGUNDA-FEIRA).
+    - `{day_month}`: Dia e mês (ex: 04.04).
 
 ### Estrutura do Documento RTF
 O arquivo final deve seguir esta ordem de blocos RTF:
