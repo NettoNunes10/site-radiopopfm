@@ -259,9 +259,10 @@
                   Configurações do Roteiro
                 </h4>
                 <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-secondary btn-sm" onclick="showConfigEditor('jabas')">Gerenciar Jabás</button>
-                  <button class="btn btn-secondary btn-sm" onclick="showConfigEditor('rules')">Regras (Renomear/Remover)</button>
-                  <button class="btn btn-secondary btn-sm" onclick="showConfigEditor('prefixes')">Prefixos de Hora</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal'); renderJabaList();">Gerenciar Jabás</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal'); renderRulesLists();">Regras (Renomear/Remover)</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal'); renderPrefixList();">Prefixos de Hora</button>
+                  <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="restoreMusicDefaults()">Restaurar Padrões</button>
                 </div>
               </div>
               <div style="padding: 24px;">
@@ -733,13 +734,391 @@
       initMusicDate();
       loadMusicConfig();
     }
-    
-    // Add setupMusic() to checkPassword() successful block
+
+    // --- VISUAL EDITORS LOGIC ---
+    function openModal(id) { document.getElementById(id).classList.add('show'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    function renderJabaList() {
+      const list = document.getElementById('jabasList');
+      list.innerHTML = musicConfig.jabas.map((j, idx) => `
+        <div class="config-item">
+          <div class="config-item-info">
+            <h5>${j.id}</h5>
+            <p>${j.caminho_arquivo}</p>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              ${j.programacao.length} janelas | ${j.duracao_ms || 0}ms
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="editJaba(${idx})">Editar</button>
+            <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deleteJaba(${idx})">Remover</button>
+          </div>
+        </div>
+      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum jabá cadastrado.</p>';
+    }
+
+    let editingJabaIdx = -1;
+    function editJaba(idx) {
+      editingJabaIdx = idx;
+      const j = idx === -1 ? { id: '', caminho_arquivo: '', total_insercoes: 1, duracao_ms: 0, cue_intro_ms: 0, cue_segue_ms: 0, programacao: [] } : musicConfig.jabas[idx];
+      
+      document.getElementById('jabaId').value = j.id;
+      document.getElementById('jabaPath').value = j.caminho_arquivo;
+      document.getElementById('jabaDuration').value = j.duracao_ms || 0;
+      document.getElementById('jabaIntro').value = j.cue_intro_ms || 0;
+      document.getElementById('jabaSegue').value = j.cue_segue_ms || 0;
+      
+      renderJabaProg(j.programacao);
+      openModal('jabaModal');
+    }
+
+    function renderJabaProg(prog) {
+      const cont = document.getElementById('jabaProgContainer');
+      cont.innerHTML = prog.map((p, i) => `
+        <div class="jaba-prog-row">
+          <div class="form-group" style="flex: 1; margin: 0;">
+            <label>Horários (Ex: 08:00-11:00)</label>
+            <input type="text" value="${p.janelas_de_horario.map(w => w.inicio + '-' + w.fim).join(', ')}" onchange="updateJabaProg(${i}, 'windows', this.value)">
+          </div>
+          <div class="form-group" style="width: 80px; margin: 0;">
+            <label>Qtd</label>
+            <input type="number" value="${p.quantidade_necessaria}" onchange="updateJabaProg(${i}, 'qty', this.value)">
+          </div>
+          <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="removeJabaProg(${i})">X</button>
+        </div>
+      `).join('');
+    }
+
+    window.currentJabaProg = [];
+    function addJabaProg() {
+      const j = editingJabaIdx === -1 ? { programacao: window.currentJabaProg } : musicConfig.jabas[editingJabaIdx];
+      j.programacao.push({ quantidade_necessaria: 1, janelas_de_horario: [] });
+      renderJabaProg(j.programacao);
+    }
+
+    function saveJaba() {
+      const j = {
+        id: document.getElementById('jabaId').value,
+        caminho_arquivo: document.getElementById('jabaPath').value,
+        duracao_ms: parseInt(document.getElementById('jabaDuration').value),
+        cue_intro_ms: parseInt(document.getElementById('jabaIntro').value),
+        cue_segue_ms: parseInt(document.getElementById('jabaSegue').value),
+        programacao: editingJabaIdx === -1 ? window.currentJabaProg : musicConfig.jabas[editingJabaIdx].programacao
+      };
+
+      if (editingJabaIdx === -1) musicConfig.jabas.push(j);
+      else musicConfig.jabas[editingJabaIdx] = j;
+
+      saveMusicConfig('jabas', musicConfig.jabas);
+      closeModal('jabaModal');
+      renderJabaList();
+    }
+
+    function deleteJaba(idx) {
+      if (confirm('Remover este jabá?')) {
+        musicConfig.jabas.splice(idx, 1);
+        saveMusicConfig('jabas', musicConfig.jabas);
+        renderJabaList();
+      }
+    }
+
+    // --- RULES EDITOR ---
+    let currentRuleDay = 'dia_semana';
+    function showRulesTab(day) {
+      currentRuleDay = day;
+      document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      renderRulesLists();
+    }
+
+    function renderRulesLists() {
+      const rules = musicConfig.rules;
+      const day = currentRuleDay;
+      
+      // Removed Blocks
+      const remContainer = document.getElementById('rulesRemovedList');
+      const removed = rules.remover_blocos?.[day] || [];
+      remContainer.innerHTML = removed.map(t => `
+        <div class="time-tag">${t} <button onclick="removeTimeRule('remover_blocos', '${t}')">×</button></div>
+      `).join('') + `
+        <div class="time-tag" style="border: 1px dashed var(--accent); color: var(--accent); cursor: pointer;" onclick="addTimeRule('remover_blocos')">+ Adicionar</div>
+      `;
+
+      // Windows
+      const winContainer = document.getElementById('rulesWindowsList');
+      const windows = rules.janelas_permitidas?.[day] || [];
+      winContainer.innerHTML = windows.map(w => `
+        <div class="time-tag">${w.inicio}-${w.fim} <button onclick="removeWindowRule('${w.inicio}')">×</button></div>
+      `).join('') + `
+        <div class="time-tag" style="border: 1px dashed var(--accent); color: var(--accent); cursor: pointer;" onclick="addWindowRule()">+ Adicionar</div>
+      `;
+
+      // Renames
+      renderRenameList();
+    }
+
+    function renderRenameList() {
+      const day = currentRuleDay;
+      const rules = musicConfig.rules;
+      const cont = document.getElementById('rulesRenameList');
+      let html = '';
+      ['ITAPEVA', 'ITAPETININGA'].forEach(city => {
+        const map = (rules.renomear_blocos?.[day] || {})[city] || {};
+        html += `<h6 style="margin: 10px 0 5px; font-size: 0.75rem; color: #64748b;">${city}</h6>`;
+        for (const [old, val] of Object.entries(map)) {
+          html += `<div class="config-item" style="padding: 8px 12px; margin-bottom: 4px;">
+            <span style="font-size: 0.8125rem;">${old} → ${val}</span>
+            <button class="btn btn-secondary btn-sm" onclick="removeRenameRule('${city}', '${old}')">×</button>
+          </div>`;
+        }
+        html += `<button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="addRenameRule('${city}')">+ Inserir Renomeação</button>`;
+      });
+      cont.innerHTML = html;
+    }
+
+    function addTimeRule(key) {
+      const time = prompt("Horário do bloco (ex: 00:25):");
+      if (!time) return;
+      if (!musicConfig.rules[key]) musicConfig.rules[key] = {};
+      if (!musicConfig.rules[key][currentRuleDay]) musicConfig.rules[key][currentRuleDay] = [];
+      musicConfig.rules[key][currentRuleDay].push(normalizeHHMM(time));
+      saveMusicConfig('rules', musicConfig.rules);
+      renderRulesLists();
+    }
+
+    function addWindowRule() {
+      const range = prompt("Intervalo permitido (ex: 08:00-11:00):");
+      if (!range || !range.includes('-')) return;
+      const [start, end] = range.split('-');
+      if (!musicConfig.rules.janelas_permitidas) musicConfig.rules.janelas_permitidas = {};
+      if (!musicConfig.rules.janelas_permitidas[currentRuleDay]) musicConfig.rules.janelas_permitidas[currentRuleDay] = [];
+      musicConfig.rules.janelas_permitidas[currentRuleDay].push({ inicio: normalizeHHMM(start), fim: normalizeHHMM(end) });
+      saveMusicConfig('rules', musicConfig.rules);
+      renderRulesLists();
+    }
+
+    function addRenameRule(city) {
+      const old = prompt("Horário original (ex: 18:50):");
+      const newT = prompt("Novo horário (ex: 18:55):");
+      if (!old || !newT) return;
+      if (!musicConfig.rules.renomear_blocos) musicConfig.rules.renomear_blocos = {};
+      if (!musicConfig.rules.renomear_blocos[currentRuleDay]) musicConfig.rules.renomear_blocos[currentRuleDay] = {};
+      if (!musicConfig.rules.renomear_blocos[currentRuleDay][city]) musicConfig.rules.renomear_blocos[currentRuleDay][city] = {};
+      musicConfig.rules.renomear_blocos[currentRuleDay][city][normalizeHHMM(old)] = normalizeHHMM(newT);
+      saveMusicConfig('rules', musicConfig.rules);
+      renderRulesLists();
+    }
+
+    function removeTimeRule(key, val) {
+      musicConfig.rules[key][currentRuleDay] = musicConfig.rules[key][currentRuleDay].filter(v => v !== val);
+      saveMusicConfig('rules', musicConfig.rules);
+      renderRulesLists();
+    }
+
+    function removeWindowRule(start) {
+      musicConfig.rules.janelas_permitidas[currentRuleDay] = musicConfig.rules.janelas_permitidas[currentRuleDay].filter(w => w.inicio !== start);
+      saveMusicConfig('rules', musicConfig.rules);
+      renderRulesLists();
+    }
+
+    function removeRenameRule(city, old) {
+      delete musicConfig.rules.renomear_blocos[currentRuleDay][city][old];
+      saveMusicConfig('rules', musicConfig.rules);
+      renderRulesLists();
+    }
+
+    // --- PREFIX EDITOR ---
+    function renderPrefixList() {
+      const day = currentRuleDay;
+      const cont = document.getElementById('rulesPrefixList');
+      const options = musicConfig.prefixes.options_by_day?.[day] || [];
+      cont.innerHTML = `
+        <div class="form-group">
+          <label>Prefixo Alvo (Regex)</label>
+          <input type="text" value="${musicConfig.prefixes.target_name || ''}" onchange="musicConfig.prefixes.target_name = this.value; saveMusicConfig('prefixes', musicConfig.prefixes);">
+        </div>
+        <div class="time-grid">
+          ${options.map((p, i) => `
+            <div class="time-tag" style="width: 100%; justify-content: space-between;">
+              ${p} <button onclick="removePrefixRule(${i})">×</button>
+            </div>
+          `).join('')}
+          <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="addPrefixRule()">+ Adicionar Opção de Prefixo</button>
+        </div>
+      `;
+    }
+
+    function addPrefixRule() {
+      const val = prompt("Nome do arquivo de prefixo (ex: ABERTURA...):");
+      if (!val) return;
+      if (!musicConfig.prefixes.options_by_day) musicConfig.prefixes.options_by_day = {};
+      if (!musicConfig.prefixes.options_by_day[currentRuleDay]) musicConfig.prefixes.options_by_day[currentRuleDay] = [];
+      musicConfig.prefixes.options_by_day[currentRuleDay].push(val);
+      saveMusicConfig('prefixes', musicConfig.prefixes);
+      renderPrefixList();
+    }
+
+    function removePrefixRule(idx) {
+      musicConfig.prefixes.options_by_day[currentRuleDay].splice(idx, 1);
+      saveMusicConfig('prefixes', musicConfig.prefixes);
+      renderPrefixList();
+    }
+
+    // --- DEFAULTS ---
+    function restoreMusicDefaults() {
+      if (!confirm('Isso irá substituir todas as suas regras atuais pelos padrões originais do script Python. Continuar?')) return;
+      
+      const defaultRules = {
+        janelas_permitidas: {
+          dia_semana: [{ inicio: "05:55", fim: "11:35" }, { inicio: "13:53", fim: "18:35" }],
+          sabado: [{ inicio: "07:55", fim: "11:35" }],
+          domingo: [{ inicio: "00:00", fim: "11:30" }]
+        },
+        remover_blocos: {
+          dia_semana: ["00:25", "01:25", "02:25", "03:25"],
+          sabado: ["00:25", "01:25", "02:25", "03:25", "04:25"],
+          domingo: ["00:25", "01:25", "02:25", "03:25", "04:25"]
+        },
+        renomear_blocos: {
+          dia_semana: { ITAPETININGA: { "18:50": "18:55", "20:55": "21:35" } },
+          sabado: { ITAPEVA: { "11:53": "11:55" }, ITAPETININGA: { "11:53": "11:55" } },
+          domingo: { ITAPEVA: { "11:53": "11:55" }, ITAPETININGA: { "11:53": "11:55" } }
+        }
+      };
+
+      const defaultPrefixes = {
+        target_name: "ABERTURA HORA CHEIA - NEUTRO",
+        options_by_day: {
+          dia_semana: ["ABERTURA HORA CHEIA - Outono (Geral) 1", "ABERTURA HORA CHEIA - Outono (Geral) 2"],
+          sabado: ["ABERTURA HORA CHEIA - Outono (Fim de Semana) 1", "ABERTURA HORA CHEIA - Outono (Fim de Semana) 2"],
+          domingo: ["ABERTURA HORA CHEIA - Outono (Fim de Semana) 1", "ABERTURA HORA CHEIA - Outono (Fim de Semana) 2"]
+        }
+      };
+
+      const defaultJabas = [
+        { id: "JRVILLA", caminho_arquivo: "M:\\Jabás\\Junior Villa - Buena Vibra.wav", total_insercoes: 1, duracao_ms: 180000, programacao: [{ quantidade_necessaria: 1, janelas_de_horario: [{ inicio: "14:00", fim: "18:00" }] }] }
+      ];
+
+      Promise.all([
+        saveMusicConfig('rules', defaultRules),
+        saveMusicConfig('prefixes', defaultPrefixes),
+        saveMusicConfig('jabas', defaultJabas)
+      ]).then(() => {
+        showToast('Padrões restaurados com sucesso!', 'success');
+      });
+    }
   </script>
+
+  <!-- Modals -->
+  <div id="prefixesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Prefixos de Hora Cheia</h3>
+        <button class="btn btn-secondary" onclick="closeModal('prefixesModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+         <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
+          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana'); renderPrefixList();">Dia Semana</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado'); renderPrefixList();">Sábado</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo'); renderPrefixList();">Domingo</button>
+        </div>
+        <div id="rulesPrefixList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="jabasModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Configurar Jabá (Música Comercial)</h3>
+        <button class="btn btn-secondary" onclick="closeModal('jabaModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div class="news-inputs" style="margin-bottom: 24px;">
+          <div class="form-group">
+            <label>Identificador (Ex: JRVILLA)</label>
+            <input type="text" id="jabaId">
+          </div>
+          <div class="form-group">
+            <label>Duração Total (ms)</label>
+            <input type="number" id="jabaDuration">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Caminho Completo do Arquivo (Ex: M:\Jabás\...)</label>
+          <input type="text" id="jabaPath">
+        </div>
+        <div class="news-inputs">
+          <div class="form-group">
+            <label>Cue Intro (ms)</label>
+            <input type="number" id="jabaIntro">
+          </div>
+          <div class="form-group">
+            <label>Cue Segue (ms)</label>
+            <input type="number" id="jabaSegue">
+          </div>
+        </div>
+        <h4 style="font-size: 0.875rem; color: #64748b; text-transform: uppercase; margin-bottom: 12px; margin-top: 24px;">Programação por Janelas</h4>
+        <div id="jabaProgContainer"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addJabaProg()" style="margin-top: 8px;">+ Adicionar Regra de Programação</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('jabaModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveJaba()">Salvar Jabá</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="jabasManagerModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Gerenciador de Jabás</h3>
+        <button class="btn btn-secondary" onclick="closeModal('jabasManagerModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editJaba(-1)">+ Novo Jabá</button>
+        <div id="jabasList" class="config-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rulesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Regras de Regionalização</h3>
+        <button class="btn btn-secondary" onclick="closeModal('rulesModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
+          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana')">Dia Semana</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado')">Sábado</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo')">Domingo</button>
+        </div>
+        
+        <div class="sections-container" style="padding: 0;">
+          <div class="section-group">
+            <h4><ion-icon name="time-outline"></ion-icon> Janelas de Conteúdo (Rede)</h4>
+            <div id="rulesWindowsList" class="time-grid"></div>
+          </div>
+          <div class="section-group">
+            <h4><ion-icon name="trash-outline"></ion-icon> Remover Blocos</h4>
+            <div id="rulesRemovedList" class="time-grid"></div>
+          </div>
+          <div class="section-group">
+            <h4><ion-icon name="swap-horizontal-outline"></ion-icon> Renomear Horários por Cidade</h4>
+            <div id="rulesRenameList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <style>
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .spin { animation: spin 1s linear infinite; }
+    .day-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
   </style>
 </body>
 </html>
