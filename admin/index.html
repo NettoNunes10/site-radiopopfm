@@ -921,12 +921,15 @@
     function saveJaba() {
       tempJaba.id = document.getElementById('jabaId').value;
       tempJaba.caminho_arquivo = document.getElementById('jabaPath').value;
-      tempJaba.duracao_ms = parseInt(document.getElementById('jabaDuration').value);
-      tempJaba.cue_intro_ms = parseInt(document.getElementById('jabaIntro').value);
-      tempJaba.cue_segue_ms = parseInt(document.getElementById('jabaSegue').value);
+      tempJaba.duracao_ms = parseInt(document.getElementById('jabaDuration').value || 0);
+      tempJaba.cue_intro_ms = parseInt(document.getElementById('jabaIntro').value || 0);
+      tempJaba.cue_segue_ms = parseInt(document.getElementById('jabaSegue').value || 0);
       
       const dayChecks = document.querySelectorAll('.jaba-day-check');
       tempJaba.dias_semana = Array.from(dayChecks).filter(c => c.checked).map(c => parseInt(c.value));
+
+      // Calcular o total de inserções baseado na soma das regras
+      tempJaba.total_insercoes = tempJaba.programacao.reduce((sum, p) => sum + (p.quantidade_necessaria || 0), 0);
 
       if (editingJabaIdx === -1) musicConfig.jabas.push(tempJaba);
       else musicConfig.jabas[editingJabaIdx] = tempJaba;
