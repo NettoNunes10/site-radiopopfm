@@ -240,59 +240,88 @@
         <!-- Tab: Music / Roteiros -->
         <div id="tab-music" class="tab-content">
           <div class="page-header">
-            <h2>Gerador de Roteiro Musical (.bil)</h2>
+            <div>
+              <h2>Configuração Musical</h2>
+              <p style="font-size: 0.875rem; color: #64748b;">Gere roteiros e gerencie jabás, prefixos e vinhetas.</p>
+            </div>
             <div class="editor-toolbar">
-              <input type="date" id="musicDateInput" class="btn btn-secondary">
-              <button class="btn btn-primary" onclick="document.getElementById('bilUpload').click()">
-                <ion-icon name="cloud-upload-outline"></ion-icon>
-                <span>Processar .BIL Base</span>
+              <button class="btn btn-secondary" style="color: #ef4444;" onclick="restoreMusicDefaults()">
+                <ion-icon name="refresh-outline"></ion-icon> Restaurar Padrões
               </button>
-              <input type="file" id="bilUpload" style="display: none;" accept=".bil" onchange="handleBilUpload(event)">
             </div>
           </div>
           
-          <div class="stat-grid">
-            <div class="card" style="grid-column: span 2;">
-              <div class="editor-header">
-                <h4 style="display: flex; align-items: center; gap: 8px;">
-                  <ion-icon name="settings-outline" style="color: var(--accent);"></ion-icon>
-                  Configurações
-                </h4>
-                <div style="display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px;">
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal')">
-                    <ion-icon name="options-outline"></ion-icon> Regras Cidade
-                  </button>
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal')">
-                    <ion-icon name="musical-notes-outline"></ion-icon> Jabás
-                  </button>
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal')">
-                    <ion-icon name="time-outline"></ion-icon> Prefixos
-                  </button>
-                  <button class="btn btn-secondary btn-sm" onclick="openModal('vignettesModal')">
-                    <ion-icon name="repeat-outline"></ion-icon> Substituições
-                  </button>
-                  <button class="btn btn-secondary btn-sm" style="margin-left: auto; color: #ef4444;" onclick="restoreMusicDefaults()">
-                    <ion-icon name="refresh-outline"></ion-icon> Restaurar Padrões
+          <div class="stat-grid" style="grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+            <!-- Left: Generation & Logs -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="card" style="padding: 0; overflow: hidden; border: 2px solid var(--primary-light);">
+                <div style="background: var(--primary); color: white; padding: 16px 24px;">
+                  <h4 style="display: flex; align-items: center; gap: 8px; margin:0; font-size: 1rem;">
+                    <ion-icon name="flash"></ion-icon> 1. Gerar Novos Roteiros
+                  </h4>
+                </div>
+                <div style="padding: 24px;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                    <div>
+                      <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: block;">DATA DO ROTEIRO</label>
+                      <input type="date" id="musicDateInput" class="news-input" style="width: 100%;">
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: block;">ARQUIVO(S) .BIL DA REDE</label>
+                      <input type="file" id="musicFile" accept=".bil" class="news-input" style="width: 100%; padding: 7px;" multiple>
+                    </div>
+                  </div>
+                  <button class="btn btn-primary" onclick="generateMusicResult()" style="width: 100%; justify-content: center; padding: 14px; font-weight: 600;">
+                    <ion-icon name="rocket-outline"></ion-icon> INICIAR PROCESSAMENTO EM LOTE
                   </button>
                 </div>
               </div>
-              <div style="padding: 24px;">
-                <div style="display: flex; gap: 16px; margin-bottom: 20px;">
-                  <div style="flex: 1;">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px;">1. SELECIONE O DIA</label>
-                    <input type="date" id="musicDateInput" class="news-input" style="width: 100%;">
+
+              <!-- Terminal Logs -->
+              <div class="card" id="processingLogsContainer" style="display: none; padding: 0; background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);">
+                <div style="background: #1e293b; padding: 8px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #334155;">
+                  <div style="display: flex; gap: 6px;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #fbbf24;"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></div>
                   </div>
-                  <div style="flex: 2;">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px;">2. SUBIR ARQUIVO(S) BASE (.BIL)</label>
-                    <div style="display: flex; gap: 8px;">
-                      <input type="file" id="musicFile" accept=".bil" class="news-input" style="flex: 1; padding: 8px;" multiple>
-                      <button class="btn btn-primary" onclick="generateMusicResult()" style="white-space: nowrap;">
-                        <ion-icon name="flash-outline"></ion-icon> Gerar Tudo
-                      </button>
-                    </div>
-                  </div>
+                  <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; margin-left: 8px;">music-engine.log</span>
                 </div>
-                <div id="processingLogs" style="display: none; background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.8125rem; max-height: 200px; overflow-y: auto;"></div>
+                <div id="processingLogs" style="padding: 16px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; max-height: 400px; overflow-y: auto;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Config Selection -->
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Acesso Rápido</h4>
+              <div class="card config-card-btn" onclick="openModal('jabasManagerModal'); renderJabaList();">
+                <div class="icon-wrap" style="background: #e0f2fe; color: #0ea5e9;"><ion-icon name="musical-notes"></ion-icon></div>
+                <div>
+                   <h5>Gerenciar Jabás</h5>
+                   <p>Músicas pagas e janelas.</p>
+                </div>
+              </div>
+              <div class="card config-card-btn" onclick="openModal('rulesModal'); renderRulesLists();">
+                <div class="icon-wrap" style="background: #fef3c7; color: #d97706;"><ion-icon name="options"></ion-icon></div>
+                <div>
+                   <h5>Regras por Cidade</h5>
+                   <p>Remover e renomear blocos.</p>
+                </div>
+              </div>
+              <div class="card config-card-btn" onclick="openModal('vignettesModal'); renderVignetteList();">
+                <div class="icon-wrap" style="background: #f0fdf4; color: #16a34a;"><ion-icon name="repeat"></ion-icon></div>
+                <div>
+                   <h5>Substituições</h5>
+                   <p>Temporadas (Verão/Outono).</p>
+                </div>
+              </div>
+              <div class="card config-card-btn" onclick="openModal('prefixesModal'); renderPrefixList();">
+                <div class="icon-wrap" style="background: #faf5ff; color: #9333ea;"><ion-icon name="time"></ion-icon></div>
+                <div>
+                   <h5>Prefixos Hora Cheia</h5>
+                   <p>Escala de aberturas.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -689,8 +718,9 @@
       
       const date = new Date(dateInput.value + 'T12:00:00');
       const logCont = document.getElementById('processingLogs');
-      logCont.style.display = 'block';
-      logCont.innerHTML = `<div>[${new Date().toLocaleTimeString()}] Aguardando leitura da fila...</div>`;
+      const logBox = document.getElementById('processingLogsContainer');
+      logBox.style.display = 'block';
+      logCont.innerHTML = `<div>[${new Date().toLocaleTimeString()}] <span style="color: #fbbf24;">>>> Fila de processamento iniciada...</span></div>`;
       
       const files = Array.from(fileInput.files);
       
@@ -1025,39 +1055,65 @@
       `;
     }
 
-    // --- VIGNETTE EDITOR ---
     function renderVignetteList() {
       const cont = document.getElementById('vignetteList');
       const sub = musicConfig.vignettes?.substituicoes || [];
       cont.innerHTML = sub.map((rule, idx) => `
         <div class="config-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-          <div style="display: flex; width: 100%; justify-content: space-between;">
-             <strong>${rule.descricao}</strong>
-             <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="removeVignetteRule(${idx})">Remover</button>
+          <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+             <strong style="color: var(--text);">${rule.descricao}</strong>
+             <div style="display: flex; gap: 8px;">
+               <button class="btn btn-secondary btn-sm" onclick="editVignetteRule(${idx})">Editar</button>
+               <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="removeVignetteRule(${idx})">Remover</button>
+             </div>
           </div>
-          <div style="font-size: 0.75rem; color: #64748b;">
-             Modo: ${rule.modo} | ${rule.buscar.length} padrões → ${rule.substituir_por.length} opções
+          <div style="font-size: 0.75rem; color: #64748b; display: flex; gap: 12px;">
+             <span><ion-icon name="sync-outline"></ion-icon> Modo: <b>${rule.modo}</b></span>
+             <span><ion-icon name="search-outline"></ion-icon> <b>${rule.buscar.length}</b> termos</span>
+             <span><ion-icon name="swap-horizontal-outline"></ion-icon> <b>${rule.substituir_por.length}</b> opções</span>
           </div>
         </div>
-      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma regra configurada.</p>';
+      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma regra de substituição configurada.</p>';
     }
 
-    function addVignetteRule() {
-      const desc = prompt("Descrição da regra (Ex: Estação Verão para Outono):");
-      if (!desc) return;
-      const buscar = prompt("Arquivos para buscar (separe por vírgula):", "VERÃO_01.wav").split(',').map(s => s.trim());
-      const trocar = prompt("Arquivos para substituir (separe por vírgula):", "OUTONO_01.wav").split(',').map(s => s.trim());
-      const modo = confirm("Usar modo CICLO? (OK = CICLO, Cancel = ALEATÓRIO)") ? 'ciclo' : 'aleatorio';
+    let editingVignetteIdx = -1;
+    function editVignetteRule(idx) {
+      editingVignetteIdx = idx;
+      const rule = idx === -1 
+        ? { descricao: '', buscar: [], substituir_por: [], modo: 'ciclo' }
+        : JSON.parse(JSON.stringify(musicConfig.vignettes.substituicoes[idx]));
+
+      document.getElementById('vigDesc').value = rule.descricao;
+      document.getElementById('vigBuscar').value = (rule.buscar || []).join(', ');
+      document.getElementById('vigTrocar').value = (rule.substituir_por || []).join(', ');
+      document.getElementById('vigModo').value = rule.modo;
+
+      openModal('vignetteEditModal');
+    }
+
+    function saveVignetteRule() {
+      const rule = {
+        descricao: document.getElementById('vigDesc').value,
+        buscar: document.getElementById('vigBuscar').value.split(',').map(s => s.trim()).filter(s => s),
+        substituir_por: document.getElementById('vigTrocar').value.split(',').map(s => s.trim()).filter(s => s),
+        modo: document.getElementById('vigModo').value
+      };
 
       if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
-      musicConfig.vignettes.substituicoes.push({ descricao: desc, buscar, substituir_por: trocar, modo });
+      
+      if (editingVignetteIdx === -1) musicConfig.vignettes.substituicoes.push(rule);
+      else musicConfig.vignettes.substituicoes[editingVignetteIdx] = rule;
+
       saveMusicConfig('vignettes', musicConfig.vignettes);
+      closeModal('vignetteEditModal');
+      renderVignetteList();
     }
 
     function removeVignetteRule(idx) {
       if (confirm('Remover esta regra?')) {
         musicConfig.vignettes.substituicoes.splice(idx, 1);
         saveMusicConfig('vignettes', musicConfig.vignettes);
+        renderVignetteList();
       }
     }
 
@@ -1133,8 +1189,42 @@
         <button class="btn btn-secondary" onclick="closeModal('vignettesModal')"><ion-icon name="close"></ion-icon></button>
       </div>
       <div class="modal-body">
-        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="addVignetteRule()">+ Nova Regra de Substituição</button>
+        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editVignetteRule(-1)">+ Nova Regra</button>
         <div id="vignetteList" class="config-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="vignetteEditModal" class="modal-overlay" style="z-index: 1300;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar Regra de Substituição</h3>
+        <button class="btn btn-secondary" onclick="closeModal('vignetteEditModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Descrição da Regra (Ex: Verão para Outono)</label>
+          <input type="text" id="vigDesc" placeholder="Descreva a regra...">
+        </div>
+        <div class="form-group">
+          <label>Arquivos para Buscar (separe por vírgula)</label>
+          <textarea id="vigBuscar" style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit;" placeholder="ex: VINHETA_VERAO_01.wav, VINHETA_VERAO_02.wav"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Arquivos para Trocar (separe por vírgula)</label>
+          <textarea id="vigTrocar" style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit;" placeholder="ex: VINHETA_OUTONO_01.wav, VINHETA_OUTONO_02.wav"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Modo de Escolha</label>
+          <select id="vigModo" class="news-input" style="width: 100%;">
+            <option value="ciclo">🔁 Ciclo (Gira na ordem da lista)</option>
+            <option value="aleatorio">🎲 Aleatório (Sorteia da lista)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('vignetteEditModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveVignetteRule()">Confirmar Regra</button>
       </div>
     </div>
   </div>
@@ -1228,11 +1318,27 @@
         <div class="form-group">
           <label>Dias da Semana</label>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-            ${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, i) => `
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-                <input type="checkbox" class="jaba-day-check" value="${i}" style="width: auto;"> ${label}
-              </label>
-            `).join('')}
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="0"> Dom
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="1"> Seg
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="2"> Ter
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="3"> Qua
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="4"> Qui
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="5"> Sex
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="jaba-day-check" value="6"> Sáb
+            </div>
           </div>
         </div>
         <div class="form-group">
