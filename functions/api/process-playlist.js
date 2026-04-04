@@ -330,7 +330,20 @@ export async function onRequestPost(context) {
         dispatched_at: new Date().toISOString(),
         automated: true
       };
+      
+      // 1. Save the file (1 Write)
       await kv.put(`playlist:${cityKey}:${dateStr}`, JSON.stringify(payload), { expirationTtl: 86400 * 7 });
+
+      // 2. Update the index of pending files (1 Read + 1 Write)
+      const indexKey = `playlist:pending:${cityKey}`;
+      const existingRaw = await kv.get(indexKey);
+      let pendingDates = existingRaw ? JSON.parse(existingRaw) : [];
+      
+      if (!pendingDates.includes(dateStr)) {
+        pendingDates.push(dateStr);
+        pendingDates.sort(); // Lexicographical sort (YYYYMMDD works)
+        await kv.put(indexKey, JSON.stringify(pendingDates), { expirationTtl: 86400 * 7 });
+      }
     };
 
     await Promise.all([

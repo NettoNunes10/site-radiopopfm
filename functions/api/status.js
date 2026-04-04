@@ -66,7 +66,7 @@ export async function onRequestGet(context) {
     ]);
 
     const now = Date.now();
-    const threshold = 120000; // 2 minutes
+    const threshold = 40 * 60 * 1000; // 40 minutes (to match 30-min heartbeat throttle)
 
     const newsStatus = newsRaw ? JSON.parse(newsRaw) : null;
     const playlistStatus = playlistRaw ? JSON.parse(playlistRaw) : null;

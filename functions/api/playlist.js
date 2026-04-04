@@ -60,8 +60,18 @@ export async function onRequestPost(context) {
       dispatched_at: new Date().toISOString()
     };
 
-    // Armazena por data para sincronização (chave primária)
+    // Armazena por data para sincronização (chave primária) (1 Write)
     await kv.put(`playlist:${cityKey}:${date}`, JSON.stringify(payload), { expirationTtl: 86400 * 7 });
+
+    // Atualiza o índice de pendentes (1 Read + 1 Write)
+    const indexKey = `playlist:pending:${cityKey}`;
+    const existingRaw = await kv.get(indexKey);
+    let pendingDates = existingRaw ? JSON.parse(existingRaw) : [];
+    if (!pendingDates.includes(date)) {
+      pendingDates.push(date);
+      pendingDates.sort();
+      await kv.put(indexKey, JSON.stringify(pendingDates), { expirationTtl: 86400 * 7 });
+    }
 
     return jsonResponse({ success: true, city: cityKey, date });
 
@@ -86,18 +96,56 @@ export async function onRequestGet(context) {
     if (!city) return jsonResponse({ error: 'Missing "city" parameter.' }, 400);
     const cityKey = city.toLowerCase();
 
-    // Se não informou data, devolve a MAIS ANTIGA disponível (Opção A)
+    // --- THROTTLED HEARTBEAT LOGIC ---
+    const statusKey = `status_playlist_${cityKey}`;
+    const existingStatusRaw = await kv.get(statusKey);
+    const now = Date.now();
+    const HEARTBEAT_THROTTLE = 30 * 60 * 1000; // 30 minutes
+
+    let shouldUpdate = true;
+    if (existingStatusRaw) {
+      const existingStatus = JSON.parse(existingStatusRaw);
+      if (now - (existingStatus.lastSeen || 0) < HEARTBEAT_THROTTLE) {
+        shouldUpdate = false;
+      }
+    }
+
+    if (shouldUpdate) {
+      const host = request.headers.get("X-Sync-Host") || "Desconhecido";
+      const syncAppVersion = request.headers.get("X-Sync-Version") || "2.1";
+      await kv.put(statusKey, JSON.stringify({
+        host,
+        lastSeen: now,
+        version: syncAppVersion
+      }), { expirationTtl: 3600 });
+    }
+    // --- END THROTTLED HEARTBEAT LOGIC ---
+
+    // Se não informou data, devolve a MAIS ANTIGA disponível usando o ÍNDICE (Read em vez de List)
     if (!date) {
-      // Lista as chaves filtradas por cidade. A ordenação do KV é lexicográfica, 
-      // então 'playlist:city:20240401' virá antes de 'playlist:city:20240402'.
-      const list = await kv.list({ prefix: `playlist:${cityKey}:`, limit: 1 });
+      const indexKey = `playlist:pending:${cityKey}`;
+      const indexRaw = await kv.get(indexKey);
       
-      if (list.keys.length === 0) {
+      if (!indexRaw) {
+        return jsonResponse({ message: 'No playlists pending (no index).' }, 204);
+      }
+
+      const pendingDates = JSON.parse(indexRaw);
+      if (pendingDates.length === 0) {
         return jsonResponse({ message: 'No playlists pending.' }, 204);
       }
 
-      // Pega o conteúdo da chave mais antiga encontrada
-      const raw = await kv.get(list.keys[0].name);
+      // Pega a data mais antiga (primeira do array ordenado)
+      const oldestDate = pendingDates[0];
+      const raw = await kv.get(`playlist:${cityKey}:${oldestDate}`);
+      
+      if (!raw) {
+        // Se o arquivo sumiu por algum motivo, limpa o índice e retorna 204
+        const updatedPending = pendingDates.filter(d => d !== oldestDate);
+        await kv.put(indexKey, JSON.stringify(updatedPending), { expirationTtl: 86400 * 7 });
+        return jsonResponse({ message: 'Playlist record missing, index updated.' }, 204);
+      }
+
       return new Response(raw, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
     }
 
@@ -129,7 +177,20 @@ export async function onRequestDelete(context) {
     }
 
     const cityKey = city.toLowerCase();
+    
+    // 1. Apaga o arquivo
     await kv.delete(`playlist:${cityKey}:${date}`);
+
+    // 2. Remove do índice de pendentes
+    const indexKey = `playlist:pending:${cityKey}`;
+    const existingRaw = await kv.get(indexKey);
+    if (existingRaw) {
+      let pendingDates = JSON.parse(existingRaw);
+      const newPending = pendingDates.filter(d => d !== date);
+      if (newPending.length !== pendingDates.length) {
+        await kv.put(indexKey, JSON.stringify(newPending), { expirationTtl: 86400 * 7 });
+      }
+    }
 
     return jsonResponse({ success: true, message: `Playlist ${date} removida.` });
 

@@ -102,18 +102,34 @@ export async function onRequestGet(context) {
       return jsonResponse({ error: 'Missing "city" query parameter.' }, 400);
     }
 
-    // --- HEARTBEAT LOGIC ---
-    // Extract metadata from sync app headers
-    const host = request.headers.get("X-Sync-Host") || "Desconhecido";
-    const syncAppVersion = request.headers.get("X-Sync-Version") || "2.0";
-    
-    // Save live status in KV
-    await kv.put(`status_${city.toLowerCase()}`, JSON.stringify({
-      host: host,
-      lastSeen: Date.now(),
-      version: syncAppVersion
-    }), { expirationTtl: 3600 }); // Status expires in 1 hour if no heartbeat
-    // --- END HEARTBEAT LOGIC ---
+    // --- THROTTLED HEARTBEAT LOGIC ---
+    // Read status first (1 Read)
+    const statusKey = `status_${city.toLowerCase()}`;
+    const existingStatusRaw = await kv.get(statusKey);
+    const now = Date.now();
+    const HEARTBEAT_THROTTLE = 30 * 60 * 1000; // 30 minutes
+
+    let shouldUpdate = true;
+    if (existingStatusRaw) {
+      const existingStatus = JSON.parse(existingStatusRaw);
+      if (now - (existingStatus.lastSeen || 0) < HEARTBEAT_THROTTLE) {
+        shouldUpdate = false;
+      }
+    }
+
+    if (shouldUpdate) {
+      // Extract metadata from sync app headers
+      const host = request.headers.get("X-Sync-Host") || "Desconhecido";
+      const syncAppVersion = request.headers.get("X-Sync-Version") || "2.0";
+      
+      // Save live status in KV (1 Write - occurs max once every 30 mins)
+      await kv.put(statusKey, JSON.stringify({
+        host: host,
+        lastSeen: now,
+        version: syncAppVersion
+      }), { expirationTtl: 3600 }); // Status expires in 1 hour if no heartbeat
+    }
+    // --- END THROTTLED HEARTBEAT LOGIC ---
 
     const raw = await kv.get('dispatch:latest');
     if (!raw) {
