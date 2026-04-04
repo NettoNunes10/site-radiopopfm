@@ -790,13 +790,13 @@
           
           const baseNameWithoutExt = file.name.split('.')[0];
           
-          // UPLOAD PRIORITIZED
-          await uploadPlaylist(`ITAPEVA`, dateStr, result.itapeva, `${baseNameWithoutExt}_ITAPEVA.bil`);
+          // UPLOAD PRIORITIZED - Using original file.name for KV sync
+          await uploadPlaylist(`ITAPEVA`, dateStr, result.itapeva, file.name);
           await new Promise(r => setTimeout(r, 600));
-          await uploadPlaylist(`ITAPETININGA`, dateStr, result.itapetininga, `${baseNameWithoutExt}_ITAPETININGA.bil`);
+          await uploadPlaylist(`ITAPETININGA`, dateStr, result.itapetininga, file.name);
           await new Promise(r => setTimeout(r, 600));
 
-          // LOCAL DOWNLOAD (Secondary Option)
+          // LOCAL DOWNLOAD (Secondary Option) - Keeps suffix for user to distinguish between local files
           logCont.innerHTML += `<div style="margin-top: 8px; font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPEVA.bil', \`${result.itapeva.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\`); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapeva (Backup Local)</a></div>`;
           logCont.innerHTML += `<div style="font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPETININGA.bil', \`${result.itapetininga.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\`); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapetininga (Backup Local)</a></div>`;
           
