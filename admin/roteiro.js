@@ -135,7 +135,7 @@ function applyPrefixes(blocks, dayType, config) {
       if (match) {
         const selected = options[idx % options.length];
         idx++;
-        b.items[i] = line.replace(match[2], selected);
+        b.items[i] = line.replace(match[1] + match[2], selected);
       }
     });
   });
@@ -314,7 +314,7 @@ window.MusicEngine = {
               const selected = prefOptions[idx % prefOptions.length];
               log(`${city}: Prefixo aplicado no bloco ${b.time} -> ${selected}`);
               idx++;
-              b.items[i] = line.replace(match[2], selected);
+              b.items[i] = line.replace(match[1] + match[2], selected);
             }
           });
         });
