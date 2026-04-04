@@ -759,23 +759,27 @@
     }
 
     let editingJabaIdx = -1;
+    let tempJaba = null;
+
     function editJaba(idx) {
       editingJabaIdx = idx;
-      const j = idx === -1 ? { id: '', caminho_arquivo: '', total_insercoes: 1, duracao_ms: 0, cue_intro_ms: 0, cue_segue_ms: 0, programacao: [] } : musicConfig.jabas[idx];
+      tempJaba = idx === -1 
+        ? { id: '', caminho_arquivo: '', total_insercoes: 1, duracao_ms: 0, cue_intro_ms: 0, cue_segue_ms: 0, programacao: [] } 
+        : JSON.parse(JSON.stringify(musicConfig.jabas[idx])); // Clone to avoid direct mutation
       
-      document.getElementById('jabaId').value = j.id;
-      document.getElementById('jabaPath').value = j.caminho_arquivo;
-      document.getElementById('jabaDuration').value = j.duracao_ms || 0;
-      document.getElementById('jabaIntro').value = j.cue_intro_ms || 0;
-      document.getElementById('jabaSegue').value = j.cue_segue_ms || 0;
+      document.getElementById('jabaId').value = tempJaba.id;
+      document.getElementById('jabaPath').value = tempJaba.caminho_arquivo;
+      document.getElementById('jabaDuration').value = tempJaba.duracao_ms || 0;
+      document.getElementById('jabaIntro').value = tempJaba.cue_intro_ms || 0;
+      document.getElementById('jabaSegue').value = tempJaba.cue_segue_ms || 0;
       
-      renderJabaProg(j.programacao);
+      renderJabaProg();
       openModal('jabaModal');
     }
 
-    function renderJabaProg(prog) {
+    function renderJabaProg() {
       const cont = document.getElementById('jabaProgContainer');
-      cont.innerHTML = prog.map((p, i) => `
+      cont.innerHTML = tempJaba.programacao.map((p, i) => `
         <div class="jaba-prog-row">
           <div class="form-group" style="flex: 1; margin: 0;">
             <label>Horários (Ex: 08:00-11:00)</label>
@@ -790,29 +794,60 @@
       `).join('');
     }
 
-    window.currentJabaProg = [];
+    function updateJabaProg(idx, field, val) {
+      if (field === 'qty') {
+        tempJaba.programacao[idx].quantidade_necessaria = parseInt(val);
+      } else if (field === 'windows') {
+        tempJaba.programacao[idx].janelas_de_horario = val.split(',').map(s => {
+          const [start, end] = s.trim().split('-');
+          return start && end ? { inicio: normalizeHHMM(start), fim: normalizeHHMM(end) } : null;
+        }).filter(v => v);
+      }
+    }
+
+    function removeJabaProg(idx) {
+      tempJaba.programacao.splice(idx, 1);
+      renderJabaProg();
+    }
+
     function addJabaProg() {
-      const j = editingJabaIdx === -1 ? { programacao: window.currentJabaProg } : musicConfig.jabas[editingJabaIdx];
-      j.programacao.push({ quantidade_necessaria: 1, janelas_de_horario: [] });
-      renderJabaProg(j.programacao);
+      tempJaba.programacao.push({ quantidade_necessaria: 1, janelas_de_horario: [] });
+      renderJabaProg();
     }
 
     function saveJaba() {
-      const j = {
-        id: document.getElementById('jabaId').value,
-        caminho_arquivo: document.getElementById('jabaPath').value,
-        duracao_ms: parseInt(document.getElementById('jabaDuration').value),
-        cue_intro_ms: parseInt(document.getElementById('jabaIntro').value),
-        cue_segue_ms: parseInt(document.getElementById('jabaSegue').value),
-        programacao: editingJabaIdx === -1 ? window.currentJabaProg : musicConfig.jabas[editingJabaIdx].programacao
-      };
+      tempJaba.id = document.getElementById('jabaId').value;
+      tempJaba.caminho_arquivo = document.getElementById('jabaPath').value;
+      tempJaba.duracao_ms = parseInt(document.getElementById('jabaDuration').value);
+      tempJaba.cue_intro_ms = parseInt(document.getElementById('jabaIntro').value);
+      tempJaba.cue_segue_ms = parseInt(document.getElementById('jabaSegue').value);
 
-      if (editingJabaIdx === -1) musicConfig.jabas.push(j);
-      else musicConfig.jabas[editingJabaIdx] = j;
+      if (editingJabaIdx === -1) musicConfig.jabas.push(tempJaba);
+      else musicConfig.jabas[editingJabaIdx] = tempJaba;
 
       saveMusicConfig('jabas', musicConfig.jabas);
       closeModal('jabaModal');
       renderJabaList();
+    }
+
+    function extractAudioData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Prefill path and ID
+      document.getElementById('jabaPath').value = `M:\\Jabás\\${file.name}`;
+      if (!document.getElementById('jabaId').value) {
+        document.getElementById('jabaId').value = file.name.split('.')[0].substring(0, 10).toUpperCase();
+      }
+
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(file);
+      audio.onloadedmetadata = () => {
+        const ms = Math.round(audio.duration * 1000);
+        document.getElementById('jabaDuration').value = ms;
+        showToast(`Duração capturada: ${ms}ms`, 'success');
+        URL.revokeObjectURL(audio.src);
+      };
     }
 
     function deleteJaba(idx) {
@@ -842,7 +877,10 @@
       remContainer.innerHTML = removed.map(t => `
         <div class="time-tag">${t} <button onclick="removeTimeRule('remover_blocos', '${t}')">×</button></div>
       `).join('') + `
-        <div class="time-tag" style="border: 1px dashed var(--accent); color: var(--accent); cursor: pointer;" onclick="addTimeRule('remover_blocos')">+ Adicionar</div>
+        <div class="time-tag" style="border: 1px dashed var(--accent); padding: 0;">
+          <input type="text" id="newRemInput" placeholder="00:00" style="border: none; background: transparent; width: 45px; font-size: 0.75rem; padding: 4px 8px; outline: none;">
+          <button onclick="addTimeRule('remover_blocos')" style="color: var(--accent); font-weight: bold; border: none; background: transparent; cursor: pointer; padding: 4px 8px;">+</button>
+        </div>
       `;
 
       // Windows
@@ -851,7 +889,10 @@
       winContainer.innerHTML = windows.map(w => `
         <div class="time-tag">${w.inicio}-${w.fim} <button onclick="removeWindowRule('${w.inicio}')">×</button></div>
       `).join('') + `
-        <div class="time-tag" style="border: 1px dashed var(--accent); color: var(--accent); cursor: pointer;" onclick="addWindowRule()">+ Adicionar</div>
+        <div class="time-tag" style="border: 1px dashed var(--accent); padding: 0;">
+          <input type="text" id="newWinInput" placeholder="00:00-00:00" style="border: none; background: transparent; width: 80px; font-size: 0.75rem; padding: 4px 8px; outline: none;">
+          <button onclick="addWindowRule()" style="color: var(--accent); font-weight: bold; border: none; background: transparent; cursor: pointer; padding: 4px 8px;">+</button>
+        </div>
       `;
 
       // Renames
@@ -872,13 +913,21 @@
             <button class="btn btn-secondary btn-sm" onclick="removeRenameRule('${city}', '${old}')">×</button>
           </div>`;
         }
-        html += `<button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="addRenameRule('${city}')">+ Inserir Renomeação</button>`;
+        html += `
+          <div class="jaba-prog-row" style="padding: 4px 8px; margin-top: 8px;">
+            <input type="text" id="renameOld_${city}" placeholder="De" style="width: 50px; font-size: 0.75rem; padding: 4px;">
+            <span style="color: var(--text-light)">→</span>
+            <input type="text" id="renameNew_${city}" placeholder="Para" style="width: 50px; font-size: 0.75rem; padding: 4px;">
+            <button class="btn btn-accent btn-sm" onclick="addRenameRule('${city}')">+</button>
+          </div>
+        `;
       });
       cont.innerHTML = html;
     }
 
     function addTimeRule(key) {
-      const time = prompt("Horário do bloco (ex: 00:25):");
+      const input = document.getElementById('newRemInput');
+      const time = input.value.trim();
       if (!time) return;
       if (!musicConfig.rules[key]) musicConfig.rules[key] = {};
       if (!musicConfig.rules[key][currentRuleDay]) musicConfig.rules[key][currentRuleDay] = [];
@@ -888,7 +937,8 @@
     }
 
     function addWindowRule() {
-      const range = prompt("Intervalo permitido (ex: 08:00-11:00):");
+      const input = document.getElementById('newWinInput');
+      const range = input.value.trim();
       if (!range || !range.includes('-')) return;
       const [start, end] = range.split('-');
       if (!musicConfig.rules.janelas_permitidas) musicConfig.rules.janelas_permitidas = {};
@@ -899,8 +949,8 @@
     }
 
     function addRenameRule(city) {
-      const old = prompt("Horário original (ex: 18:50):");
-      const newT = prompt("Novo horário (ex: 18:55):");
+      const old = document.getElementById(`renameOld_${city}`).value.trim();
+      const newT = document.getElementById(`renameNew_${city}`).value.trim();
       if (!old || !newT) return;
       if (!musicConfig.rules.renomear_blocos) musicConfig.rules.renomear_blocos = {};
       if (!musicConfig.rules.renomear_blocos[currentRuleDay]) musicConfig.rules.renomear_blocos[currentRuleDay] = {};
@@ -944,13 +994,17 @@
               ${p} <button onclick="removePrefixRule(${i})">×</button>
             </div>
           `).join('')}
-          <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="addPrefixRule()">+ Adicionar Opção de Prefixo</button>
+          <div class="time-tag" style="border: 1px dashed var(--accent); padding: 0; width: 100%;">
+            <input type="text" id="newPrefixInput" placeholder="Nome do arquivo..." style="border: none; background: transparent; flex: 1; font-size: 0.75rem; padding: 4px 8px; outline: none;">
+            <button onclick="addPrefixRule()" style="color: var(--accent); font-weight: bold; border: none; background: transparent; cursor: pointer; padding: 4px 8px;">+</button>
+          </div>
         </div>
       `;
     }
 
     function addPrefixRule() {
-      const val = prompt("Nome do arquivo de prefixo (ex: ABERTURA...):");
+      const input = document.getElementById('newPrefixInput');
+      const val = input.value.trim();
       if (!val) return;
       if (!musicConfig.prefixes.options_by_day) musicConfig.prefixes.options_by_day = {};
       if (!musicConfig.prefixes.options_by_day[currentRuleDay]) musicConfig.prefixes.options_by_day[currentRuleDay] = [];
@@ -1043,7 +1097,13 @@
           </div>
           <div class="form-group">
             <label>Duração Total (ms)</label>
-            <input type="number" id="jabaDuration">
+            <div style="display: flex; gap: 8px;">
+               <input type="number" id="jabaDuration" style="flex: 1;">
+               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jabaAudioFile').click()">
+                 <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
+               </button>
+               <input type="file" id="jabaAudioFile" style="display: none;" accept="audio/*" onchange="extractAudioData(event)">
+            </div>
           </div>
         </div>
         <div class="form-group">
