@@ -269,6 +269,14 @@
               <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal'); renderPrefixList();" title="Prefixos">
                 <ion-icon name="time"></ion-icon> Prefixos
               </button>
+              <div style="width: 1px; background: var(--border); height: 24px; margin: 0 8px;"></div>
+              <button class="btn btn-secondary btn-sm" onclick="exportMusicConfig()" title="Exportar Backup">
+                <ion-icon name="download-outline"></ion-icon> Exportar
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()" title="Importar Backup">
+                <ion-icon name="upload-outline"></ion-icon> Importar
+              </button>
+              <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importMusicConfig(event)">
               <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="restoreMusicDefaults()" title="Reset">
                 <ion-icon name="refresh-outline"></ion-icon> Reset
               </button>
@@ -654,15 +662,71 @@
     async function loadMusicConfig() {
       const password = sessionStorage.getItem('newsmaker_password');
       try {
+        const fetchKey = async (key) => {
+          const r = await fetch(`/api/config?key=${key}`, { headers: { 'Authorization': `Bearer ${password}` } });
+          const text = await r.text();
+          try { return text ? JSON.parse(text) : null; } catch(e) { return null; }
+        };
+
         const [r, j, p, v] = await Promise.all([
-          fetch('/api/config?key=config_music_rules', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
-          fetch('/api/config?key=config_music_jabas', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
-          fetch('/api/config?key=config_music_prefixes', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
-          fetch('/api/config?key=config_music_substitutions', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json())
+          fetchKey('config_music_rules'),
+          fetchKey('config_music_jabas'),
+          fetchKey('config_music_prefixes'),
+          fetchKey('config_music_substitutions')
         ]);
-        musicConfig = { rules: r, jabas: j.configuracao_jabas || [], prefixes: p, vignettes: v };
+        
+        musicConfig = { 
+          rules: r || { janelas_permitidas: {}, remover_blocos: {}, renomear_blocos: {} }, 
+          jabas: (j && (j.configuracao_jabas || j.jabas)) || [], 
+          prefixes: p || { options_by_day: {} }, 
+          vignettes: v || { substituicoes: [] } 
+        };
+        
         renderVignetteList();
-      } catch (e) { console.error('Failed to load music config', e); }
+        renderJabaList();
+        console.log('Music config loaded successfully');
+      } catch (e) { 
+        console.error('Failed to load music config', e); 
+        showToast('Erro ao carregar configurações de nuvem.', 'error');
+      }
+    }
+
+    async function exportMusicConfig() {
+      const data = JSON.stringify(musicConfig, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_radio_popfm_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Configurações exportadas!', 'success');
+    }
+
+    async function importMusicConfig(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      if (!confirm('ATENÇÃO: Importar este arquivo irá SUBSTITUIR todas as suas configurações atuais no sistema. Deseja continuar?')) return;
+
+      const text = await file.text();
+      try {
+        const imported = JSON.parse(text);
+        
+        // Save each part to KV
+        await Promise.all([
+          saveMusicConfig('rules', imported.rules),
+          saveMusicConfig('jabas', imported.jabas),
+          saveMusicConfig('prefixes', imported.prefixes),
+          saveMusicConfig('vignettes', imported.vignettes)
+        ]);
+        
+        showToast('Configurações importadas com sucesso!', 'success');
+        setTimeout(() => location.reload(), 1000); // Reload to ensure clean state
+      } catch (e) {
+        showToast('Erro ao ler arquivo de backup: JSON inválido.', 'error');
+        console.error(e);
+      }
     }
 
     async function generateMusicResult() {
