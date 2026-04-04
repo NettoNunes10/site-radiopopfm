@@ -944,7 +944,6 @@
       const pathField = document.getElementById('jabaPath');
       const idField = document.getElementById('jabaId');
 
-      // Prefill path and ID
       pathField.value = `M:\\Jabás\\${file.name}`;
       if (!idField.value) {
         idField.value = file.name.split('.')[0].substring(0, 10).toUpperCase();
@@ -952,53 +951,48 @@
 
       showToast('Analisando arquivo...', 'info');
 
-      // Use HTMLAudioElement with explicit loading for best compatibility
       const audio = new Audio();
       const objectUrl = URL.createObjectURL(file);
       
-      // Safety timeout
       const timeout = setTimeout(() => {
         if (durField.value == 0 || durField.value == "0") {
-          showToast('Tempo limite excedido. Tente novamente ou insira manualmente.', 'error');
+          showToast('Tempo limite excedido.', 'error');
         }
         URL.revokeObjectURL(objectUrl);
-      }, 8000);
+      }, 10000);
 
-      const handleMetadata = () => {
+      const handleSuccess = () => {
         clearTimeout(timeout);
         if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
           const ms = Math.round(audio.duration * 1000);
           durField.value = ms;
           showToast(`Duração detectada: ${ms}ms`, 'success');
+          URL.revokeObjectURL(objectUrl);
         } else {
-          // If duration is still not available, wait a bit more or fail
+          // Retry once in 500ms if duration is not settled
           setTimeout(() => {
-            if (audio.duration && !isNaN(audio.duration)) {
+            if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
               const ms = Math.round(audio.duration * 1000);
               durField.value = ms;
-              showToast(`Duração detectada (atrasada): ${ms}ms`, 'success');
+              showToast(`Duração detectada: ${ms}ms`, 'success');
             } else {
-              showToast('Não foi possível ler a duração deste formato.', 'error');
+              showToast('Duração não encontrada. Insira manualmente.', 'error');
             }
             URL.revokeObjectURL(objectUrl);
           }, 500);
-          return;
         }
-        URL.revokeObjectURL(objectUrl);
       };
 
-      audio.onloadedmetadata = handleMetadata;
-      audio.onloadeddata = handleMetadata; // Backup event
+      audio.onloadedmetadata = handleSuccess;
       
       audio.onerror = () => {
         clearTimeout(timeout);
-        showToast('Erro ao carregar o codec deste áudio.', 'error');
+        showToast('Erro de codec ou arquivo inválido.', 'error');
         URL.revokeObjectURL(objectUrl);
       };
 
       audio.preload = 'metadata';
       audio.src = objectUrl;
-      audio.load(); // Explicitly start loading
     }
 
     function deleteJaba(idx) {
