@@ -38,15 +38,10 @@ export async function onRequestOptions() {
 // POST /api/playlist - Enviar .bil para o KV (chamado pelo site)
 export async function onRequestPost(context) {
   const { request, env } = context;
-
-  if (!authorize(request, env)) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
-  }
+  if (!authorize(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
 
   const kv = env.NEWSMAKER_KV;
-  if (!kv) {
-    return jsonResponse({ error: 'KV namespace not configured on server.' }, 500);
-  }
+  if (!kv) return jsonResponse({ error: 'KV namespace not configured.' }, 500);
 
   try {
     const body = await request.json();
@@ -57,117 +52,86 @@ export async function onRequestPost(context) {
     }
 
     const cityKey = city.toLowerCase();
-    const version = Date.now().toString();
-
     const payload = {
       city: cityKey,
       date,
       filename,
-      content, // O conteúdo já vem em base64 ou string (o roteiro é texto)
-      version,
+      content,
       dispatched_at: new Date().toISOString()
     };
 
-    // Armazena a versão mais recente para a cidade
-    await kv.put(`playlist:latest:${cityKey}`, JSON.stringify(payload), { expirationTtl: 86400 * 7 }); // 1 semana
-
-    // Armazena por data para backup/histórico
+    // Armazena por data para sincronização (chave primária)
     await kv.put(`playlist:${cityKey}:${date}`, JSON.stringify(payload), { expirationTtl: 86400 * 7 });
 
-    return jsonResponse({ success: true, version, city: cityKey });
+    return jsonResponse({ success: true, city: cityKey, date });
 
   } catch (error) {
     return jsonResponse({ error: `Upload failed: ${error.message}` }, 500);
   }
 }
 
-// GET /api/playlist - Receptor Python/Sync busca a playlist (polling)
-// Query params: city (obrigatório), version (opcional)
+// GET /api/playlist - Receptor busca a playlist por data
 export async function onRequestGet(context) {
   const { request, env } = context;
-
-  if (!authorize(request, env)) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
-  }
+  if (!authorize(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
 
   const kv = env.NEWSMAKER_KV;
-  if (!kv) {
-    return jsonResponse({ error: 'KV namespace not configured on server.' }, 500);
-  }
+  if (!kv) return jsonResponse({ error: 'KV namespace not configured.' }, 500);
 
   try {
     const url = new URL(request.url);
     const city = url.searchParams.get('city');
-    const clientVersion = url.searchParams.get('version');
+    let date = url.searchParams.get('date');
 
-    if (!city) {
-      return jsonResponse({ error: 'Missing "city" query parameter.' }, 400);
-    }
-
+    if (!city) return jsonResponse({ error: 'Missing "city" parameter.' }, 400);
     const cityKey = city.toLowerCase();
 
-    // --- HEARTBEAT LOGIC --- (Opcional, mas útil para o dashboard)
-    const host = request.headers.get("X-Sync-Host") || "Desconhecido";
-    await kv.put(`status_playlist_${cityKey}`, JSON.stringify({
-      host: host,
-      lastSeen: Date.now(),
-      type: 'music_sync'
-    }), { expirationTtl: 3600 });
-    // --- END HEARTBEAT ---
+    // Se não informou data, devolve a MAIS ANTIGA disponível (Opção A)
+    if (!date) {
+      // Lista as chaves filtradas por cidade. A ordenação do KV é lexicográfica, 
+      // então 'playlist:city:20240401' virá antes de 'playlist:city:20240402'.
+      const list = await kv.list({ prefix: `playlist:${cityKey}:`, limit: 1 });
+      
+      if (list.keys.length === 0) {
+        return jsonResponse({ message: 'No playlists pending.' }, 204);
+      }
 
-    const raw = await kv.get(`playlist:latest:${cityKey}`);
-    if (!raw) {
-      return jsonResponse({ message: 'No playlist available.' }, 204);
+      // Pega o conteúdo da chave mais antiga encontrada
+      const raw = await kv.get(list.keys[0].name);
+      return new Response(raw, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
     }
 
-    const data = JSON.parse(raw);
+    const raw = await kv.get(`playlist:${cityKey}:${date}`);
+    if (!raw) return jsonResponse({ message: 'Playlist not found for date.' }, 204);
 
-    // Se o cliente já tem essa versão, retorna 304
-    if (clientVersion && clientVersion === data.version) {
-      return new Response(null, { status: 304, headers: CORS_HEADERS });
-    }
-
-    return jsonResponse({
-      city: data.city,
-      date: data.date,
-      filename: data.filename,
-      version: data.version,
-      content: data.content, // O .bil em texto
-      dispatched_at: data.dispatched_at
-    });
+    return new Response(raw, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
 
   } catch (error) {
     return jsonResponse({ error: `Fetch failed: ${error.message}` }, 500);
   }
 }
-// DELETE /api/playlist - Apaga a playlist do KV (chamado pelo Sync após o download)
+
+// DELETE /api/playlist - Apaga a playlist do KV após download
 export async function onRequestDelete(context) {
   const { request, env } = context;
-
-  if (!authorize(request, env)) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
-  }
+  if (!authorize(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
 
   const kv = env.NEWSMAKER_KV;
-  if (!kv) {
-    return jsonResponse({ error: 'KV namespace not configured.' }, 500);
-  }
+  if (!kv) return jsonResponse({ error: 'KV namespace not configured.' }, 500);
 
   try {
     const url = new URL(request.url);
     const city = url.searchParams.get('city');
+    const date = url.searchParams.get('date');
 
-    if (!city) {
-      return jsonResponse({ error: 'Missing "city" parameter.' }, 400);
+    if (!city || !date) {
+      return jsonResponse({ error: 'Missing "city" or "date" parameters.' }, 400);
     }
 
     const cityKey = city.toLowerCase();
-    
-    // Apaga apenas o link do "latest" para que o sync pare de baixar
-    // Mantemos a chave com a data para histórico no KV
-    await kv.delete(`playlist:latest:${cityKey}`);
+    await kv.delete(`playlist:${cityKey}:${date}`);
 
-    return jsonResponse({ success: true, message: `Playlist de ${cityKey} removida do KV.` });
+    return jsonResponse({ success: true, message: `Playlist ${date} removida.` });
 
   } catch (error) {
     return jsonResponse({ error: `Delete failed: ${error.message}` }, 500);
