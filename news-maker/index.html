@@ -346,8 +346,52 @@
       border-bottom: 1px solid #dcfce7;
     }
 
-    .generated-output li:last-child {
-      border-bottom: none;
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      transition: all 0.3s ease;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      box-shadow: 0 0 0 2px rgba(203, 213, 225, 0.2);
+    }
+
+    .status-indicator.online {
+      color: #059669;
+      background: #ecfdf5;
+    }
+
+    .status-indicator.online .status-dot {
+      background: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+      animation: pulse-online 2s infinite;
+    }
+
+    .status-indicator.offline {
+      color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .status-indicator.offline .status-dot {
+      background: #ef4444;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    }
+
+    @keyframes pulse-online {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
   </style>
 </head>
@@ -401,7 +445,13 @@
       <div class="section-card">
         <div class="section-header">
           <h2>Itapeva</h2>
-          <span class="section-chip">3 notícias</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div id="status-itapeva" class="status-indicator">
+              <div class="status-dot"></div>
+              <span>Checando status...</span>
+            </div>
+            <span class="section-chip">3 notícias</span>
+          </div>
         </div>
         <div class="news-grid">
           <div class="news-input"><label>Notícia 1</label><textarea id="itapeva-1" placeholder="Cole o texto da notícia..."></textarea></div>
@@ -413,7 +463,13 @@
       <div class="section-card">
         <div class="section-header">
           <h2>Itapetininga</h2>
-          <span class="section-chip">3 notícias</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div id="status-itapetininga" class="status-indicator">
+              <div class="status-dot"></div>
+              <span>Checando status...</span>
+            </div>
+            <span class="section-chip">3 notícias</span>
+          </div>
         </div>
         <div class="news-grid">
           <div class="news-input"><label>Notícia 1</label><textarea id="itapetininga-1" placeholder="Cole o texto da notícia..."></textarea></div>
@@ -506,6 +562,7 @@
           document.getElementById('appShell').style.display = 'block';
           loadState();
           initDate();
+          startStatusPolling();
         } else {
           errorLabel.textContent = 'Senha incorreta.';
           errorLabel.style.display = 'block';
@@ -813,6 +870,53 @@
         btn.disabled = false;
         btn.innerHTML = '<span>📡 Enviar para Estúdios</span>';
       }
+    }
+    
+    // --- STUDIO STATUS LOGIC ---
+    async function updateStudioStatus(city) {
+      const el = document.getElementById(`status-${city}`);
+      if (!el) return;
+
+      const password = sessionStorage.getItem('newsmaker_password');
+      if (!password) return;
+
+      try {
+        const response = await fetch(`/api/status?city=${city}`, {
+          headers: {
+            'Authorization': `Bearer ${password}`
+          }
+        });
+        
+        if (!response.ok) {
+          el.className = 'status-indicator offline';
+          el.querySelector('span').textContent = 'Erro ao checar';
+          return;
+        }
+
+        const data = await response.json();
+        const span = el.querySelector('span');
+
+        if (data.online) {
+          el.className = 'status-indicator online';
+          span.textContent = `Online (${data.host})`;
+        } else {
+          el.className = 'status-indicator offline';
+          span.textContent = 'Offline';
+        }
+      } catch (e) {
+        el.className = 'status-indicator offline';
+        el.querySelector('span').textContent = 'Sem conexão';
+      }
+    }
+
+    function updateAllStatuses() {
+      ['itapeva', 'itapetininga'].forEach(city => updateStudioStatus(city));
+    }
+
+    // Start polling when logged in
+    function startStatusPolling() {
+      updateAllStatuses();
+      setInterval(updateAllStatuses, 30000); // Check every 30 seconds
     }
   </script>
 </body>
