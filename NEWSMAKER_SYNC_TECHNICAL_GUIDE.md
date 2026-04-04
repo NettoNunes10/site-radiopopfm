@@ -94,8 +94,16 @@ O arquivo final deve seguir esta ordem de blocos RTF:
 5.  **Separador**: `\pard\qc\f{id}\fs{size} ...\par` (Centralizado)
 6.  **Nacional**: `\pard\qj\f{id}\fs{size} {national_text}\par` (Justificado)
 
-### Escrita dos Arquivos
-O Sync deve percorrer os arrays `national` e o array da `cidade` no JSON. Para cada par de notícias (ex: Notícia 1 de Nacional + Notícia 1 da Cidade), ele deve gerar os arquivos para todos os slots de horário configurados (ex: `08h55.rtf`, `14h55.rtf`).
+### Escrita dos Arquivos (Regra de Mapeamento)
+As 3 notícias enviadas pelo site devem ser mapeadas em 6 slots de horário (manhã e tarde), conforme a tabela abaixo:
+
+| Par de Notícias no JSON | Arquivos RTF Gerados |
+|-------------------------|----------------------|
+| **Notícia 1 (Nac + Reg)** | `08h55.rtf` e `14h55.rtf` |
+| **Notícia 2 (Nac + Reg)** | `09h55.rtf` e `15h55.rtf` |
+| **Notícia 3 (Nac + Reg)** | `10h55.rtf` e `16h55.rtf` |
+
+**Nota**: O Sync deve garantir que o arquivo gerado para as 08h55 seja um clone exato do arquivo gerado para as 14h55, e assim sucessivamente para os demais pares.
 
 ---
 
