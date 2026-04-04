@@ -139,3 +139,36 @@ export async function onRequestGet(context) {
     return jsonResponse({ error: `Fetch failed: ${error.message}` }, 500);
   }
 }
+// DELETE /api/playlist - Apaga a playlist do KV (chamado pelo Sync após o download)
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+
+  if (!authorize(request, env)) {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
+
+  const kv = env.NEWSMAKER_KV;
+  if (!kv) {
+    return jsonResponse({ error: 'KV namespace not configured.' }, 500);
+  }
+
+  try {
+    const url = new URL(request.url);
+    const city = url.searchParams.get('city');
+
+    if (!city) {
+      return jsonResponse({ error: 'Missing "city" parameter.' }, 400);
+    }
+
+    const cityKey = city.toLowerCase();
+    
+    // Apaga apenas o link do "latest" para que o sync pare de baixar
+    // Mantemos a chave com a data para histórico no KV
+    await kv.delete(`playlist:latest:${cityKey}`);
+
+    return jsonResponse({ success: true, message: `Playlist de ${cityKey} removida do KV.` });
+
+  } catch (error) {
+    return jsonResponse({ error: `Delete failed: ${error.message}` }, 500);
+  }
+}
