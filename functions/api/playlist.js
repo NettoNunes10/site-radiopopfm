@@ -51,6 +51,18 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: 'Missing city, date or content in payload.' }, 400);
     }
 
+    // Sunday check: 0 = Sunday
+    const checkDate = new Date(`${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}T12:00:00`);
+    if (checkDate.getDay() === 0) {
+      return jsonResponse({
+        success: true,
+        message: 'Arquivos de DOMINGO não são processados para distribuição.',
+        skipped: true,
+        city,
+        date
+      });
+    }
+
     const cityKey = city.toLowerCase();
     const payload = {
       city: cityKey,

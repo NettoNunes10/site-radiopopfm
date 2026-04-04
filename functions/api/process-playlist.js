@@ -294,6 +294,17 @@ export async function onRequestPost(context) {
     const dateStr = dateMatch[1];
     const date = new Date(`${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}T12:00:00`);
 
+    // Sunday check: 0 = Sunday
+    if (date.getDay() === 0) {
+      return jsonResponse({
+        success: true,
+        message: 'Arquivos de DOMINGO não são processados para distribuição automática.',
+        skipped: true,
+        fileName,
+        date: dateStr
+      });
+    }
+
     // Fetch configs from KV
     const fetchConfig = async (key) => {
       const val = await kv.get(key);
