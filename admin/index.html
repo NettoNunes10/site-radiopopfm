@@ -1021,7 +1021,11 @@
 
     // --- DEFAULTS ---
     function restoreMusicDefaults() {
-      if (!confirm('Isso irá substituir todas as suas regras atuais pelos padrões originais do script Python. Continuar?')) return;
+      const check = prompt('ATENÇÃO: Isso irá APAGAR todas as suas regras atuais e restaurar os padrões do script original. Para continuar, digite CONFIRMA (em maiúsculas):');
+      if (check !== 'CONFIRMA') {
+        if (check !== null) showToast('Ação cancelada ou palavra incorreta.', 'error');
+        return;
+      }
       
       const defaultRules = {
         janelas_permitidas: {
@@ -1082,8 +1086,52 @@
     </div>
   </div>
 
-  <!-- Modals -->
-  <div id="jabasModal" class="modal-overlay">
+  <div id="jabasManagerModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Gerenciador de Jabás</h3>
+        <button class="btn btn-secondary" onclick="closeModal('jabasManagerModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editJaba(-1)">+ Novo Jabá</button>
+        <div id="jabasList" class="config-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rulesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Regras de Regionalização</h3>
+        <button class="btn btn-secondary" onclick="closeModal('rulesModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
+          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana')">Dia Semana</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado')">Sábado</button>
+          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo')">Domingo</button>
+        </div>
+        
+        <div class="sections-container" style="padding: 0;">
+          <div class="section-group">
+            <h4><ion-icon name="time-outline"></ion-icon> Janelas de Conteúdo (Rede)</h4>
+            <div id="rulesWindowsList" class="time-grid"></div>
+          </div>
+          <div class="section-group">
+            <h4><ion-icon name="trash-outline"></ion-icon> Remover Blocos</h4>
+            <div id="rulesRemovedList" class="time-grid"></div>
+          </div>
+          <div class="section-group">
+            <h4><ion-icon name="swap-horizontal-outline"></ion-icon> Renomear Horários por Cidade</h4>
+            <div id="rulesRenameList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jaba Editor Modal (Higher z-index to appear over manager) -->
+  <div id="jabaModal" class="modal-overlay" style="z-index: 1200;">
     <div class="modal">
       <div class="modal-header">
         <h3>Configurar Jabá (Música Comercial)</h3>
@@ -1127,50 +1175,6 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('jabaModal')">Cancelar</button>
         <button class="btn btn-primary" onclick="saveJaba()">Salvar Jabá</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="jabasManagerModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Gerenciador de Jabás</h3>
-        <button class="btn btn-secondary" onclick="closeModal('jabasManagerModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editJaba(-1)">+ Novo Jabá</button>
-        <div id="jabasList" class="config-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="rulesModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Regras de Regionalização</h3>
-        <button class="btn btn-secondary" onclick="closeModal('rulesModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
-          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana')">Dia Semana</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado')">Sábado</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo')">Domingo</button>
-        </div>
-        
-        <div class="sections-container" style="padding: 0;">
-          <div class="section-group">
-            <h4><ion-icon name="time-outline"></ion-icon> Janelas de Conteúdo (Rede)</h4>
-            <div id="rulesWindowsList" class="time-grid"></div>
-          </div>
-          <div class="section-group">
-            <h4><ion-icon name="trash-outline"></ion-icon> Remover Blocos</h4>
-            <div id="rulesRemovedList" class="time-grid"></div>
-          </div>
-          <div class="section-group">
-            <h4><ion-icon name="swap-horizontal-outline"></ion-icon> Renomear Horários por Cidade</h4>
-            <div id="rulesRenameList"></div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
