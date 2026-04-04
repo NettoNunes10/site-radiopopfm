@@ -4,3 +4,8 @@ compatibility_date = "2026-04-03"
 ENVIRONMENT = "production"
 # As variáveis NEWSMAKER_PASSWORD e GEMINI_API_KEY devem ser 
 # configuradas no painel do Cloudflare Pages (Settings > Functions).
+
+# KV Namespace para armazenar boletins de dispatch
+[[kv_namespaces]]
+binding = "NEWSMAKER_KV"
+id = "51d818ce7a344ae79aa97b8dd5ab8b40"

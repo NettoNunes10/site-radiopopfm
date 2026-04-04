@@ -1,0 +1,133 @@
+// Cloudflare Pages Function - Dispatch de Boletins para Estúdios
+// Respondendo em: /api/dispatch
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
+}
+
+function authorize(request, env) {
+  const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+  const expectedPassword = env.NEWSMAKER_PASSWORD;
+  if (!expectedPassword || authHeader !== `Bearer ${expectedPassword}`) {
+    return false;
+  }
+  return true;
+}
+
+// OPTIONS - CORS preflight
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
+// POST /api/dispatch - Enviar boletins para o KV (chamado pelo site)
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  if (!authorize(request, env)) {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
+
+  const kv = env.NEWSMAKER_KV;
+  if (!kv) {
+    return jsonResponse({ error: 'KV namespace not configured on server.' }, 500);
+  }
+
+  try {
+    const body = await request.json();
+    const { date, notes } = body;
+
+    if (!date || !notes) {
+      return jsonResponse({ error: 'Missing date or notes in payload.' }, 400);
+    }
+
+    // Gerar hash de versão único
+    const version = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+    const kvPayload = {
+      date,
+      version,
+      notes,
+      dispatched_at: new Date().toISOString(),
+    };
+
+    // Armazena no KV com TTL de 48h (172800 segundos)
+    // Chave principal: "dispatch:latest" (sempre a mais recente)
+    await kv.put('dispatch:latest', JSON.stringify(kvPayload), { expirationTtl: 172800 });
+
+    // Também salva por data para histórico
+    await kv.put(`dispatch:${date}`, JSON.stringify(kvPayload), { expirationTtl: 172800 });
+
+    return jsonResponse({ success: true, version, date });
+
+  } catch (error) {
+    return jsonResponse({ error: `Dispatch failed: ${error.message}` }, 500);
+  }
+}
+
+// GET /api/dispatch - Receptor Python busca boletins (polling)
+// Query params: city (obrigatório), version (opcional - para check de novidade)
+export async function onRequestGet(context) {
+  const { request, env } = context;
+
+  if (!authorize(request, env)) {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
+
+  const kv = env.NEWSMAKER_KV;
+  if (!kv) {
+    return jsonResponse({ error: 'KV namespace not configured on server.' }, 500);
+  }
+
+  try {
+    const url = new URL(request.url);
+    const city = url.searchParams.get('city');
+    const clientVersion = url.searchParams.get('version');
+
+    if (!city) {
+      return jsonResponse({ error: 'Missing "city" query parameter.' }, 400);
+    }
+
+    const raw = await kv.get('dispatch:latest');
+    if (!raw) {
+      return jsonResponse({ message: 'No dispatches available.' }, 204);
+    }
+
+    const data = JSON.parse(raw);
+
+    // Se o cliente já tem essa versão, retorna 304
+    if (clientVersion && clientVersion === data.version) {
+      return new Response(null, { status: 304, headers: CORS_HEADERS });
+    }
+
+    // Filtra apenas as notas relevantes (nacional + cidade solicitada)
+    const filteredNotes = {
+      nacional: data.notes.nacional || [],
+    };
+
+    const cityKey = city.toLowerCase();
+    if (data.notes[cityKey]) {
+      filteredNotes[cityKey] = data.notes[cityKey];
+    } else {
+      return jsonResponse({ error: `City "${city}" not found in dispatch.` }, 404);
+    }
+
+    return jsonResponse({
+      date: data.date,
+      version: data.version,
+      dispatched_at: data.dispatched_at,
+      notes: filteredNotes,
+    });
+
+  } catch (error) {
+    return jsonResponse({ error: `Fetch failed: ${error.message}` }, 500);
+  }
+}

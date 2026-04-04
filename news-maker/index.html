@@ -378,6 +378,9 @@
         <button id="downloadBtn" class="btn" style="background: #27ae60; color: white; display: none;" onclick="downloadAllRTFs()">
           <span>Baixar RTFs (.zip)</span>
         </button>
+        <button id="dispatchBtn" class="btn" style="background: #2563eb; color: white; display: none;" onclick="dispatchToStudios()">
+          <span>📡 Enviar para Estúdios</span>
+        </button>
         <button class="btn btn-secondary" onclick="clearAll()">Limpar Tudo</button>
       </div>
     </div>
@@ -600,6 +603,7 @@
 
         window.lastGenerationData = data; // Salva para o download de RTFs
         document.getElementById('downloadBtn').style.display = 'inline-flex';
+        document.getElementById('dispatchBtn').style.display = 'inline-flex';
 
         let output = '';
         const fileList = document.getElementById('fileList');
@@ -645,6 +649,7 @@
       document.getElementById('generatedOutput').style.display = 'none';
       document.getElementById('messageLabel').textContent = '';
       document.getElementById('downloadBtn').style.display = 'none';
+      document.getElementById('dispatchBtn').style.display = 'none';
       window.lastGenerationData = null;
       localStorage.removeItem('newsmaker_state');
       showToast('Campos limpos.', 'success');
@@ -758,6 +763,50 @@
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+    }
+
+    async function dispatchToStudios() {
+      if (!window.lastGenerationData) {
+        showToast('Gere os resultados primeiro!', 'error');
+        return;
+      }
+
+      const password = sessionStorage.getItem('newsmaker_password');
+      if (!password) {
+        showToast('Sessão expirada. Faça login novamente.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('dispatchBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Enviando...';
+
+      try {
+        const response = await fetch('/api/dispatch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${password}`,
+          },
+          body: JSON.stringify({
+            date: window.lastGenerationData.date,
+            notes: window.lastGenerationData.notes,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro no envio');
+        }
+
+        showToast('📡 Enviado para os estúdios!', 'success');
+      } catch (error) {
+        showToast(`Erro: ${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>📡 Enviar para Estúdios</span>';
+      }
     }
   </script>
 </body>
