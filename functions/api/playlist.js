@@ -8,10 +8,11 @@ const CORS_HEADERS = {
 };
 
 function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
+  const isNoBody = status === 204 || status === 304;
+  return new Response(isNoBody ? null : JSON.stringify(data), {
     status,
     headers: { 
-      'Content-Type': 'application/json', 
+      'Content-Type': isNoBody ? null : 'application/json', 
       'Cache-Control': 'no-store',
       ...CORS_HEADERS 
     },
