@@ -11,6 +11,7 @@
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/roteiro.js"></script>
 </head>
 <body>
   <!-- Login Screen -->
@@ -239,15 +240,41 @@
         <!-- Tab: Music / Roteiros -->
         <div id="tab-music" class="tab-content">
           <div class="page-header">
-            <h2>Roteiros Musicais (.bil)</h2>
+            <h2>Gerador de Roteiro Musical (.bil)</h2>
+            <div class="editor-toolbar">
+              <input type="date" id="musicDateInput" class="btn btn-secondary">
+              <button class="btn btn-primary" onclick="document.getElementById('bilUpload').click()">
+                <ion-icon name="cloud-upload-outline"></ion-icon>
+                <span>Processar .BIL Base</span>
+              </button>
+              <input type="file" id="bilUpload" style="display: none;" accept=".bil" onchange="handleBilUpload(event)">
+            </div>
           </div>
           
-          <div class="card" style="text-align: center; padding: 80px 40px;">
-            <div style="background: #f0fdf4; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-              <ion-icon name="construct-outline" style="font-size: 32px; color: #10b981;"></ion-icon>
+          <div class="stat-grid">
+            <div class="card" style="grid-column: span 2;">
+              <div class="editor-header">
+                <h4 style="display: flex; align-items: center; gap: 8px;">
+                  <ion-icon name="settings-outline" style="color: var(--accent);"></ion-icon>
+                  Configurações do Roteiro
+                </h4>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary btn-sm" onclick="showConfigEditor('jabas')">Gerenciar Jabás</button>
+                  <button class="btn btn-secondary btn-sm" onclick="showConfigEditor('rules')">Regras (Renomear/Remover)</button>
+                  <button class="btn btn-secondary btn-sm" onclick="showConfigEditor('prefixes')">Prefixos de Hora</button>
+                </div>
+              </div>
+              <div style="padding: 24px;">
+                <p id="musicStatus" style="color: var(--text-light); font-size: 0.875rem;">Arraste um arquivo .BIL base da Rede para gerar os arquivos regionalizados de Itapeva e Itapetininga.</p>
+                <div id="musicResults" style="display: none; margin-top: 20px;">
+                  <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-accent" onclick="downloadMusicalZip()">
+                      <ion-icon name="download-outline"></ion-icon> Baixar .BILs Gerados
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 style="font-size: 1.5rem; margin-bottom: 12px;">Em Construção</h3>
-            <p style="color: var(--text-light); max-width: 480px; margin: 0 auto;">Estamos finalizando o módulo de gerenciamento de roteiros musicais dinâmicos para o software BeAudio. Em breve você poderá atualizar a programação musical por aqui.</p>
           </div>
         </div>
 
@@ -313,6 +340,7 @@
           loadState();
           initDate();
           startStatusPolling();
+          setupMusic();
           
           const lastTab = localStorage.getItem('admin_last_tab') || 'dashboard';
           showTab(lastTab);
@@ -613,6 +641,100 @@
       updateAllStatuses();
       setInterval(updateAllStatuses, 30000);
     }
+
+    // --- MUSIC SCRIPT LOGIC ---
+    let musicConfig = { rules: {}, jabas: [], prefixes: {} };
+
+    async function loadMusicConfig() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        const [r, j, p] = await Promise.all([
+          fetch('/api/config?key=config_music_rules', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
+          fetch('/api/config?key=config_music_jabas', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json()),
+          fetch('/api/config?key=config_music_prefixes', { headers: { 'Authorization': `Bearer ${password}` } }).then(res => res.json())
+        ]);
+        musicConfig = { rules: r, jabas: j.configuracao_jabas || [], prefixes: p };
+      } catch (e) { console.error('Failed to load music config', e); }
+    }
+
+    async function handleBilUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const dateStr = document.getElementById('musicDateInput').value;
+      if (!dateStr) {
+        showToast('Selecione a data para o roteiro!', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target.result;
+        try {
+          const results = MusicEngine.process(text, musicConfig.rules, musicConfig.jabas, musicConfig.prefixes, new Date(dateStr + 'T12:00:00'));
+          window.lastMusicResults = results;
+          document.getElementById('musicStatus').innerHTML = `<strong>Sucesso!</strong> Arquivos gerados para ${dateStr}.<br>Itapeva (${results.itapeva.split('\n').length} linhas) | Itapetininga (${results.itapetininga.split('\n').length} linhas)`;
+          document.getElementById('musicResults').style.display = 'block';
+          showToast('Roteiros gerados!', 'success');
+        } catch (err) {
+          showToast('Erro ao processar: ' + err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadMusicalZip() {
+      if (!window.lastMusicResults) return;
+      const dateStr = document.getElementById('musicDateInput').value;
+      MusicEngine.download(`ITAPEVA_${dateStr}.bil`, window.lastMusicResults.itapeva);
+      setTimeout(() => {
+        MusicEngine.download(`ITAPETININGA_${dateStr}.bil`, window.lastMusicResults.itapetininga);
+      }, 500);
+    }
+
+    function initMusicDate() {
+      const today = new Date();
+      today.setDate(today.getDate() + 1);
+      document.getElementById('musicDateInput').value = today.toISOString().split('T')[0];
+    }
+
+    function showConfigEditor(type) {
+      const raw = JSON.stringify(musicConfig[type === 'jabas' ? 'jabas' : type], null, 2);
+      const newJson = prompt(`Editor de Configuração (${type}). Cole o JSON atualizado:`, raw);
+      if (newJson) {
+        try {
+          const parsed = JSON.parse(newJson);
+          saveMusicConfig(type, parsed);
+        } catch (e) { alert('JSON Inválido!'); }
+      }
+    }
+
+    async function saveMusicConfig(type, data) {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const key = type === 'jabas' ? 'config_music_jabas' : (type === 'rules' ? 'config_music_rules' : 'config_music_prefixes');
+      const payload = type === 'jabas' ? { configuracao_jabas: data } : data;
+      
+      const res = await fetch(`/api/config?key=${key}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        showToast('Configuração salva!', 'success');
+        loadMusicConfig();
+      } else {
+        showToast('Erro ao salvar.', 'error');
+      }
+    }
+
+    // Call after login
+    function setupMusic() {
+      initMusicDate();
+      loadMusicConfig();
+    }
+    
+    // Add setupMusic() to checkPassword() successful block
   </script>
 
   <style>
