@@ -18,6 +18,18 @@ function jsonResponse(data, status = 200) {
   });
 }
 
+async function sendToSlack(webhookUrl, message) {
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message })
+    });
+  } catch (e) {
+    console.error('Slack error:', e);
+  }
+}
+
 function authorize(request, env) {
   const authHeader = (request.headers.get('authorization') || request.headers.get('Authorization') || '').trim();
   const expectedPassword = env.NEWSMAKER_PASSWORD;
@@ -72,7 +84,34 @@ export async function onRequestPost(context) {
     // Também salva por data para histórico
     await kv.put(`dispatch:${date}`, JSON.stringify(kvPayload), { expirationTtl: 172800 });
 
-    return jsonResponse({ success: true, version, date });
+    // --- NEW: Enviar para Slack (se configurado) ---
+    const slackUrl = env.SLACK_NEWS_WEBHOOK_URL;
+    if (slackUrl && slackUrl.startsWith('http')) {
+      const cityNames = {
+        nacional: 'NACIONAL',
+        itapeva: 'ITAPEVA',
+        itapetininga: 'ITAPETININGA'
+      };
+
+      // Função interna para processar o envio em ordem
+      const processSlackQueue = async () => {
+        for (const [sectionKey, sectionLabel] of Object.entries(cityNames)) {
+          const sectionNotes = notes[sectionKey] || [];
+          for (let i = 0; i < sectionNotes.length; i++) {
+            const note = sectionNotes[i];
+            const slackMsg = `[${sectionLabel} / ${date}] - NOTÍCIA ${i + 1}:\n${note.text}`;
+            await sendToSlack(slackUrl, slackMsg);
+            // Pequeno delay para garantir ordem de recepção no Slack
+            await new Promise(r => setTimeout(r, 200));
+          }
+        }
+      };
+
+      // Usa waitUntil para não atrasar a resposta do Admin
+      context.waitUntil(processSlackQueue());
+    }
+
+    return jsonResponse({ success: true, version, date, slack: !!slackUrl });
 
   } catch (error) {
     return jsonResponse({ error: `Dispatch failed: ${error.message}` }, 500);
