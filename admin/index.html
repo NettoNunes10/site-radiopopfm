@@ -30,11 +30,26 @@
 
   <!-- Main App Shell -->
   <div id="appShell" class="app-shell" style="display: none; width: 100%;">
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <ion-icon name="menu-outline" id="menuBtn" onclick="toggleSidebar()"></ion-icon>
+        <h1 style="font-size: 1.1rem; font-weight: 800; color: white; margin: 0;">POP ADMIN</h1>
+      </div>
+      <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
+    </header>
+
+    <!-- Sidebar Backdrop -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <ion-icon name="pulse" style="font-size: 24px; color: #10b981;"></ion-icon>
-        <h1>POP ADMIN</h1>
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+          <ion-icon name="pulse" style="font-size: 24px; color: #10b981;"></ion-icon>
+          <h1>POP ADMIN</h1>
+        </div>
+        <ion-icon name="close-outline" class="close-sidebar-mobile" onclick="toggleSidebar()"></ion-icon>
       </div>
       
       <nav class="nav-links">
@@ -187,15 +202,22 @@
               <div style="display: flex; align-items: center; gap: 12px;">
                 <span id="statusLabel" style="font-size: 0.875rem; color: var(--text-light); font-weight: 500;">Pronto para edição.</span>
               </div>
-              <div style="display: flex; gap: 8px;">
-                <button id="downloadBtn" class="btn" style="background: #059669; color: white; display: none;" onclick="downloadAllRTFs()">
-                  <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
-                </button>
-                <button id="dispatchBtn" class="btn btn-accent" style="display: none;" onclick="dispatchToStudios()">
-                  <ion-icon name="radio-outline"></ion-icon> Enviar Estúdios
-                </button>
-                <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
-              </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-secondary" onclick="exportNewsJSON()" title="Exportar JSON">
+                    <ion-icon name="download-outline"></ion-icon> Exportar
+                  </button>
+                  <button class="btn btn-secondary" onclick="openImportNewsModal()" title="Importar/Colar JSON">
+                    <ion-icon name="upload-outline"></ion-icon> Importar
+                  </button>
+                  <div style="width: 1px; background: var(--border); height: 24px; margin: 0 4px;" class="hide-mobile"></div>
+                  <button id="downloadBtn" class="btn" style="background: #059669; color: white; display: none;" onclick="downloadAllRTFs()">
+                    <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
+                  </button>
+                  <button id="dispatchBtn" class="btn btn-accent" style="display: none;" onclick="dispatchToStudios()">
+                    <ion-icon name="radio-outline"></ion-icon> Enviar Estúdios
+                  </button>
+                  <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+                </div>
             </div>
 
             <div class="sections-container">
@@ -296,6 +318,28 @@
     </main>
   </div>
 
+  <!-- Modal: Importar Notícias -->
+  <div id="importNewsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Importar Notícias (JSON)</h3>
+        <button onclick="closeModal('importNewsModal')" style="background: none; border: none; font-size: 24px; cursor: pointer;"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-light); font-size: 0.875rem; margin-bottom: 16px;">Cole o JSON de importação abaixo ou selecione um arquivo.</p>
+        <textarea id="importNewsTextarea" style="width: 100%; min-height: 200px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 0.75rem; margin-bottom: 16px;" placeholder='{ "date": "...", "sections": { ... } }'></textarea>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase;">Ou suba um arquivo .json</label>
+          <input type="file" id="importNewsFile" accept=".json" onchange="handleNewsFileImport(event)">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('importNewsModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="processNewsImport()">Importar Dados</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast" class="toast">
     <div id="toastIcon"></div>
@@ -315,6 +359,10 @@
       document.getElementById('nav-' + tabId).classList.add('active');
       
       saveSidebarState(tabId);
+
+      // Close sidebar if on mobile
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.classList.remove('open');
     }
 
     function saveSidebarState(tab) {
@@ -1295,6 +1343,88 @@
       ]).then(() => {
         showToast('Padrões restaurados com sucesso!', 'success');
       });
+    }
+
+    // --- MOBILE SIDEBAR ---
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('open');
+    }
+
+    // --- NEWS EXPORT/IMPORT ---
+    function exportNewsJSON() {
+      const state = {
+        date: document.getElementById('dateInput').value,
+        sections: {}
+      };
+      sections.forEach(sec => {
+        state.sections[sec] = [];
+        for (let i = 1; i <= 3; i++) {
+          state.sections[sec].push(document.getElementById(`${sec}-${i}`).value);
+        }
+      });
+      
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `popfm_noticias_${state.date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Exportado com sucesso!', 'success');
+    }
+
+    function openImportNewsModal() {
+      const textarea = document.getElementById('importNewsTextarea');
+      const fileInput = document.getElementById('importNewsFile');
+      if (textarea) textarea.value = '';
+      if (fileInput) fileInput.value = '';
+      openModal('importNewsModal');
+    }
+
+    function handleNewsFileImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('importNewsTextarea').value = e.target.result;
+      };
+      reader.readAsText(file);
+    }
+
+    function processNewsImport() {
+      const raw = document.getElementById('importNewsTextarea').value.trim();
+      if (!raw) {
+        showToast('Cole o JSON ou selecione um arquivo.', 'error');
+        return;
+      }
+
+      try {
+        const data = JSON.parse(raw);
+        if (!data.sections) throw new Error('Formato inválido: falta objeto "sections"');
+
+        if (!confirm('Isso irá substituir o conteúdo atual da tela. Deseja continuar?')) return;
+
+        if (data.date) {
+            document.getElementById('dateInput').value = data.date;
+        }
+        
+        sections.forEach(sec => {
+          if (data.sections[sec]) {
+            data.sections[sec].forEach((val, i) => {
+              const el = document.getElementById(`${sec}-${i + 1}`);
+              if (el) el.value = val || '';
+            });
+          }
+        });
+
+        saveState(); // Update localStorage
+        closeModal('importNewsModal');
+        showToast('Importado com sucesso!', 'success');
+      } catch (e) {
+        alert('Erro ao importar JSON: ' + e.message);
+      }
     }
   </script>
 
