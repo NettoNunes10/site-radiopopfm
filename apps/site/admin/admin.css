@@ -1,7 +1,19 @@
 :root {
-  --primary: #065f46;
-  --primary-light: #059669;
-  --accent: #10b981;
+  /* Default / Massa FM (Green/Amber) */
+  --massa-primary: #065f46;
+  --massa-primary-light: #059669;
+  --massa-accent: #10b981;
+  
+  /* Pop FM (Purple) */
+  --pop-primary: #5b21b6;
+  --pop-primary-light: #7c3aed;
+  --pop-accent: #a78bfa;
+
+  /* Current Active Theme (Controlled via JS) */
+  --primary: var(--massa-primary);
+  --primary-light: var(--massa-primary-light);
+  --accent: var(--massa-accent);
+
   --bg-sidebar: #0f172a;
   --bg-main: #f8fafc;
   --text-main: #1e293b;
@@ -9,6 +21,12 @@
   --border: #e2e8f0;
   --glass: rgba(255, 255, 255, 0.8);
   --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="pop"] {
+  --primary: var(--pop-primary);
+  --primary-light: var(--pop-primary-light);
+  --accent: var(--pop-accent);
 }
 
 * {
@@ -92,6 +110,21 @@ body {
 .nav-link.active ion-icon {
   color: var(--accent);
 }
+
+.nav-section-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 16px 16px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-section-label.massa { color: var(--massa-accent); }
+.nav-section-label.pop { color: var(--pop-accent); }
 
 /* Main Content */
 .main-content {

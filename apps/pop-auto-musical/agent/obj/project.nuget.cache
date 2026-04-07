@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "3XnMT0PYWDE=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\netto\\Documents\\projetos\\site-radiopopfm\\apps\\pop-auto-musical\\agent\\RadioAgent.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\netto\\.nuget\\packages\\taglibsharp\\2.3.0\\taglibsharp.2.3.0.nupkg.sha512"
+  ],
+  "logs": []
+}

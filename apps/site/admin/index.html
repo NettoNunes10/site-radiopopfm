@@ -53,24 +53,46 @@
       </div>
       
       <nav class="nav-links">
+        <div class="nav-section-label massa">
+          <ion-icon name="radio"></ion-icon>
+          <span>Rede Massa</span>
+        </div>
         <div class="nav-item">
           <a class="nav-link active" onclick="showTab('dashboard')" id="nav-dashboard">
             <ion-icon name="grid-outline"></ion-icon>
-            <span>Início (Status)</span>
+            <span>Status Global</span>
           </a>
         </div>
         <div class="nav-item">
           <a class="nav-link" onclick="showTab('news')" id="nav-news">
             <ion-icon name="newspaper-outline"></ion-icon>
-            <span>Boletins de Notícias</span>
+            <span>Boletins Massa</span>
           </a>
         </div>
         <div class="nav-item">
           <a class="nav-link" onclick="showTab('music')" id="nav-music">
             <ion-icon name="musical-notes-outline"></ion-icon>
-            <span>Roteiros Musicais</span>
+            <span>Musical Massa</span>
           </a>
         </div>
+
+        <div class="nav-section-label pop">
+          <ion-icon name="pulse"></ion-icon>
+          <span>Rede Pop FM</span>
+        </div>
+        <div class="nav-item">
+          <a class="nav-link" onclick="showTab('pop-generator')" id="nav-pop-generator">
+            <ion-icon name="flash-outline"></ion-icon>
+            <span>Gerador Musical</span>
+          </a>
+        </div>
+        <div class="nav-item">
+          <a class="nav-link" onclick="showTab('pop-config')" id="nav-pop-config">
+            <ion-icon name="settings-outline"></ion-icon>
+            <span>Regras & Jabás</span>
+          </a>
+        </div>
+
         <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 16px 0;"></div>
         <div class="nav-item">
           <a class="nav-link" onclick="location.reload()">
@@ -314,6 +336,90 @@
           </div>
         </div>
 
+        <!-- Tab: Pop Generator -->
+        <div id="tab-pop-generator" class="tab-content">
+          <div class="page-header">
+            <h2>Gerador de Programação Pop</h2>
+            <div class="editor-toolbar">
+              <input type="date" id="popGenDate" class="btn btn-secondary">
+              <button class="btn btn-primary" onclick="generatePopProgramming()">
+                <ion-icon name="flash-outline"></ion-icon>
+                <span>Gerar Progr. Automática</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="card">
+              <div class="city-header">
+                <h3>Processamento em Nuvem</h3>
+                <ion-icon name="cloud-done-outline" style="color: var(--accent); font-size: 24px;"></ion-icon>
+              </div>
+              <p style="color: var(--text-light); font-size: 0.875rem; margin-top: 12px;">
+                Este gerador utiliza o índice de músicas enviado pelo <strong>Agente Local (C#)</strong> para criar o roteiro .BIL baseado nos modelos SEMANAL, SABADO ou DOMINGO.
+              </p>
+              <div style="margin-top: 24px; padding: 16px; background: #f1f5f9; border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 8px;">
+                  <span>STATUS DO ÍNDICE LOCAL</span>
+                  <span id="popLibraryStatus">CHECKING...</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: var(--text-main);">
+                  Músicas Indexadas: <strong id="popLibraryCount">0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="popGenResultArea" style="display: none; margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="font-size: 0.875rem; color: var(--text-light); text-transform: uppercase;">Roteiro Gerado</h4>
+              <button class="btn btn-accent btn-sm" onclick="downloadPopBil()">
+                <ion-icon name="download-outline"></ion-icon> Baixar .BIL
+              </button>
+            </div>
+            <div id="popGenResultBox" class="result-box" style="max-height: 400px; overflow-y: auto;"></div>
+          </div>
+        </div>
+
+        <!-- Tab: Pop Config -->
+        <div id="tab-pop-config" class="tab-content">
+          <div class="page-header">
+            <h2>Configurações Pop FM</h2>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+            <!-- Paths Config -->
+            <div class="card">
+              <div class="city-header" style="margin-bottom: 20px;">
+                <h4>Caminhos e Pastas (Locais)</h4>
+                <ion-icon name="folder-open-outline"></ion-icon>
+              </div>
+              <div class="form-group">
+                <label>Raiz de Músicas (M:)</label>
+                <input type="text" id="popPathMusic" placeholder="M:\MUSICAS">
+              </div>
+              <div class="form-group">
+                <label>VHTs / Vinhetas (U:)</label>
+                <input type="text" id="popPathSweepers" placeholder="U:\Materiais\Eventos Gerais\VHT - Geração">
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="savePopPaths()">Salvar Caminhos</button>
+            </div>
+
+            <!-- Rules Config -->
+            <div class="card">
+              <div class="city-header" style="margin-bottom: 20px;">
+                <h4>Regras de Geração</h4>
+                <ion-icon name="options-outline"></ion-icon>
+              </div>
+              <div class="form-group">
+                <label>Artistas Favoritos (Peso +)</label>
+                <textarea id="popFavArtists" style="min-height: 100px; border-radius: 8px; border: 1px solid var(--border); padding: 8px; width: 100%;" placeholder="DANIEL, LEONARDO..."></textarea>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="savePopRules()">Salvar Regras</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -355,8 +461,22 @@
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
       
-      document.getElementById('tab-' + tabId).classList.add('active');
-      document.getElementById('nav-' + tabId).classList.add('active');
+      const targetTab = document.getElementById('tab-' + tabId);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+      
+      const targetNav = document.getElementById('nav-' + tabId);
+      if (targetNav) {
+        targetNav.classList.add('active');
+      }
+
+      // Theme toggle: if it's a pop tab, set data-theme="pop", otherwise remove it
+      if (tabId.startsWith('pop-')) {
+        document.body.setAttribute('data-theme', 'pop');
+      } else {
+        document.body.removeAttribute('data-theme');
+      }
       
       saveSidebarState(tabId);
 
@@ -880,6 +1000,7 @@
     // Call after login
     function setupMusic() {
       loadMusicConfig();
+      loadPopConfig();
     }
 
     // --- VISUAL EDITORS LOGIC ---
@@ -1409,7 +1530,7 @@
         if (data.date) {
             document.getElementById('dateInput').value = data.date;
         }
-        
+
         sections.forEach(sec => {
           if (data.sections[sec]) {
             data.sections[sec].forEach((val, i) => {
@@ -1419,12 +1540,112 @@
           }
         });
 
-        saveState(); // Update localStorage
+        saveState();
+        showToast('Dados importados!', 'success');
         closeModal('importNewsModal');
-        showToast('Importado com sucesso!', 'success');
       } catch (e) {
-        alert('Erro ao importar JSON: ' + e.message);
+        showToast('Erro no JSON: ' + e.message, 'error');
       }
+    }
+
+    // --- POP FM SPECIFIC LOGIC ---
+    let popConfig = { paths: {}, rules: { favoriteArtists: [] } };
+
+    async function loadPopConfig() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      if (!password) return;
+
+      try {
+        const [paths, rules, libraryStatus] = await Promise.all([
+          fetch(`/api/config?key=pop_paths`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
+          fetch(`/api/config?key=pop_rules`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
+          fetch(`/api/pop/status`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({})))
+        ]);
+
+        popConfig.paths = paths || {};
+        popConfig.rules = rules || { favoriteArtists: [] };
+
+        document.getElementById('popPathMusic').value = popConfig.paths.music || '';
+        document.getElementById('popPathSweepers').value = popConfig.paths.sweepers || '';
+        document.getElementById('popFavArtists').value = (popConfig.rules.favoriteArtists || []).join(', ');
+
+        if (libraryStatus) {
+            const statusEl = document.getElementById('popLibraryStatus');
+            statusEl.textContent = libraryStatus.online ? 'SINCRONIZADO' : 'AGUARDANDO AGENTE';
+            statusEl.style.color = libraryStatus.online ? 'var(--massa-accent)' : '#ef4444';
+            document.getElementById('popLibraryCount').textContent = libraryStatus.count || 0;
+        }
+      } catch (e) {
+        console.error('Pop config load fail', e);
+      }
+    }
+
+    async function savePopPaths() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const paths = {
+        music: document.getElementById('popPathMusic').value,
+        sweepers: document.getElementById('popPathSweepers').value
+      };
+      const res = await fetch(`/api/config?key=pop_paths`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(paths)
+      });
+      if (res.ok) showToast('Caminhos Pop salvos!', 'success');
+    }
+
+    async function savePopRules() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const rules = {
+        favoriteArtists: document.getElementById('popFavArtists').value.split(',').map(s => s.trim()).filter(s => s)
+      };
+      const res = await fetch(`/api/config?key=pop_rules`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(rules)
+      });
+      if (res.ok) showToast('Regras Pop salvas!', 'success');
+    }
+
+    async function generatePopProgramming() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const date = document.getElementById('popGenDate').value;
+      if (!date) return showToast('Selecione uma data!', 'error');
+
+      const btn = event?.target || {};
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Gerando...';
+
+      try {
+        const res = await fetch(`/api/pop/generate`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro na geração');
+
+        window.lastPopBil = data.bil;
+        document.getElementById('popGenResultBox').textContent = data.bil;
+        document.getElementById('popGenResultArea').style.display = 'block';
+        showToast('Programação Pop gerada!', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function downloadPopBil() {
+      if (!window.lastPopBil) return;
+      const date = document.getElementById('popGenDate').value.replace(/-/g, '');
+      const blob = new Blob([window.lastPopBil], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${date}_POP.bil`;
+      a.click();
     }
   </script>
 
