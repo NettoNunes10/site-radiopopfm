@@ -91,10 +91,17 @@ export async function onRequest(context) {
 }
 
 async function getTemplate(kv, dow) {
-  let key = "pop_template_SEMANAL";
-  if (dow === 0) key = "pop_template_DOMINGO";
-  if (dow === 6) key = "pop_template_SABADO";
-  return await kv.get(key);
+  const [library, mapping] = await Promise.all([
+    kv.get("pop_templates_library", "json"),
+    kv.get("pop_templates_mapping", "json")
+  ]);
+
+  if (!library || !mapping) return null;
+
+  const templateName = mapping[dow];
+  if (!templateName || !library[templateName]) return null;
+
+  return library[templateName];
 }
 
 function selectMusic(category, library, favorites, histArtists, histSongs, maxA, maxS) {
