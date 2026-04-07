@@ -79,11 +79,24 @@ export async function onRequest(context) {
       finalLines.push(line);
     }
 
-    return new Response(JSON.stringify({ 
+    const result = { 
       success: true, 
       bil: finalLines.join('\r\n'),
       date: date 
-    }), { headers: { "Content-Type": "application/json" } });
+    };
+
+    // Store in Queue for Agent Download
+    const bilName = `${date.replace(/-/g, '')}_POP.bil`;
+    const dlId = `pop_dl_${Date.now()}`;
+    
+    await kv.put(dlId, JSON.stringify({
+      id: dlId,
+      filename: bilName,
+      content: result.bil,
+      timestamp: new Date().toISOString()
+    }));
+
+    return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: "Generation failed", detail: e.message }), { status: 500 });

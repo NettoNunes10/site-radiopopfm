@@ -356,9 +356,15 @@
                     <span>STATUS DO ÍNDICE</span>
                     <span id="popLibraryStatus">CHECKING...</span>
                   </div>
-                  <div style="font-size: 0.8125rem; color: var(--text-main);">
+                  <div style="font-size: 0.8125rem; color: var(--text-main); margin-bottom: 4px;">
                     Músicas Indexadas: <strong id="popLibraryCount">0</strong>
                   </div>
+                  <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 12px;">
+                    Última Sincronia: <span id="popLastSyncTime">---</span>
+                  </div>
+                  <button id="btnTriggerSync" class="btn btn-secondary btn-sm" style="width: 100%; border-color: var(--accent); color: var(--accent);" onclick="triggerPopSync()">
+                    <ion-icon name="sync-outline"></ion-icon> Sincronizar Agora
+                  </button>
                 </div>
               </div>
 
@@ -374,6 +380,10 @@
                 <div class="form-group">
                   <label>VHTs / Vinhetas (U:)</label>
                   <input type="text" id="popPathSweepers" placeholder="U:\Materiais\Eventos Gerais\VHT - Geração">
+                </div>
+                <div class="form-group">
+                  <label>Destino dos Roteiros (.BIL)</label>
+                  <input type="text" id="popPathDownload" placeholder="U:\Materiais\Roteiros">
                 </div>
                 <button class="btn btn-secondary btn-sm" onclick="savePopPaths()">Salvar Caminhos</button>
               </div>
@@ -1605,7 +1615,23 @@
             statusEl.textContent = libraryStatus.online ? 'SINCRONIZADO' : 'AGUARDANDO AGENTE';
             statusEl.style.color = libraryStatus.online ? 'var(--massa-accent)' : '#ef4444';
             document.getElementById('popLibraryCount').textContent = libraryStatus.count || 0;
+            
+            if (libraryStatus.lastUpdate) {
+              const d = new Date(libraryStatus.lastUpdate);
+              document.getElementById('popLastSyncTime').textContent = d.toLocaleString();
+            }
+
+            const syncBtn = document.getElementById('btnTriggerSync');
+            if (libraryStatus.forceSyncRequested) {
+              syncBtn.disabled = true;
+              syncBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Sincronia Agendada...';
+            } else {
+              syncBtn.disabled = false;
+              syncBtn.innerHTML = '<ion-icon name="sync-outline"></ion-icon> Sincronizar Agora';
+            }
         }
+        
+        document.getElementById('popPathDownload').value = popConfig.paths.download || '';
 
         // Also load templates
         loadPopTemplates();
@@ -1618,7 +1644,8 @@
       const password = sessionStorage.getItem('newsmaker_password');
       const paths = {
         music: document.getElementById('popPathMusic').value,
-        sweepers: document.getElementById('popPathSweepers').value
+        sweepers: document.getElementById('popPathSweepers').value,
+        download: document.getElementById('popPathDownload').value
       };
       const res = await fetch(`/api/config?key=pop_paths`, {
         method: 'POST',
@@ -1670,6 +1697,20 @@
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
+    }
+
+    async function triggerPopSync() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        const res = await fetch('/api/pop/sync-trigger', { 
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${password}` } 
+        });
+        if (res.ok) {
+          showToast('Sincronia solicitada ao Agente!', 'success');
+          loadPopConfig(); // Refresh button state
+        }
+      } catch (e) { showToast('Erro ao solicitar sincronia.', 'error'); }
     }
 
     function downloadPopBil() {

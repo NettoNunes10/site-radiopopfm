@@ -13,8 +13,13 @@ export async function onRequest(context) {
   }
 
   // 2. GET (Check Status)
-  const data = await kv.get("pop_library_status");
-  const statusJson = data ? JSON.parse(data) : { online: false, count: 0 };
+  const [data, forceSync] = await Promise.all([
+    kv.get("pop_library_status", "json"),
+    kv.get("pop_force_sync_requested")
+  ]);
+
+  const statusJson = data || { online: false, count: 0 };
+  statusJson.forceSyncRequested = forceSync === "true";
 
   // Heatmap check: if lastUpdate is older than 5 minutes, set online to false
   if (statusJson.lastUpdate) {
