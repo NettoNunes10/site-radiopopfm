@@ -298,6 +298,9 @@
               <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal'); renderJabaList();" title="Jabás">
                 <ion-icon name="musical-notes"></ion-icon> Jabás
               </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('promoManagerModal'); renderPromosList();" style="border-color: #ec4899; color: #ec4899;" title="Promoções">
+                <ion-icon name="megaphone"></ion-icon> Promoções
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal'); renderRulesLists();" title="Regras">
                 <ion-icon name="options"></ion-icon> Regras
               </button>
@@ -897,7 +900,7 @@
     }
 
     // --- MUSIC SCRIPT LOGIC ---
-    let musicConfig = { rules: {}, jabas: [], prefixes: {} };
+    let musicConfig = { rules: {}, jabas: [], prefixes: {}, promos: [] };
 
     async function loadMusicConfig() {
       const password = sessionStorage.getItem('newsmaker_password');
@@ -908,18 +911,20 @@
           try { return text ? JSON.parse(text) : null; } catch(e) { return null; }
         };
 
-        const [r, j, p, v] = await Promise.all([
+        const [r, j, p, v, pr] = await Promise.all([
           fetchKey('config_music_rules'),
           fetchKey('config_music_jabas'),
           fetchKey('config_music_prefixes'),
-          fetchKey('config_music_substitutions')
+          fetchKey('config_music_substitutions'),
+          fetchKey('config_music_promos')
         ]);
         
         musicConfig = { 
           rules: r || { janelas_permitidas: {}, remover_blocos: {}, renomear_blocos: {} }, 
           jabas: (j && (j.configuracao_jabas || j.jabas)) || [], 
           prefixes: p || { options_by_day: {} }, 
-          vignettes: v || { substituicoes: [] } 
+          vignettes: v || { substituicoes: [] },
+          promos: pr || []
         };
         
         renderVignetteList();
@@ -958,7 +963,8 @@
           saveMusicConfig('rules', imported.rules),
           saveMusicConfig('jabas', imported.jabas),
           saveMusicConfig('prefixes', imported.prefixes),
-          saveMusicConfig('vignettes', imported.vignettes)
+          saveMusicConfig('vignettes', imported.vignettes),
+          saveMusicConfig('promos', imported.promos || [])
         ]);
         
         showToast('Configurações importadas com sucesso!', 'success');
@@ -1001,7 +1007,7 @@
         const content = decoder.decode(buffer);
 
         try {
-          const result = MusicEngine.process(content, musicConfig.rules, musicConfig.jabas, musicConfig.prefixes, musicConfig.vignettes, date);
+          const result = MusicEngine.process(content, musicConfig.rules, musicConfig.jabas, musicConfig.prefixes, musicConfig.vignettes, date, musicConfig.promos);
           
           logCont.innerHTML += result.logs.map(l => `<div>${l}</div>`).join('');
           logCont.scrollTop = logCont.scrollHeight;
@@ -1030,7 +1036,7 @@
 
     async function saveMusicConfig(type, data) {
       const password = sessionStorage.getItem('newsmaker_password');
-      const key = type === 'jabas' ? 'config_music_jabas' : (type === 'rules' ? 'config_music_rules' : (type === 'prefixes' ? 'config_music_prefixes' : 'config_music_substitutions'));
+      const key = type === 'jabas' ? 'config_music_jabas' : (type === 'rules' ? 'config_music_rules' : (type === 'prefixes' ? 'config_music_prefixes' : (type === 'vignettes' ? 'config_music_substitutions' : 'config_music_promos')));
       const payload = type === 'jabas' ? { configuracao_jabas: data } : (type === 'vignettes' ? data : data);
       
       const res = await fetch(`/api/config?key=${key}`, {
@@ -1057,6 +1063,73 @@
     function openModal(id) { document.getElementById(id).classList.add('show'); }
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
+    // --- PROMO LOGIC ---
+    function renderPromosList() {
+      const list = document.getElementById('promosList');
+      if (!musicConfig.promos) musicConfig.promos = [];
+      list.innerHTML = musicConfig.promos.map((p, idx) => `
+        <div class="config-item" style="border-left: 4px solid ${p.enabled ? '#ec4899' : '#cbd5e1'};">
+          <div class="config-item-info">
+            <h5>${p.id} ${p.enabled ? '' : '<span style="color: #ef4444; font-size: 0.75rem;">(Inativa)</span>'}</h5>
+            <p>${p.caminho_arquivo}</p>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              Até ${p.data_limite} | Horas: ${p.horas_ativas.join(', ')} | ${p.duracao_ms}ms
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="editPromo(${idx})">Editar</button>
+            <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePromo(${idx})">Remover</button>
+          </div>
+        </div>
+      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma promoção cadastrada.</p>';
+    }
+
+    let editingPromoIdx = -1;
+    let tempPromo = null;
+
+    function editPromo(idx) {
+      editingPromoIdx = idx;
+      tempPromo = idx === -1 
+        ? { id: '', enabled: true, caminho_arquivo: '', duracao_ms: 0, data_limite: '', horas_ativas: [] } 
+        : JSON.parse(JSON.stringify(musicConfig.promos[idx]));
+      
+      document.getElementById('promoEnabled').checked = tempPromo.enabled;
+      document.getElementById('promoId').value = tempPromo.id;
+      document.getElementById('promoPath').value = tempPromo.caminho_arquivo;
+      document.getElementById('promoDuration').value = tempPromo.duracao_ms || 0;
+      document.getElementById('promoEndDate').value = tempPromo.data_limite;
+      document.getElementById('promoHours').value = (tempPromo.horas_ativas || []).join(', ');
+      
+      openModal('promoModal');
+    }
+
+    function savePromo() {
+      tempPromo.enabled = document.getElementById('promoEnabled').checked;
+      tempPromo.id = document.getElementById('promoId').value;
+      tempPromo.caminho_arquivo = document.getElementById('promoPath').value;
+      tempPromo.duracao_ms = parseInt(document.getElementById('promoDuration').value || 0);
+      tempPromo.data_limite = document.getElementById('promoEndDate').value;
+      tempPromo.horas_ativas = document.getElementById('promoHours').value.split(',').map(s => s.trim().padStart(2, '0')).filter(s => s && s !== '000'); // simple cleanup
+      
+      if (!tempPromo.id || !tempPromo.caminho_arquivo) return showToast('Preencha os campos essenciais!', 'error');
+
+      if (!musicConfig.promos) musicConfig.promos = [];
+      if (editingPromoIdx === -1) musicConfig.promos.push(tempPromo);
+      else musicConfig.promos[editingPromoIdx] = tempPromo;
+
+      saveMusicConfig('promos', musicConfig.promos);
+      closeModal('promoModal');
+      renderPromosList();
+    }
+
+    function deletePromo(idx) {
+      if (confirm('Remover esta promoção?')) {
+        musicConfig.promos.splice(idx, 1);
+        saveMusicConfig('promos', musicConfig.promos);
+        renderPromosList();
+      }
+    }
+
     function renderJabaList() {
       const list = document.getElementById('jabasList');
       list.innerHTML = musicConfig.jabas.map((j, idx) => `
@@ -1077,8 +1150,6 @@
     }
 
     let editingJabaIdx = -1;
-    let tempJaba = null;
-
     function editJaba(idx) {
       editingJabaIdx = idx;
       tempJaba = idx === -1 

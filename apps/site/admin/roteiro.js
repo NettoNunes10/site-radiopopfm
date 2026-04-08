@@ -252,9 +252,61 @@ function buildOutput(prelude, blocks) {
   return out;
 }
 
+function applyPromos(blocks, promosConfig, date, city, log) {
+  if (!promosConfig || promosConfig.length === 0) return;
+  const targetDateStr = date.toISOString().split('T')[0];
+  
+  const activePromos = promosConfig.filter(p => p.enabled && (!p.data_limite || p.data_limite >= targetDateStr));
+  if (activePromos.length === 0) return;
+
+  blocks.forEach(block => {
+    const hourPrefix = block.time.substring(0, 2);
+    const validPromosForHour = activePromos.filter(p => (p.horas_ativas || []).includes(hourPrefix));
+    if (validPromosForHour.length === 0) return;
+
+    let breaksCountForHour = 0;
+    
+    for (let i = 0; i < block.items.length; i++) {
+        if (COMM_END_RE.test(block.items[i]) || block.items[i].includes('Término do bloco comercial')) {
+            breaksCountForHour++;
+            
+            if (breaksCountForHour === 1) { // Só no primeiro break do horário
+                let songsFound = 0;
+                let insertIdx = i + 1;
+                
+                for (let j = i + 1; j < block.items.length; j++) {
+                    const line = block.items[j].toUpperCase();
+                    if (line.startsWith("M:")) {
+                        songsFound++;
+                        if (songsFound === 2) {
+                            insertIdx = j + 1;
+                            break;
+                        }
+                    }
+                }
+                
+                const spliceArgs = [insertIdx, 0];
+                for (let p of validPromosForHour) {
+                    spliceArgs.push(buildJabaLine({
+                        caminho_arquivo: p.caminho_arquivo,
+                        duracao_ms: p.duracao_ms || 1500,
+                        cue_intro_ms: 0,
+                        cue_segue_ms: 0
+                    }));
+                }
+                block.items.splice(...spliceArgs);
+                log(`${city}: Promoções (Qtd: ${validPromosForHour.length}) inseridas no bloco ${block.time} após 2ª música.`);
+                
+                i += validPromosForHour.length;
+            }
+        }
+    }
+  });
+}
+
 // --- MAIN EXPORT ---
 window.MusicEngine = {
-  process(fileContent, rules, jabas, prefixes, substitutions, date) {
+  process(fileContent, rules, jabas, prefixes, substitutions, date, promos = []) {
     const logs = [];
     const log = (msg) => logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
     
@@ -322,6 +374,9 @@ window.MusicEngine = {
 
       // Jabas
       applyJabas(cityBlocks, jabas, date, city, log);
+
+      // Promos
+      applyPromos(cityBlocks, promos, date, city, log);
 
       return buildOutput(prelude, cityBlocks);
     };
