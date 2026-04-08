@@ -1086,6 +1086,7 @@
 
     let editingPromoIdx = -1;
     let tempPromo = null;
+    let tempJaba = null; // Global for Jaba editor too
 
     function editPromo(idx) {
       editingPromoIdx = idx;
@@ -1128,6 +1129,83 @@
         saveMusicConfig('promos', musicConfig.promos);
         renderPromosList();
       }
+    }
+
+    function extractPromoAudioData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const durField = document.getElementById('promoDuration');
+      const pathField = document.getElementById('promoPath');
+      const idField = document.getElementById('promoId');
+
+      // Default path based on name
+      pathField.value = `U:\\Materiais\\Vinhetas\\${file.name}`;
+      if (!idField.value) {
+        idField.value = file.name.split('.')[0].substring(0, 15).toUpperCase().replace(/\s/g, '');
+      }
+
+      showToast('Analisando arquivo de promoção...', 'info');
+
+      const audio = new Audio();
+      const objectUrl = URL.createObjectURL(file);
+      
+      audio.onloadedmetadata = () => {
+        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
+          const ms = Math.round(audio.duration * 1000);
+          durField.value = ms;
+          showToast(`Duração detectada: ${ms}ms`, 'success');
+        } else {
+          showToast('Duração não encontrada automaticamente.', 'info');
+        }
+        URL.revokeObjectURL(objectUrl);
+      };
+      
+      audio.onerror = () => {
+        showToast('Erro ao ler áudio. Insira a duração manualmente.', 'error');
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      audio.preload = 'metadata';
+      audio.src = objectUrl;
+    }
+
+    function extractAudioData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const durField = document.getElementById('jabaDuration');
+      const pathField = document.getElementById('jabaPath');
+      const idField = document.getElementById('jabaId');
+
+      pathField.value = `M:\\Jabás\\${file.name}`;
+      if (!idField.value) {
+        idField.value = file.name.split('.')[0].substring(0, 15).toUpperCase().replace(/\s/g, '');
+      }
+
+      showToast('Analisando arquivo...', 'info');
+
+      const audio = new Audio();
+      const objectUrl = URL.createObjectURL(file);
+      
+      audio.onloadedmetadata = () => {
+        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
+          const ms = Math.round(audio.duration * 1000);
+          durField.value = ms;
+          showToast(`Duração detectada: ${ms}ms`, 'success');
+        } else {
+          showToast('Duração não encontrada.', 'error');
+        }
+        URL.revokeObjectURL(objectUrl);
+      };
+      
+      audio.onerror = () => {
+        showToast('Erro de codec ou arquivo inválido.', 'error');
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      audio.preload = 'metadata';
+      audio.src = objectUrl;
     }
 
     function renderJabaList() {
