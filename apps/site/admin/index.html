@@ -1993,6 +1993,68 @@
     </div>
   </div>
 
+  <div id="promoManagerModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Gerenciador de Promoções</h3>
+        <button class="btn btn-secondary" onclick="closeModal('promoManagerModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editPromo(-1)">+ Nova Promoção</button>
+        <div id="promosList" class="config-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="promoModal" class="modal-overlay" style="z-index: 1200;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Configurar Promoção</h3>
+        <button class="btn btn-secondary" onclick="closeModal('promoModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: #fdf2f8; padding: 12px; border-radius: 8px; border: 1px solid #fbcfe8; margin-bottom: 16px;">
+          <label style="margin: 0; color: #be185d;">Campanha Ativa</label>
+          <input type="checkbox" id="promoEnabled" style="width: 20px; height: 20px;">
+        </div>
+        <div class="news-inputs" style="margin-bottom: 24px;">
+          <div class="form-group">
+            <label>Identificador (Ex: DIADASMAES)</label>
+            <input type="text" id="promoId">
+          </div>
+          <div class="form-group">
+            <label>Duração Total (ms)</label>
+            <div style="display: flex; gap: 8px;">
+               <input type="number" id="promoDuration" style="flex: 1;">
+               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('promoAudioFile').click()">
+                 <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
+               </button>
+               <input type="file" id="promoAudioFile" style="display: none;" accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/x-flac" onchange="extractPromoAudioData(event)">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Caminho Completo do Arquivo (Ex: U:\Materiais\Vinhetas\...)</label>
+          <input type="text" id="promoPath">
+        </div>
+        <div class="news-inputs">
+          <div class="form-group">
+            <label>Data Limite (Último dia da promo)</label>
+            <input type="date" id="promoEndDate">
+          </div>
+          <div class="form-group">
+            <label>Horas Ativas (Separe por vírgula)</label>
+            <input type="text" id="promoHours" placeholder="08, 10, 12, 18">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('promoModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="savePromo()">Salvar Promoção</button>
+      </div>
+    </div>
+  </div>
+
   <div id="rulesModal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
