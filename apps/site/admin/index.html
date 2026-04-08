@@ -343,7 +343,7 @@
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+          <div class="grid-2-col" style="margin-bottom: 24px;">
             <!-- Library Status & Global Config -->
             <div style="display: flex; flex-direction: column; gap: 24px;">
               <div class="card">
@@ -425,7 +425,7 @@
               <input type="file" id="blmUpload" accept=".blm" style="display: none;" onchange="handleBlmUpload(event)">
             </div>
 
-            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 32px;">
+            <div class="grid-sidebar-layout">
               <div style="border-right: 1px solid var(--border); padding-right: 32px;">
                 <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Arquivos na Biblioteca</h4>
                 <div id="popTemplateList" class="config-list">
@@ -523,7 +523,16 @@
 
       // Close sidebar if on mobile
       const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
       if (sidebar) sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('show');
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('show');
     }
 
     function saveSidebarState(tab) {
