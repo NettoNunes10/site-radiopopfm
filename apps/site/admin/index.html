@@ -1066,7 +1066,7 @@
     // --- PROMO LOGIC ---
     function renderPromosList() {
       const list = document.getElementById('promosList');
-      if (!musicConfig.promos) musicConfig.promos = [];
+      if (!Array.isArray(musicConfig.promos)) musicConfig.promos = [];
       list.innerHTML = musicConfig.promos.map((p, idx) => `
         <div class="config-item" style="border-left: 4px solid ${p.enabled ? '#ec4899' : '#cbd5e1'};">
           <div class="config-item-info">
@@ -1114,7 +1114,7 @@
       
       if (!tempPromo.id || !tempPromo.caminho_arquivo) return showToast('Preencha os campos essenciais!', 'error');
 
-      if (!musicConfig.promos) musicConfig.promos = [];
+      if (!Array.isArray(musicConfig.promos)) musicConfig.promos = [];
       if (editingPromoIdx === -1) musicConfig.promos.push(tempPromo);
       else musicConfig.promos[editingPromoIdx] = tempPromo;
 
