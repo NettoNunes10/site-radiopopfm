@@ -259,6 +259,7 @@ function applyPromos(blocks, promosConfig, date, city, log) {
   const activePromos = promosConfig.filter(p => p.enabled && (!p.data_limite || p.data_limite >= targetDateStr));
   if (activePromos.length === 0) return;
 
+  const dayType = getDayType(date); // 'dia_semana', 'sabado', 'domingo'
   const usedHours = new Set(); // Rastreia as horas que JÁ receberam a injeção
 
   blocks.forEach(block => {
@@ -267,7 +268,15 @@ function applyPromos(blocks, promosConfig, date, city, log) {
     // Se a promoção já foi incluída no 1º break dessa hora (mesmo que em blocos anteriores como 09:15), pula!
     if (usedHours.has(hourPrefix)) return;
 
-    const validPromosForHour = activePromos.filter(p => (p.horas_ativas || []).includes(hourPrefix));
+    const validPromosForHour = activePromos.filter(p => {
+       let horas = [];
+       if (dayType === 'sabado') horas = p.horas_sabado || p.horas_ativas || [];
+       else if (dayType === 'domingo') horas = p.horas_domingo || p.horas_ativas || [];
+       else horas = p.horas_dia_semana || p.horas_ativas || []; // dia de semana normal
+       
+       return horas.includes(hourPrefix);
+    });
+    
     if (validPromosForHour.length === 0) return;
 
     for (let i = 0; i < block.items.length; i++) {

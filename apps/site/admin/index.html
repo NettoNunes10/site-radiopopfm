@@ -1078,7 +1078,7 @@
             <h5>${p.id} ${p.enabled ? '' : '<span style="color: #ef4444; font-size: 0.75rem;">(Inativa)</span>'}</h5>
             <p>${p.caminho_arquivo}</p>
             <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-              Até ${p.data_limite} | Horas: ${p.horas_ativas.join(', ')} | ${p.duracao_ms}ms
+              Até ${p.data_limite} | Sem: ${(p.horas_dia_semana || p.horas_ativas || []).length}x | Sáb: ${(p.horas_sabado || p.horas_ativas || []).length}x | Dom: ${(p.horas_domingo || p.horas_ativas || []).length}x
             </div>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -1104,7 +1104,9 @@
       document.getElementById('promoPath').value = tempPromo.caminho_arquivo;
       document.getElementById('promoDuration').value = tempPromo.duracao_ms || 0;
       document.getElementById('promoEndDate').value = tempPromo.data_limite;
-      document.getElementById('promoHours').value = (tempPromo.horas_ativas || []).join(', ');
+      document.getElementById('promoHoursDiaSemana').value = (tempPromo.horas_dia_semana || tempPromo.horas_ativas || []).join(', ');
+      document.getElementById('promoHoursSabado').value = (tempPromo.horas_sabado || tempPromo.horas_ativas || []).join(', ');
+      document.getElementById('promoHoursDomingo').value = (tempPromo.horas_domingo || tempPromo.horas_ativas || []).join(', ');
       
       openModal('promoModal');
     }
@@ -1115,7 +1117,10 @@
       tempPromo.caminho_arquivo = document.getElementById('promoPath').value;
       tempPromo.duracao_ms = parseInt(document.getElementById('promoDuration').value || 0);
       tempPromo.data_limite = document.getElementById('promoEndDate').value;
-      tempPromo.horas_ativas = document.getElementById('promoHours').value.split(',').map(s => s.trim().padStart(2, '0')).filter(s => s && s !== '000'); // simple cleanup
+      const parseHours = (val) => val.split(',').map(s => s.trim().padStart(2, '0')).filter(s => s && s !== '000');
+      tempPromo.horas_dia_semana = parseHours(document.getElementById('promoHoursDiaSemana').value);
+      tempPromo.horas_sabado = parseHours(document.getElementById('promoHoursSabado').value);
+      tempPromo.horas_domingo = parseHours(document.getElementById('promoHoursDomingo').value);
       
       if (!tempPromo.id || !tempPromo.caminho_arquivo) return showToast('Preencha os campos essenciais!', 'error');
 
@@ -2120,14 +2125,22 @@
           <label>Caminho Completo do Arquivo (Ex: U:\Materiais\Vinhetas\...)</label>
           <input type="text" id="promoPath">
         </div>
-        <div class="news-inputs">
+        <div class="form-group">
+          <label>Data Limite (Último dia da promo)</label>
+          <input type="date" id="promoEndDate">
+        </div>
+        <div class="news-inputs" style="margin-top: 16px;">
           <div class="form-group">
-            <label>Data Limite (Último dia da promo)</label>
-            <input type="date" id="promoEndDate">
+            <label>Dias de Semana (Seg-Sex)</label>
+            <input type="text" id="promoHoursDiaSemana" placeholder="08, 10, 12, 18">
           </div>
           <div class="form-group">
-            <label>Horas Ativas (Separe por vírgula)</label>
-            <input type="text" id="promoHours" placeholder="08, 10, 12, 18">
+            <label>Sábado</label>
+            <input type="text" id="promoHoursSabado" placeholder="09, 11, 15">
+          </div>
+          <div class="form-group">
+            <label>Domingo</label>
+            <input type="text" id="promoHoursDomingo" placeholder="10, 14">
           </div>
         </div>
       </div>
