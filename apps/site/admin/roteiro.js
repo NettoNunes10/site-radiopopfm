@@ -259,46 +259,48 @@ function applyPromos(blocks, promosConfig, date, city, log) {
   const activePromos = promosConfig.filter(p => p.enabled && (!p.data_limite || p.data_limite >= targetDateStr));
   if (activePromos.length === 0) return;
 
+  const usedHours = new Set(); // Rastreia as horas que JÁ receberam a injeção
+
   blocks.forEach(block => {
     const hourPrefix = block.time.substring(0, 2);
+    
+    // Se a promoção já foi incluída no 1º break dessa hora (mesmo que em blocos anteriores como 09:15), pula!
+    if (usedHours.has(hourPrefix)) return;
+
     const validPromosForHour = activePromos.filter(p => (p.horas_ativas || []).includes(hourPrefix));
     if (validPromosForHour.length === 0) return;
 
-    let breaksCountForHour = 0;
-    
     for (let i = 0; i < block.items.length; i++) {
         if (COMM_END_RE.test(block.items[i]) || block.items[i].includes('Término do bloco comercial')) {
-            breaksCountForHour++;
+            // Este é o PRIMEIRO break comercial dessa hora (conforme controle do usedHours)
+            let songsFound = 0;
+            let insertIdx = i + 1;
             
-            if (breaksCountForHour === 1) { // Só no primeiro break do horário
-                let songsFound = 0;
-                let insertIdx = i + 1;
-                
-                for (let j = i + 1; j < block.items.length; j++) {
-                    const line = block.items[j].toUpperCase();
-                    if (line.startsWith("M:")) {
-                        songsFound++;
-                        if (songsFound === 2) {
-                            insertIdx = j + 1;
-                            break;
-                        }
+            for (let j = i + 1; j < block.items.length; j++) {
+                const line = block.items[j].toUpperCase();
+                if (line.startsWith("M:")) {
+                    songsFound++;
+                    if (songsFound === 2) {
+                        insertIdx = j + 1;
+                        break;
                     }
                 }
-                
-                const spliceArgs = [insertIdx, 0];
-                for (let p of validPromosForHour) {
-                    spliceArgs.push(buildJabaLine({
-                        caminho_arquivo: p.caminho_arquivo,
-                        duracao_ms: p.duracao_ms || 1500,
-                        cue_intro_ms: 0,
-                        cue_segue_ms: 0
-                    }));
-                }
-                block.items.splice(...spliceArgs);
-                log(`${city}: Promoções (Qtd: ${validPromosForHour.length}) inseridas no bloco ${block.time} após 2ª música.`);
-                
-                i += validPromosForHour.length;
             }
+            
+            const spliceArgs = [insertIdx, 0];
+            for (let p of validPromosForHour) {
+                spliceArgs.push(buildJabaLine({
+                    caminho_arquivo: p.caminho_arquivo,
+                    duracao_ms: p.duracao_ms || 1500,
+                    cue_intro_ms: 0,
+                    cue_segue_ms: 0
+                }));
+            }
+            block.items.splice(...spliceArgs);
+            log(`${city}: Promoções (Qtd: ${validPromosForHour.length}) inseridas no bloco ${block.time} após 2ª música (1º Break da Hora ${hourPrefix}).`);
+            
+            usedHours.add(hourPrefix); // Marca a hora cheia como processada, garantindo uso exclusivo no 1º break
+            break; // Já fez a injeção neste bloco, não precisa procurar mais breaks nele
         }
     }
   });
