@@ -256,7 +256,15 @@ function applyPromos(blocks, promosConfig, date, city, log) {
   if (!promosConfig || promosConfig.length === 0) return;
   const targetDateStr = date.toISOString().split('T')[0];
   
-  const activePromos = promosConfig.filter(p => p.enabled && (!p.data_limite || p.data_limite >= targetDateStr));
+  let activePromos = promosConfig.filter(p => p.enabled && (!p.data_limite || p.data_limite >= targetDateStr));
+  if (activePromos.length === 0) return;
+
+  // Filtragem Anti-Duplicação: Se a própria rede já mandou o roteiro original contendo a vinheta, ignore a injeção local
+  activePromos = activePromos.filter(p => {
+      const alreadyInFile = blocks.some(b => b.items.some(line => line.toUpperCase().includes(p.caminho_arquivo.toUpperCase())));
+      if (alreadyInFile) log(`${city}: Promoção '${p.id}' já estava presente no roteiro da rede. Ignorando injeção local para não duplicar.`);
+      return !alreadyInFile;
+  });
   if (activePromos.length === 0) return;
 
   const dayType = getDayType(date); // 'dia_semana', 'sabado', 'domingo'

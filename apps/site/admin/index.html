@@ -1117,7 +1117,7 @@
       tempPromo.caminho_arquivo = document.getElementById('promoPath').value;
       tempPromo.duracao_ms = parseInt(document.getElementById('promoDuration').value || 0);
       tempPromo.data_limite = document.getElementById('promoEndDate').value;
-      const parseHours = (val) => val.split(',').map(s => s.trim().padStart(2, '0')).filter(s => s && s !== '000');
+      const parseHours = (val) => val.trim() === '' ? [] : val.split(',').map(s => s.trim().padStart(2, '0')).filter(s => s && s !== '000');
       tempPromo.horas_dia_semana = parseHours(document.getElementById('promoHoursDiaSemana').value);
       tempPromo.horas_sabado = parseHours(document.getElementById('promoHoursSabado').value);
       tempPromo.horas_domingo = parseHours(document.getElementById('promoHoursDomingo').value);
