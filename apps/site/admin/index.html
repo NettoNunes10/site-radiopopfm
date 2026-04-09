@@ -1021,8 +1021,13 @@
           await new Promise(r => setTimeout(r, 600));
 
           // LOCAL DOWNLOAD (Secondary Option) - Keeps suffix for user to distinguish between local files
-          logCont.innerHTML += `<div style="margin-top: 8px; font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPEVA.bil', \`${result.itapeva.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\`); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapeva (Backup Local)</a></div>`;
-          logCont.innerHTML += `<div style="font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPETININGA.bil', \`${result.itapetininga.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\`); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapetininga (Backup Local)</a></div>`;
+          window.lastGeneratedItapeva = window.lastGeneratedItapeva || {};
+          window.lastGeneratedItapetininga = window.lastGeneratedItapetininga || {};
+          window.lastGeneratedItapeva[baseNameWithoutExt] = result.itapeva;
+          window.lastGeneratedItapetininga[baseNameWithoutExt] = result.itapetininga;
+
+          logCont.innerHTML += `<div style="margin-top: 8px; font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPEVA.bil', window.lastGeneratedItapeva['${baseNameWithoutExt}']); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapeva (Backup Local)</a></div>`;
+          logCont.innerHTML += `<div style="font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPETININGA.bil', window.lastGeneratedItapetininga['${baseNameWithoutExt}']); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapetininga (Backup Local)</a></div>`;
           
         } catch (e) {
           logCont.innerHTML += `<div style="color: #ef4444;">Erro interno: ${e.message}</div>`;
