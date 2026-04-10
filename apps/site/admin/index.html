@@ -1751,13 +1751,21 @@
         }
 
         window.debugLibrary = async () => {
-          const res = await fetch('/api/pop?inspect=1');
+          const password = sessionStorage.getItem('newsmaker_password');
+          const res = await fetch(`/api/pop?inspect=1&_=${Date.now()}`, {
+            headers: { 'Authorization': `Bearer ${password}` }
+          });
           const data = await res.json();
-          if (data.library) {
-            const keys = Object.keys(data.library).sort().join('\n');
-            alert("Categorias na Nuvem:\n\n" + (keys || "Biblioteca Vazia (Faça Sincronia no Agente)"));
+          if (data && data.library) {
+            const keys = Object.keys(data.library).sort();
+            if (keys.length === 0) {
+              alert("Biblioteca na nuvem está vazia.\n\nVerifique se o seu PopSync local concluiu a primeira sincronização.");
+            } else {
+              alert("Categorias na Nuvem:\n\n" + keys.join('\n'));
+            }
           } else {
-            alert("Erro ao ler biblioteca. Verifique se o agente já sincronizou.");
+            console.log("Response data:", data);
+            alert("Erro ao ler biblioteca detalhada. Verifique se a senha está correta.");
           }
         };
         
