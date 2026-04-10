@@ -247,7 +247,24 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
 
   // 2. Localização da Pasta na Biblioteca (Normalizada para evitar ?? e acentos)
   const normCategory = normalizeKey(category);
-  const folderKey = Object.keys(library).find(key => normalizeKey(key) === normCategory) || category;
+  const keys = Object.keys(library);
+  
+  // Tenta Match Exato (Normalizado)
+  let folderKey = keys.find(key => normalizeKey(key) === normCategory);
+  
+  // Tenta Match Tolerante (Se contém o nome da pasta ou vice-versa)
+  if (!folderKey && normCategory.length > 3) {
+    folderKey = keys.find(key => {
+      const normKey = normalizeKey(key);
+      return normKey.includes(normCategory) || normCategory.includes(normKey);
+    });
+  }
+
+  if (!folderKey) {
+    const nearMatches = keys.filter(k => normalizeKey(k).includes(normCategory.substring(0, 4))).slice(0, 3).join(', ');
+    if (nearMatches) log(`📌 Dica: Não achei '${category}', mas vi pastas como: ${nearMatches}`);
+    return null;
+  }
 
   const files = library[folderKey] || [];
   if (files.length === 0) return null;
