@@ -1678,11 +1678,14 @@
     function handleNewsFileImport(event) {
       const file = event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        document.getElementById('importNewsTextarea').value = e.target.result;
-      };
-      reader.readAsText(file);
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject('Erro na leitura do arquivo');
+        reader.readAsText(file, "windows-1252"); // Força o charset de rádio (ANSI/Windows-1252)
+      }).then(content => {
+        document.getElementById('importNewsTextarea').value = content;
+      }).catch(err => showToast(err, 'error'));
     }
 
     function processNewsImport() {
@@ -2073,8 +2076,7 @@
 
       const password = sessionStorage.getItem('newsmaker_password');
       const buffer = await file.arrayBuffer();
-      const decoder = new TextDecoder('windows-1252');
-      const content = decoder.decode(buffer);
+      const content = new TextDecoder('windows-1252').decode(buffer).trim();
 
       try {
         const res = await fetch('/api/pop/templates', {
