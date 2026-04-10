@@ -2061,7 +2061,9 @@
       if (!name) return;
 
       const password = sessionStorage.getItem('newsmaker_password');
-      const content = await file.text();
+      const buffer = await file.arrayBuffer();
+      const decoder = new TextDecoder('windows-1252');
+      const content = decoder.decode(buffer);
 
       try {
         const res = await fetch('/api/pop/templates', {

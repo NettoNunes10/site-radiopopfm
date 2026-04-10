@@ -105,12 +105,16 @@ export async function onRequest(context) {
           continue;
         }
 
-        // Processamento de Slots (.apm)
-        if (line.includes('.apm')) {
-          const category = line.split('.apm')[0].trim().toUpperCase();
-
           // --- LOGICA DE SUBSTITUIÇÃO (PAGAS) ---
-          if (pendingPaidSongs.length > 0 && rules.substitutionMode) {
+          // Identifica se a categoria é música (para permitir substituição)
+          let folderKey = category;
+          if (category.includes('VHT')) folderKey = 'VHT';
+          else if (category.includes('CHAMADA')) folderKey = 'PROMOS';
+          else if (category.includes('INTERCOM')) folderKey = 'INTERCOM';
+          else if (category.includes('AMOSTRA')) folderKey = 'SAMPLES';
+          const isMusicSlot = !['VHT', 'PROMOS', 'INTERCOM', 'SAMPLES'].includes(folderKey);
+
+          if (pendingPaidSongs.length > 0 && rules.substitutionMode && isMusicSlot) {
             const paidFile = pendingPaidSongs.shift();
             log(`♻️  SUBSTITUIÇÃO: '${category}' removido -> Entrou JABÁ: ${paidFile.path}`);
             finalLines.push(generateBilLine(paidFile.path, paidFile.duration || 180000));
