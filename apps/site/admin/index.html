@@ -1820,7 +1820,10 @@
         <div class="config-item">
           <div class="config-item-info">
             <h5>${j.id} ${!j.enabled ? '<span style="color:#ef4444">(INATIVO)</span>' : ''}</h5>
-            <p>${j.caminho_arquivo} | ${j.horas_ativas || 'Sem horário'}</p>
+            <p>${j.caminho_arquivo}</p>
+            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">
+               ${(j.programacao || []).length} Janela(s) configurada(s)
+            </div>
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-secondary btn-sm" onclick="editPopJaba(${i})"><ion-icon name="create-outline"></ion-icon></button>
@@ -1832,24 +1835,66 @@
 
     function editPopJaba(index) {
       currentPopJabaIndex = index;
-      const j = index === -1 ? { id: '', caminho_arquivo: '', duracao_ms: 180000, horas_ativas: '', enabled: true } : popJabas[index];
+      const j = index === -1 
+        ? { id: '', caminho_arquivo: '', duracao_ms: 180000, dias_semana: [0,1,2,3,4,5,6], enabled: true, programacao: [] } 
+        : JSON.parse(JSON.stringify(popJabas[index]));
       
       document.getElementById('popJabaId').value = j.id;
       document.getElementById('popJabaPath').value = j.caminho_arquivo;
-      document.getElementById('popJabaDuration').value = j.duracao_ms;
-      document.getElementById('popJabaHours').value = j.horas_ativas;
+      document.getElementById('popJabaDuration').value = j.duracao_ms || 180000;
       document.getElementById('popJabaEnabled').checked = j.enabled !== false;
-      
+
+      // Dias da semana
+      document.querySelectorAll('.pop-jaba-day-check').forEach(chk => {
+        chk.checked = (j.dias_semana || []).includes(parseInt(chk.value));
+      });
+
+      window.currentPopJabaProg = j.programacao || [];
+      renderPopJabaProg();
       openModal('popJabaEditModal');
     }
 
+    function addPopJabaProg() {
+      window.currentPopJabaProg.push({ quantidade_necessaria: 1, janelas_de_horario: [{ inicio: "00:00", fim: "23:59" }] });
+      renderPopJabaProg();
+    }
+
+    function removePopJabaProg(idx) {
+      window.currentPopJabaProg.splice(idx, 1);
+      renderPopJabaProg();
+    }
+
+    function renderPopJabaProg() {
+      const container = document.getElementById('popJabaProgContainer');
+      container.innerHTML = window.currentPopJabaProg.map((prog, idx) => `
+        <div style="background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; position: relative;">
+          <button style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer;" onclick="removePopJabaProg(${idx})"><ion-icon name="trash"></ion-icon></button>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 0.75rem;">Inserções:</label>
+            <input type="number" value="${prog.quantidade_necessaria}" onchange="window.currentPopJabaProg[${idx}].quantidade_necessaria = parseInt(this.value)" style="width: 60px; padding: 4px; font-size: 0.75rem;">
+          </div>
+          ${prog.janelas_de_horario.map((w, wIdx) => `
+            <div style="display: flex; gap: 4px; align-items: center; font-size: 0.75rem;">
+              <input type="text" value="${w.inicio}" onchange="window.currentPopJabaProg[${idx}].janelas_de_horario[${wIdx}].inicio = this.value" style="width: 50px; padding: 4px; text-align: center;">
+              <span>até</span>
+              <input type="text" value="${w.fim}" onchange="window.currentPopJabaProg[${idx}].janelas_de_horario[${wIdx}].fim = this.value" style="width: 50px; padding: 4px; text-align: center;">
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
     async function savePopJaba() {
+      const days = [];
+      document.querySelectorAll('.pop-jaba-day-check:checked').forEach(chk => days.push(parseInt(chk.value)));
+
       const j = {
         id: document.getElementById('popJabaId').value.toUpperCase().replace(/\s/g, '_'),
         caminho_arquivo: document.getElementById('popJabaPath').value,
         duracao_ms: parseInt(document.getElementById('popJabaDuration').value) || 180000,
-        horas_ativas: document.getElementById('popJabaHours').value,
-        enabled: document.getElementById('popJabaEnabled').checked
+        dias_semana: days,
+        enabled: document.getElementById('popJabaEnabled').checked,
+        programacao: window.currentPopJabaProg
       };
 
       if (!j.id || !j.caminho_arquivo) return showToast('Preencha ID e Caminho!', 'error');
@@ -2387,38 +2432,65 @@
         <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')"><ion-icon name="close"></ion-icon></button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>Identificador (Ex: LOJA_CEM_PROMO)</label>
-          <input type="text" id="popJabaId">
-        </div>
-        <div class="form-group">
-          <label>Caminho do Arquivo (Local)</label>
-          <input type="text" id="popJabaPath" placeholder="M:\Massa FM\JABAS\ARQUIVO.wav">
-        </div>
-        <div class="form-group">
-          <label>Duração Total (ms)</label>
-          <div style="display: flex; gap: 8px;">
-             <input type="number" id="popJabaDuration" style="flex: 1;">
-             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('popJabaAudioFile').click()">
-               <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
-             </button>
-             <input type="file" id="popJabaAudioFile" style="display: none;" accept="audio/*" onchange="extractPopJabaAudioData(event)">
+        <div class="news-inputs" style="margin-bottom: 24px;">
+          <div class="form-group">
+            <label>Identificador (Ex: JRVILLA_POP)</label>
+            <input type="text" id="popJabaId">
           </div>
+          <div class="form-group">
+            <label>Duração Total (ms)</label>
+            <div style="display: flex; gap: 8px;">
+               <input type="number" id="popJabaDuration" style="flex: 1;">
+               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('popJabaAudioFile').click()">
+                 <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
+               </button>
+               <input type="file" id="popJabaAudioFile" style="display: none;" accept="audio/*" onchange="extractPopJabaAudioData(event)">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dias da Semana</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="0"> Dom
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="1"> Seg
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="2"> Ter
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="3"> Qua
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="4"> Qui
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="5"> Sex
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
+              <input type="checkbox" class="pop-jaba-day-check" value="6"> Sáb
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Caminho Completo do Arquivo (Ex: M:\Jabás\...)</label>
+          <input type="text" id="popJabaPath">
         </div>
         <div class="news-inputs" style="margin-top: 16px;">
           <div class="form-group">
-            <label>Horas Ativas (Seg-Sex)</label>
-            <input type="text" id="popJabaHours" placeholder="08, 10, 15">
-          </div>
-          <div class="form-group" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 0;">
-            <label style="margin: 0;">Ativo</label>
+            <label>Ativo</label>
             <input type="checkbox" id="popJabaEnabled" checked style="width: 20px; height: 20px;">
           </div>
         </div>
+        <h4 style="font-size: 0.875rem; color: #64748b; text-transform: uppercase; margin-bottom: 12px; margin-top: 24px;">Programação por Janelas</h4>
+        <div id="popJabaProgContainer"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addPopJabaProg()" style="margin-top: 8px;">+ Adicionar Regra de Programação</button>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="savePopJaba()">Salvar Jabá</button>
+        <button class="btn btn-primary" onclick="savePopJaba()">Salvar Jabá POP</button>
       </div>
     </div>
   </div>
@@ -2497,6 +2569,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase;">Arquivos</h4>
                 <button class="btn btn-secondary btn-sm" onclick="document.getElementById('blmUpload').click()">+ Subir</button>
+                <input type="file" id="blmUpload" style="display: none;" accept=".blm" onchange="handleBlmUpload(event)">
               </div>
               <div id="popTemplateList" class="config-list"></div>
             </div>

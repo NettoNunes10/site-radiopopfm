@@ -78,7 +78,7 @@ export async function onRequestGet(context) {
         ...newsStatus
       } : { online: false, message: 'Status unknown' },
       playlist: playlistStatus ? {
-        online: (now - (playlistStatus.lastSeen || 0) < threshold),
+        online: (now - (playlistStatus.lastSeen || 0)) < threshold,
         ...playlistStatus
       } : { online: false, message: 'Status unknown' },
       // Backward compatibility for old NewsMaker if needed during transition

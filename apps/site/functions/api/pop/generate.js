@@ -95,11 +95,24 @@ export async function onRequest(context) {
           currentHour = timeMatch[1];
           finalLines.push(line);
 
-          // Verifica se há um Jabá para esta hora específica (agendamento simplificado POP)
+          // Verifica se há um Jabá para esta hora específica (Agendamento por Grade POP)
           pendingJabaForHour = activeJabas.find(j => {
-             if (!j.horas_ativas) return false;
-             const hList = j.horas_ativas.split(',').map(h => h.trim().padStart(2, '0'));
-             return hList.includes(currentHour);
+             if (j.enabled === false) return false;
+             
+             // Verifica se o dia da semana bate
+             if (j.dias_semana && !j.dias_semana.includes(dow)) return false;
+
+             // Percorre as regras de programação (janelas)
+             const prog = j.programacao || [];
+             return prog.some(p => {
+               const windows = p.janelas_de_horario || [];
+               return windows.some(w => {
+                 // Verifica se currentHour (ex: "08") está no intervalo (ex: "08:00" e "10:00")
+                 const startH = w.inicio.split(':')[0];
+                 const endH = w.fim.split(':')[0];
+                 return currentHour >= startH && currentHour <= endH;
+               });
+             });
           });
           continue;
         }
