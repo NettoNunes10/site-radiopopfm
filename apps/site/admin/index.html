@@ -365,6 +365,9 @@
               <button class="btn btn-secondary btn-sm" onclick="openModal('popRulesModal');">
                 <ion-icon name="options"></ion-icon> Regras de Plástica
               </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('popMappingModal'); loadPopMapping();" style="border-color: #10b981; color: #10b981;">
+                <ion-icon name="map-outline"></ion-icon> Mapear Materiais
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="openModal('popPathsModal');">
                 <ion-icon name="folder-open"></ion-icon> Caminhos (M: / U:)
               </button>
@@ -2130,6 +2133,92 @@
       } catch (e) { showToast('Erro ao salvar escala.', 'error'); }
     }
 
+    // --- POP MATERIAL MAPPING LOGIC ---
+    let popMapping = {};
+
+    async function loadPopMapping() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        const res = await fetch('/api/pop/material-mapping', { headers: { 'Authorization': `Bearer ${password}` } });
+        const data = await res.json();
+        popMapping = data || {};
+        renderPopMappingList();
+      } catch (e) {
+        console.error('Failed to load mapping', e);
+      }
+    }
+
+    function renderPopMappingList() {
+      const cont = document.getElementById('popMappingList');
+      const keys = Object.keys(popMapping);
+      
+      if (keys.length === 0) {
+        cont.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 12px; font-size: 0.8125rem;">Nenhum mapeamento manual definido.</p>';
+        return;
+      }
+
+      cont.innerHTML = keys.map(original => `
+        <div style="display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <input type="text" class="mapping-key" value="${original}" placeholder="Nome no Modelo" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <ion-icon name="arrow-forward-outline" style="color: #64748b;"></ion-icon>
+          <input type="text" class="mapping-val" value="${popMapping[original]}" placeholder="Pasta Real" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <button onclick="removePopMappingRow(this)" style="background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;"><ion-icon name="trash-outline"></ion-icon></button>
+        </div>
+      `).join('');
+    }
+
+    function addPopMappingRow() {
+      const cont = document.getElementById('popMappingList');
+      if (cont.querySelector('p')) cont.innerHTML = '';
+      
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.gap = '8px';
+      div.style.alignItems = 'center';
+      div.style.background = '#f8fafc';
+      div.style.padding = '8px';
+      div.style.borderRadius = '8px';
+      div.style.border = '1px solid #e2e8f0';
+      div.style.marginBottom = '8px';
+      
+      div.innerHTML = `
+        <input type="text" class="mapping-key" placeholder="Nome no Modelo" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+        <ion-icon name="arrow-forward-outline" style="color: #64748b;"></ion-icon>
+        <input type="text" class="mapping-val" placeholder="Pasta Real" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+        <button onclick="removePopMappingRow(this)" style="background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;"><ion-icon name="trash-outline"></ion-icon></button>
+      `;
+      cont.appendChild(div);
+    }
+
+    function removePopMappingRow(btn) {
+      btn.parentElement.remove();
+    }
+
+    async function savePopMapping() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const keys = document.querySelectorAll('.mapping-key');
+      const vals = document.querySelectorAll('.mapping-val');
+      const newMapping = {};
+
+      keys.forEach((k, i) => {
+        const keyVal = k.value.trim();
+        const valVal = vals[i].value.trim();
+        if (keyVal && valVal) newMapping[keyVal] = valVal;
+      });
+
+      try {
+        const res = await fetch('/api/pop/material-mapping', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMapping)
+        });
+        if (res.ok) {
+          showToast('Mapeamento salvo!', 'success');
+          closeModal('popMappingModal');
+        }
+      } catch (e) { showToast('Erro ao salvar.', 'error'); }
+    }
+
     // --- AUTO INITIALIZATION ---
     window.addEventListener('DOMContentLoaded', () => {
       const savedPass = sessionStorage.getItem('newsmaker_password');
@@ -2491,6 +2580,28 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')">Cancelar</button>
         <button class="btn btn-primary" onclick="savePopJaba()">Salvar Jabá POP</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popMappingModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Mapeamento de Materiais (Overide)</h3>
+        <button class="btn btn-secondary" onclick="closeModal('popMappingModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.8125rem; color: #64748b; margin-bottom: 16px;">
+          Se o motor não encontrar uma pasta automaticamente, ou se o nome no modelo for diferente da pasta real, configure aqui.
+        </p>
+        <div id="popMappingList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px;">
+           <!-- Linhas de mapeamento injetadas aqui -->
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="addPopMappingRow()">+ Adicionar Regra</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('popMappingModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="savePopMapping()">Salvar Mapeamento</button>
       </div>
     </div>
   </div>

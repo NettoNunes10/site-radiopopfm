@@ -25,12 +25,13 @@ export async function onRequest(context) {
     const { date, days = 1 } = await request.json(); // YYYY-MM-DD
     if (!date) return new Response(JSON.stringify({ error: "Missing date" }), { status: 400 });
 
-    const [libRaw, rulesRaw, jabasRaw, templateLib, templateMapping] = await Promise.all([
+    const [libRaw, rulesRaw, jabasRaw, templateLib, templateMapping, materialRules] = await Promise.all([
       kv.get("pop_library_index", "json"),
       kv.get("pop_rules", "json"),
       kv.get("pop_jabas", "json"),
       kv.get("pop_templates_library", "json"),
-      kv.get("pop_templates_mapping", "json")
+      kv.get("pop_templates_mapping", "json"),
+      kv.get("pop_material_rules", "json")
     ]);
 
     if (!libRaw) return new Response(JSON.stringify({ error: "Biblioteca Pop não indexada." }), { status: 400 });
@@ -120,7 +121,7 @@ export async function onRequest(context) {
           }
 
           // Tenta selecionar áudio da biblioteca
-          const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, isMusicSlot, log);
+          const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, isMusicSlot, materialRules || {}, log);
           
           if (selection) {
             // Log apenas para o que o Python logava (ou erros)
@@ -239,19 +240,32 @@ function schedulePaidMusicPop(blocks, jabas, dow, log) {
 /**
  * Seleção de Áudio com Inteligência Artificial e Histórico
  */
-function selectAudioPop(category, library, favorites, histArtists, histSongs, maxA, maxS, isMusicSlot, log) {
+function selectAudioPop(category, library, favorites, histArtists, histSongs, maxA, maxS, isMusicSlot, mappingRules, log) {
   // 1. Surpresa Sertanejo C (0.5% chance)
   if (category === 'SERTANEJO B' && Math.random() < 0.005) {
     category = 'SERTANEJO C';
     log(`🎲 SURPRESA! Slot SERTANEJO B trocado por SERTANEJO C`);
   }
 
-  // 2. Localização da Pasta na Biblioteca (Normalizada para evitar ?? e acentos)
+  // 2. Localização da Pasta na Biblioteca
+  let folderKey = null;
+
+  // A) Tenta Mapeamento Manual (Override)
+  if (mappingRules && mappingRules[category]) {
+    folderKey = mappingRules[category];
+    if (!library[folderKey]) {
+        log(`⚠️  ALERTA: Mapeamento manual para '${category}' aponta para '${folderKey}', mas esta pasta não existe na biblioteca.`);
+        folderKey = null;
+    }
+  }
+
   const normCategory = normalizeKey(category);
   const keys = Object.keys(library);
   
-  // Tenta Match Exato (Normalizado)
-  let folderKey = keys.find(key => normalizeKey(key) === normCategory);
+  // B) Tenta Match Exato (Normalizado) se não houver override
+  if (!folderKey) {
+    folderKey = keys.find(key => normalizeKey(key) === normCategory);
+  }
   
   // Tenta Match Tolerante (Se contém o nome da pasta ou vice-versa)
   if (!folderKey && normCategory.length > 3) {
