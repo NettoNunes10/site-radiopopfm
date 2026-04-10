@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PopSync")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+898d62032fe89571c390c478ccf10bc88160770f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eb5f2c91d782d399b38a8138df5d4eff732bb199")]
 [assembly: System.Reflection.AssemblyProductAttribute("PopSync")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PopSync")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -7,19 +7,6 @@
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
-      },
-      "TagLibSharp/2.3.0": {
-        "type": "package",
-        "compile": {
-          "lib/netstandard2.0/TagLibSharp.dll": {
-            "related": ".pdb"
-          }
-        },
-        "runtime": {
-          "lib/netstandard2.0/TagLibSharp.dll": {
-            "related": ".pdb"
-          }
-        }
       }
     },
     "net8.0-windows7.0/win-x64": {
@@ -27,19 +14,6 @@
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
-        }
-      },
-      "TagLibSharp/2.3.0": {
-        "type": "package",
-        "compile": {
-          "lib/netstandard2.0/TagLibSharp.dll": {
-            "related": ".pdb"
-          }
-        },
-        "runtime": {
-          "lib/netstandard2.0/TagLibSharp.dll": {
-            "related": ".pdb"
-          }
         }
       }
     }
@@ -95,29 +69,11 @@
         "tools/net8.0/illink.runtimeconfig.json",
         "useSharedDesignerContext.txt"
       ]
-    },
-    "TagLibSharp/2.3.0": {
-      "sha512": "Qo4z6ZjnIfbR3Us1Za5M2vQ97OWZPmODvVmepxZ8XW0UIVLGdO2T63/N3b23kCcyiwuIe0TQvMEQG8wUCCD1mA==",
-      "type": "package",
-      "path": "taglibsharp/2.3.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "lib/net462/TagLibSharp.dll",
-        "lib/net462/TagLibSharp.pdb",
-        "lib/net462/TaglibSharp.xml",
-        "lib/netstandard2.0/TagLibSharp.dll",
-        "lib/netstandard2.0/TagLibSharp.pdb",
-        "lib/netstandard2.0/TaglibSharp.xml",
-        "taglibsharp.2.3.0.nupkg.sha512",
-        "taglibsharp.nuspec"
-      ]
     }
   },
   "projectFileDependencyGroups": {
     "net8.0-windows7.0": [
-      "Microsoft.NET.ILLink.Tasks >= 8.0.25",
-      "TagLibSharp >= 2.3.0"
+      "Microsoft.NET.ILLink.Tasks >= 8.0.25"
     ]
   },
   "packageFolders": {
@@ -167,10 +123,6 @@
             "target": "Package",
             "version": "[8.0.25, )",
             "autoReferenced": true
-          },
-          "TagLibSharp": {
-            "target": "Package",
-            "version": "[2.3.0, )"
           }
         },
         "imports": [
@@ -184,6 +136,24 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+            "version": "[8.0.25, 8.0.25]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Crossgen2.win-x64",
+            "version": "[8.0.25, 8.0.25]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Runtime.win-x64",
+            "version": "[8.0.25, 8.0.25]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+            "version": "[8.0.25, 8.0.25]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"

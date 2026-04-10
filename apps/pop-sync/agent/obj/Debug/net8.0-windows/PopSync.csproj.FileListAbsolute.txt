@@ -9,10 +9,10 @@ C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Debug\
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Debug\net8.0-windows\PopSync.runtimeconfig.json
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Debug\net8.0-windows\PopSync.dll
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Debug\net8.0-windows\PopSync.pdb
-C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Debug\net8.0-windows\TagLibSharp.dll
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\obj\Debug\net8.0-windows\PopSync.csproj.Up2Date
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\obj\Debug\net8.0-windows\PopSync.dll
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\obj\Debug\net8.0-windows\refint\PopSync.dll
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\obj\Debug\net8.0-windows\PopSync.pdb
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\obj\Debug\net8.0-windows\PopSync.genruntimeconfig.cache
 C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\obj\Debug\net8.0-windows\ref\PopSync.dll
+C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Debug\net8.0-windows\Newtonsoft.Json.dll
