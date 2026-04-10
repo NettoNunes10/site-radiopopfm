@@ -1701,8 +1701,7 @@
         if (data.date) {
             document.getElementById('dateInput').value = data.date;
         }
-
-        sections.forEach(sec => {
+             sections.forEach(sec => {
           if (data.sections[sec]) {
             data.sections[sec].forEach((val, i) => {
               const el = document.getElementById(`${sec}-${i + 1}`);
@@ -1720,57 +1719,6 @@
     }
 
     // --- POP FM SPECIFIC LOGIC ---
-    let popConfig = { paths: {}, rules: { favoriteArtists: [] } };
-
-    async function loadPopConfig() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      if (!password) return;
-
-      try {
-        const [paths, rules, libraryStatus] = await Promise.all([
-          fetch(`/api/config?key=pop_paths`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
-          fetch(`/api/config?key=pop_rules`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
-          fetch(`/api/pop/status`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({})))
-        ]);
-
-        popConfig.paths = paths || {};
-        popConfig.rules = rules || { favoriteArtists: [] };
-
-        document.getElementById('popPathMusic').value = popConfig.paths.music || '';
-        document.getElementById('popPathSweepers').value = popConfig.paths.sweepers || '';
-        document.getElementById('popFavArtists').value = (popConfig.rules.favoriteArtists || []).join(', ');
-
-        if (libraryStatus) {
-            const statusEl = document.getElementById('popLibraryStatus');
-            statusEl.textContent = libraryStatus.online ? 'SINCRONIZADO' : 'AGUARDANDO AGENTE';
-            statusEl.style.color = libraryStatus.online ? 'var(--massa-accent)' : '#ef4444';
-            document.getElementById('popLibraryCount').textContent = libraryStatus.count || 0;
-            
-            if (libraryStatus.lastUpdate) {
-              const d = new Date(libraryStatus.lastUpdate);
-              document.getElementById('popLastSyncTime').textContent = d.toLocaleString();
-            }
-
-            const syncBtn = document.getElementById('btnTriggerSync');
-            if (libraryStatus.forceSyncRequested) {
-              syncBtn.disabled = true;
-              syncBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Sincronia Agendada...';
-            } else {
-              syncBtn.disabled = false;
-              syncBtn.innerHTML = '<ion-icon name="sync-outline"></ion-icon> Sincronizar Agora';
-            }
-        }
-        
-        document.getElementById('popPathDownload').value = popConfig.paths.download || '';
-
-        // Also load templates
-        loadPopTemplates();
-      } catch (e) {
-        console.error('Pop config load fail', e);
-      }
-    }
-
-    // --- POP FM ADVANCED GENERATOR ---
     async function loadPopConfig() {
       const password = sessionStorage.getItem('newsmaker_password');
       if (!password) return;
@@ -1792,12 +1740,18 @@
         document.getElementById('popPathMusic').value = paths.music || '';
         document.getElementById('popPathSweepers').value = paths.sweepers || '';
 
-        // Status Summary in Main Tab
-        document.getElementById('popLibrarySummary').textContent = 
-          `Músicas: ${libStatus.count || 0} | Sincronia: ${libStatus.lastSync ? new Date(libStatus.lastSync).toLocaleString() : '---'}`;
+        // Status Summary in Main Tab (Terminal Footer)
+        const summaryEl = document.getElementById('popLibrarySummary');
+        if (summaryEl) {
+          const syncDate = libStatus && libStatus.lastUpdate ? new Date(libStatus.lastUpdate).toLocaleString() : '---';
+          summaryEl.textContent = `Músicas: ${(libStatus && libStatus.count) || 0} | Sincronia: ${syncDate}`;
+        }
         
         loadPopTemplates();
-      } catch (e) { console.error('Pop config load fail', e); }
+        loadPopJabas(); // Garante o carregamento dos Jabás também
+      } catch (e) {
+        console.error('Pop config load fail', e);
+      }
     }
 
     // --- POP JABA MANAGEMENT ---
@@ -2145,6 +2099,22 @@
         if (res.ok) showToast('Escala semanal salva!', 'success');
       } catch (e) { showToast('Erro ao salvar escala.', 'error'); }
     }
+
+    // --- AUTO INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedPass = sessionStorage.getItem('newsmaker_password');
+      if (savedPass) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display = 'flex';
+        loadState();
+        initDate();
+        startStatusPolling();
+        setupMusic();
+        
+        const lastTab = localStorage.getItem('admin_last_tab') || 'dashboard';
+        showTab(lastTab);
+      }
+    });
   </script>
 
   <div id="vignettesModal" class="modal-overlay">
