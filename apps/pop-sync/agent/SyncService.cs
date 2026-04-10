@@ -49,7 +49,7 @@ namespace PopSync
                         if (dirInfo.Name.StartsWith("$") || dirInfo.Name.ToUpper().Contains("RECYCLE.BIN") || (dirInfo.Attributes & FileAttributes.System) != 0) 
                             continue;
 
-                        var category = dirInfo.Name.ToUpper().Trim();
+                        var category = dirInfo.FullName.ToUpper().Trim();
                         var files = ScanFolder(dir);
                         if (files.Count > 0)
                         {
@@ -69,11 +69,11 @@ namespace PopSync
                         var dirInfo = new DirectoryInfo(dir);
                         if (dirInfo.Name.StartsWith("$") || dirInfo.Name.ToUpper().Contains("RECYCLE.BIN")) continue;
 
-                        var category = dirInfo.Name.ToUpper().Trim();
+                        var category = dirInfo.FullName.ToUpper().Trim();
                         var files = ScanFolder(dir);
                         if (files.Count > 0)
                         {
-                            // Se já existir no drive M, mescla.
+                            // Se já existir no drive M (por exemplo, mesma pasta mapeada em ambos), mescla.
                             if (library.ContainsKey(category)) 
                                 library[category].AddRange(files);
                             else 
@@ -166,7 +166,7 @@ namespace PopSync
                             if (!string.IsNullOrEmpty(filename) && content != null)
                             {
                                 var localPath = Path.Combine(_config.DownloadPath, filename);
-                                await File.WriteAllTextAsync(localPath, content);
+                                await System.IO.File.WriteAllTextAsync(localPath, content);
                                 Log($"✅ Roteiro salvo em: {localPath}");
 
                                 // Confirma e deleta do servidor

@@ -110,14 +110,19 @@ export async function onRequest(context) {
         if (line.toLowerCase().includes('.apm')) {
           const isMusicSlot = line.includes('/m:3000');
           
-          // Extrai o nome do arquivo .apm (ex: SERTANEJO B.apm) - Agora aceita espaços
-          const apmMatch = line.match(/^(.+?\.apm)/i);
-          if (!apmMatch) {
+          // Extrai o nome do arquivo .apm (ex: SERTANEJO B.apm) - Robusto com espaços e caminhos
+          let fullApmName = "";
+          const apmIdx = line.toLowerCase().indexOf('.apm');
+          if (apmIdx !== -1) {
+            // Pega tudo do início da linha até o .apm
+            fullApmName = line.substring(0, apmIdx + 4).trim();
+          }
+
+          if (!fullApmName) {
             finalLines.push(line);
             continue;
           }
           
-          const fullApmName = apmMatch[1]; // SERTANEJO B.apm
           const category = fullApmName.split('.apm')[0].trim(); // SERTANEJO B
 
           // --- LÓGICA DE SUBSTITUIÇÃO (PAGAS) ---
@@ -268,37 +273,35 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
   // 2. Localização da Pasta na Biblioteca
   let folderKey = null;
 
-  // A) Tenta Mapeamento Manual (Override)
-  // Normaliza a busca para ignorar extensões nas chaves do mapeamento também
-  let mappingKey = Object.keys(mappingRules).find(k => k.split('.apm')[0].trim() === category);
+  // A) Tenta Mapeamento Manual (Override por Caminho Completo)
+  let mappingKey = Object.keys(mappingRules).find(k => k.split('.apm')[0].trim().toUpperCase() === category.toUpperCase());
   if (mappingKey) {
-    folderKey = mappingRules[mappingKey];
+    const targetPath = mappingRules[mappingKey].toUpperCase().replace(/\//g, '\\').trim();
     
-    // Se for um caminho completo, extrai a pasta final
-    if (folderKey.includes('\\')) folderKey = folderKey.split('\\').pop();
-    else if (folderKey.includes('/')) folderKey = folderKey.split('/').pop();
+    // Busca na biblioteca o item cujo caminho bate (Case Insensitive)
+    folderKey = keys.find(k => k.toUpperCase().trim() === targetPath);
 
-    if (!library[folderKey]) {
-        log(`⚠️  ALERTA: Mapeamento para '${category}' aponta para '${folderKey}', mas não achei essa pasta na biblioteca.`);
-        folderKey = null;
-    } else {
-        log(`✅ [MAPEADO] Usando regra manual para '${category}' -> pasta '${folderKey}'`);
+    if (!folderKey) {
+        log(`⚠️  ALERTA: Mapeamento para '${category}' aponta para '${targetPath}', mas não achei essa pasta na biblioteca (indexada por caminhos).`);
+        // Tenta fallback por nome da pasta apenas
+        const shortName = targetPath.split('\\').pop();
+        folderKey = keys.find(k => k.endsWith('\\' + shortName) || k === shortName);
+    } 
+    
+    if (folderKey) {
+        log(`✅ [MAPEADO] Regra manual para '${category}' -> pasta '${folderKey}'`);
     }
   }
 
   const normCategory = normalizeKey(category);
-  const keys = Object.keys(library);
   
-  // B) Tenta Match Exato (Normalizado) se não houver override
+  // B) Tenta Match Automático se não houver override
   if (!folderKey) {
-    folderKey = keys.find(key => normalizeKey(key) === normCategory);
-  }
-  
-  // Tenta Match Tolerante (Se contém o nome da pasta ou vice-versa)
-  if (!folderKey && normCategory.length > 3) {
+    // Busca uma chave (caminho) que termine com o nome da categoria ou seja igual a ela
     folderKey = keys.find(key => {
-      const normKey = normalizeKey(key);
-      return normKey.includes(normCategory) || normCategory.includes(normKey);
+        const normKey = normalizeKey(key);
+        const shortKey = normalizeKey(key.split('\\').pop() || "");
+        return normKey === normCategory || shortKey === normCategory;
     });
   }
 
@@ -367,7 +370,8 @@ function normalizeKey(str) {
   if (!str) return "";
   return str.normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-    .replace(/\?\?/g, "")            // Remove lixo de codificação (??)
+    .replace(/\uFFFD/g, "")          // Remove o caractere de erro '' (UTF-8 Replacement Character)
+    .replace(/\?/g, "")             // Remove pontos de interrogação (comum em codificação quebrada)
     .replace(/[^a-zA-Z0-9]/g, "")    // Remove tudo que não for alfanumérico
     .toUpperCase()
     .trim();
