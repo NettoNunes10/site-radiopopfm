@@ -106,9 +106,9 @@ export async function onRequest(context) {
         }
         
         // Identificação de Categoria (Ex: SERTANEJO A, VHT - GERAÇÃO)
-        const categoryMatch = line.match(/^([A-Z0-9 \-À-ÿ]+)$/i);
+        const categoryMatch = line.match(/^([A-Z0-9 \-À-ÿ\?]+)$/i);
         if (categoryMatch) {
-          const category = categoryMatch[1].toUpperCase().trim();
+          const category = categoryMatch[1].trim();
 
           // --- LOGICA DE SUBSTITUIÇÃO (PAGAS) ---
           // Identifica se a categoria é música (para permitir substituição)
@@ -250,11 +250,8 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
   }
 
   // 2. Mapeamento de Pastas (Sweepers vs Music)
-  let folderKey = category;
-  if (category.includes('VHT')) folderKey = 'VHT';
-  else if (category.includes('CHAMADA')) folderKey = 'PROMOS';
-  else if (category.includes('INTERCOM')) folderKey = 'INTERCOM';
-  else if (category.includes('AMOSTRA')) folderKey = 'SAMPLES';
+  const normCategory = normalizeKey(category);
+  const folderKey = Object.keys(library).find(key => normalizeKey(key) === normCategory) || category;
 
   const files = library[folderKey] || [];
   if (files.length === 0) return null;

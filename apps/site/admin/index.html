@@ -1744,8 +1744,19 @@
         const summaryEl = document.getElementById('popLibrarySummary');
         if (summaryEl) {
           const syncDate = libStatus && libStatus.lastUpdate ? new Date(libStatus.lastUpdate).toLocaleString() : '---';
-          summaryEl.textContent = `Músicas: ${libStatus.musicCount || 0} | Materiais: ${libStatus.materialCount || 0} | Sincronia: ${syncDate}`;
+          summaryEl.innerHTML = `Músicas: ${libStatus.musicCount || 0} | Materiais: ${libStatus.materialCount || 0} | Sincronia: ${syncDate} <button onclick="debugLibrary()" style="margin-left: 10px; background: none; border: 1px solid #cbd5e1; color: #64748b; font-size: 0.6rem; cursor: pointer; border-radius: 4px; padding: 1px 4px;">Inspecionar</button>`;
         }
+
+        window.debugLibrary = async () => {
+          const res = await fetch('/api/pop');
+          const data = await res.json();
+          if (data.library) {
+            const keys = Object.keys(data.library).join('\n');
+            alert("Categorias na Nuvem:\n\n" + (keys || "Biblioteca Vazia"));
+          } else {
+            alert("Erro ao ler biblioteca.");
+          }
+        };
         
         loadPopTemplates();
         loadPopJabas(); // Garante o carregamento dos Jabás também
