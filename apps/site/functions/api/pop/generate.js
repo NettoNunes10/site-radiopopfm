@@ -110,8 +110,8 @@ export async function onRequest(context) {
         if (line.toLowerCase().includes('.apm')) {
           const isMusicSlot = line.includes('/m:3000');
           
-          // Extrai o nome do arquivo .apm (ex: SERTANEJO B.apm)
-          const apmMatch = line.match(/([^\s\\]+\.apm)/i);
+          // Extrai o nome do arquivo .apm (ex: SERTANEJO B.apm) - Agora aceita espaços
+          const apmMatch = line.match(/^(.+?\.apm)/i);
           if (!apmMatch) {
             finalLines.push(line);
             continue;
