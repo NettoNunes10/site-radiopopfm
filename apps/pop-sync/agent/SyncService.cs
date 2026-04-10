@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
+using TagLib;
 
 namespace PopSync
 {
@@ -227,12 +228,22 @@ namespace PopSync
                                 title = parts[1].Trim();
                             }
 
+                            long durationMs = 0;
+                            try
+                            {
+                                using (var tfile = TagLib.File.Create(file))
+                                {
+                                    durationMs = (long)tfile.Properties.Duration.TotalMilliseconds;
+                                }
+                            }
+                            catch { /* Ignora se falhar ao ler tags e mantém 0 */ }
+
                             results.Add(new
                             {
                                 Name = title,
                                 Artist = artist,
                                 FullPath = file,
-                                DurationMs = 180000 
+                                DurationMs = durationMs
                             });
                         }
                     }

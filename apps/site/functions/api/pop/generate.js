@@ -106,17 +106,30 @@ export async function onRequest(context) {
           continue;
         }
         
-        // --- IDENTIFICAÇÃO DE CATEGORIA (Resiliente) ---
-        // Se a linha contém .apm, ela é um slot para substituição
+        // --- IDENTIFICAÇÃO DE CATEGORIA (.apm) ---
         if (line.toLowerCase().includes('.apm')) {
-          const category = line.split('.apm')[0].trim();
           const isMusicSlot = line.includes('/m:3000');
+          
+          // Extrai o nome do arquivo .apm (ex: SERTANEJO B.apm)
+          const apmMatch = line.match(/([^\s\\]+\.apm)/i);
+          if (!apmMatch) {
+            finalLines.push(line);
+            continue;
+          }
+          
+          const fullApmName = apmMatch[1]; // SERTANEJO B.apm
+          const category = fullApmName.split('.apm')[0].trim(); // SERTANEJO B
 
           // --- LÓGICA DE SUBSTITUIÇÃO (PAGAS) ---
           if (pendingPaidSongs.length > 0 && rules.substitutionMode && isMusicSlot) {
             const paidFile = pendingPaidSongs.shift();
             log(`♻️  SUBSTITUIÇÃO: '${category}' removido -> Entrou JABÁ: ${paidFile.path}`);
-            finalLines.push(generateBilLine(paidFile.path, paidFile.duration || 180000));
+            
+            // Substitui o placeholder e injeta tempo na linha original
+            let newLine = line.replace(fullApmName, paidFile.path.replace(/\//g, '\\'));
+            const duration = paidFile.duration || 180000;
+            newLine = newLine.replace('/t:0', `/t:${duration}`).replace('/f:0', `/f:${duration}`);
+            finalLines.push(newLine);
             continue;
           }
 
@@ -124,9 +137,14 @@ export async function onRequest(context) {
           const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, isMusicSlot, materialRules || {}, log);
           
           if (selection) {
-            // Log apenas para o que o Python logava (ou erros)
-            // Removido log genérico de SUBSTITUIÇÃO normal
-            finalLines.push(generateBilLine(selection.FullPath, selection.DurationMs));
+            // Sucesso! Substitui na linha original mantendo metadados técnicos
+            let newLine = line.replace(fullApmName, selection.FullPath.replace(/\//g, '\\'));
+            const duration = selection.DurationMs || 0;
+            if (duration > 0) {
+                // Injeta tempo real se disponível
+                newLine = newLine.replace('/t:0', `/t:${duration}`).replace('/f:0', `/f:${duration}`);
+            }
+            finalLines.push(newLine);
             continue;
           } else {
             log(`⚠️  AVISO: Nenhuma opção na biblioteca para '${category}'. Mantendo slot original.`);
@@ -251,11 +269,20 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
   let folderKey = null;
 
   // A) Tenta Mapeamento Manual (Override)
-  if (mappingRules && mappingRules[category]) {
-    folderKey = mappingRules[category];
+  // Normaliza a busca para ignorar extensões nas chaves do mapeamento também
+  let mappingKey = Object.keys(mappingRules).find(k => k.split('.apm')[0].trim() === category);
+  if (mappingKey) {
+    folderKey = mappingRules[mappingKey];
+    
+    // Se for um caminho completo, extrai a pasta final
+    if (folderKey.includes('\\')) folderKey = folderKey.split('\\').pop();
+    else if (folderKey.includes('/')) folderKey = folderKey.split('/').pop();
+
     if (!library[folderKey]) {
-        log(`⚠️  ALERTA: Mapeamento manual para '${category}' aponta para '${folderKey}', mas esta pasta não existe na biblioteca.`);
+        log(`⚠️  ALERTA: Mapeamento para '${category}' aponta para '${folderKey}', mas não achei essa pasta na biblioteca.`);
         folderKey = null;
+    } else {
+        log(`✅ [MAPEADO] Usando regra manual para '${category}' -> pasta '${folderKey}'`);
     }
   }
 
