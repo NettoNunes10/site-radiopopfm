@@ -47,11 +47,20 @@ export async function onRequest(context) {
     }
   }
 
-  // GET -> Trata como consulta de STATUS
+  // GET -> Consulta de STATUS, INSPEÇÃO ou DOWNLOAD
   if (method === "GET") {
     const url = new URL(request.url);
+    const downloadKey = url.searchParams.get("download_key");
     const isInspect = url.searchParams.get("inspect") === "1";
 
+    // Caso A: É um pedido de DOWNLOAD de arquivo .bil
+    if (downloadKey) {
+      const file = await kv.get(downloadKey);
+      if (!file) return new Response("Not found", { status: 404 });
+      return new Response(file, { headers: { "Content-Type": "application/json" } });
+    }
+
+    // Caso B: É uma consulta de STATUS ou INSPEÇÃO de lista
     const [data, forceSync, downloads, libraryIndex] = await Promise.all([
       kv.get("pop_library_status", "json"),
       kv.get("pop_force_sync_requested"),
@@ -62,6 +71,9 @@ export async function onRequest(context) {
     const statusJson = data || { online: false, count: 0 };
     statusJson.forceSyncRequested = forceSync === "true";
     statusJson.pendingDownloads = downloads.keys.map(k => k.name);
+    
+    // Alinha o nome da data com o front-end (lastUpdate)
+    if (statusJson.lastSync) statusJson.lastUpdate = statusJson.lastSync;
     
     if (isInspect) statusJson.library = libraryIndex || {};
 
@@ -79,17 +91,6 @@ export async function onRequest(context) {
     }
     await kv.delete(key);
     return new Response(JSON.stringify({ success: true }));
-  }
-
-  // GET por chave específica (Download do conteúdo)
-  if (method === "GET") {
-    const url = new URL(request.url);
-    const key = url.searchParams.get("download_key");
-    if (key) {
-      const file = await kv.get(key);
-      if (!file) return new Response("Not found", { status: 404 });
-      return new Response(file, { headers: { "Content-Type": "application/json" } });
-    }
   }
 
   return new Response("Method not allowed", { status: 405 });
