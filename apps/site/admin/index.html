@@ -1077,9 +1077,13 @@
           <div class="config-item-info">
             <h5>${p.id} ${p.enabled ? '' : '<span style="color: #ef4444; font-size: 0.75rem;">(Inativa)</span>'}</h5>
             <p>${p.caminho_arquivo}</p>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-              Até ${p.data_limite} | Sem: ${(p.horas_dia_semana || p.horas_ativas || []).length}x | Sáb: ${(p.horas_sabado || p.horas_ativas || []).length}x | Dom: ${(p.horas_domingo || p.horas_ativas || []).length}x
-            </div>
+             <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+               <span>Até ${p.data_limite}</span>
+               <span>| Sem: ${(p.horas_dia_semana || p.horas_ativas || []).length}x</span>
+               <span>| Sáb: ${(p.horas_sabado || p.horas_ativas || []).length}x</span>
+               <span>| Dom: ${(p.horas_domingo || p.horas_ativas || []).length}x</span>
+               ${p.overlay ? '<span style="color: #0369a1; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; font-weight: bold;">OVERLAY</span>' : ''}
+             </div>
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-secondary btn-sm" onclick="editPromo(${idx})">Editar</button>
@@ -1104,6 +1108,7 @@
       document.getElementById('promoPath').value = tempPromo.caminho_arquivo;
       document.getElementById('promoDuration').value = tempPromo.duracao_ms || 0;
       document.getElementById('promoEndDate').value = tempPromo.data_limite;
+      document.getElementById('promoOverlay').checked = !!tempPromo.overlay;
       document.getElementById('promoHoursDiaSemana').value = (tempPromo.horas_dia_semana || tempPromo.horas_ativas || []).join(', ');
       document.getElementById('promoHoursSabado').value = (tempPromo.horas_sabado || tempPromo.horas_ativas || []).join(', ');
       document.getElementById('promoHoursDomingo').value = (tempPromo.horas_domingo || tempPromo.horas_ativas || []).join(', ');
@@ -1113,6 +1118,7 @@
 
     function savePromo() {
       tempPromo.enabled = document.getElementById('promoEnabled').checked;
+      tempPromo.overlay = document.getElementById('promoOverlay').checked;
       tempPromo.id = document.getElementById('promoId').value;
       tempPromo.caminho_arquivo = document.getElementById('promoPath').value;
       tempPromo.duracao_ms = parseInt(document.getElementById('promoDuration').value || 0);
@@ -2101,9 +2107,15 @@
         <button class="btn btn-secondary" onclick="closeModal('promoModal')"><ion-icon name="close"></ion-icon></button>
       </div>
       <div class="modal-body">
-        <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: #fdf2f8; padding: 12px; border-radius: 8px; border: 1px solid #fbcfe8; margin-bottom: 16px;">
-          <label style="margin: 0; color: #be185d;">Campanha Ativa</label>
-          <input type="checkbox" id="promoEnabled" style="width: 20px; height: 20px;">
+        <div class="news-inputs" style="margin-bottom: 16px; gap: 8px;">
+          <div class="form-group" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #fdf2f8; padding: 12px; border-radius: 8px; border: 1px solid #fbcfe8; margin: 0;">
+            <label style="margin: 0; color: #be185d;">Campanha Ativa</label>
+            <input type="checkbox" id="promoEnabled" style="width: 20px; height: 20px;">
+          </div>
+          <div class="form-group" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #f0f9ff; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin: 0;">
+            <label style="margin: 0; color: #0369a1;">Overlay (Sobrescrever Rede)</label>
+            <input type="checkbox" id="promoOverlay" style="width: 20px; height: 20px;">
+          </div>
         </div>
         <div class="news-inputs" style="margin-bottom: 24px;">
           <div class="form-group">

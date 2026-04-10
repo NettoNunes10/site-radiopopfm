@@ -259,6 +259,22 @@ function applyPromos(blocks, promosConfig, date, city, log) {
   let activePromos = promosConfig.filter(p => p.enabled && (!p.data_limite || p.data_limite >= targetDateStr));
   if (activePromos.length === 0) return;
 
+  // --- ETAPA DE OVERLAY (Limpeza) ---
+  // Se a promoção estiver marcada com "overlay", limpamos qualquer rastro dela no arquivo 
+  // ANTES de rodar a lógica de injeção. Isso garante que os horários do site prevaleçam.
+  activePromos.forEach(p => {
+    if (p.overlay) {
+      let removedCount = 0;
+      blocks.forEach(b => {
+        const initialCount = b.items.length;
+        // Filtra para remover linhas que contenham o caminho do arquivo (case insensitive)
+        b.items = b.items.filter(line => !line.toUpperCase().includes(p.caminho_arquivo.toUpperCase()));
+        if (b.items.length < initialCount) removedCount += (initialCount - b.items.length);
+      });
+      if (removedCount > 0) log(`${city}: Overlay ativado para '${p.id}'. Removidas ${removedCount} instâncias prévias do roteiro original.`);
+    }
+  });
+
   // Filtragem Anti-Duplicação: Se a própria rede já mandou o roteiro original contendo a vinheta, ignore a injeção local
   activePromos = activePromos.filter(p => {
       const alreadyInFile = blocks.some(b => b.items.some(line => line.toUpperCase().includes(p.caminho_arquivo.toUpperCase())));
