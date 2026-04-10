@@ -1,0 +1,11 @@
+{
+  "server_url": "https://site-radiopopfm.pages.dev",
+  "auth_password": "nn123",
+  "city": "itapeva",
+  "output_path": "U:\\Materiais\\Noticias\\Noticias da Massa",
+  "musical_path": "U:\\Materiais\\Roteiros",
+  "check_interval": 1200,
+  "autostart": true,
+  "last_version": "1775268855127_1rbt2s",
+  "slack_webhook_url": "https://hooks.slack.com/services/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"
+}

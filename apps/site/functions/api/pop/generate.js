@@ -1,9 +1,13 @@
+/**
+ * Cloudflare Pages Function - Gerador Pop FM (Versão Alta Performance)
+ * Implementa paridade com a lógica legada Python.
+ */
+
 export async function onRequest(context) {
   const { request, env } = context;
   const kv = env.NEWSMAKER_KV;
   const { method } = request;
 
-  // 1. Auth (Bearer Token)
   const authHeader = request.headers.get("Authorization");
   const password = env.NEWSMAKER_PASSWORD;
   if (!authHeader || authHeader !== `Bearer ${password}`) {
@@ -16,145 +20,202 @@ export async function onRequest(context) {
   if (method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   try {
-    const { date } = await request.json(); // YYYY-MM-DD
+    const { date, days = 1 } = await request.json(); // YYYY-MM-DD
     if (!date) return new Response(JSON.stringify({ error: "Missing date" }), { status: 400 });
 
-    const targetDate = new Date(date + "T12:00:00");
-    const dow = targetDate.getDay(); // 0=Sun, 1=Mon... 6=Sat
-
-    // 2. Load Data from KV
-    const [libRaw, rulesRaw, templateRaw] = await Promise.all([
+    // 1. Carregar Configurações GLOBAIS da POP (Isoladas da Massa)
+    const [libRaw, rulesRaw, jabasRaw, templateLib, templateMapping] = await Promise.all([
       kv.get("pop_library_index", "json"),
       kv.get("pop_rules", "json"),
-      getTemplate(kv, dow)
+      kv.get("pop_jabas", "json"), // Chave exclusiva POP
+      kv.get("pop_templates_library", "json"),
+      kv.get("pop_templates_mapping", "json")
     ]);
 
-    if (!libRaw) return new Response(JSON.stringify({ error: "Library not indexed. Run the C# agent first." }), { status: 400 });
-    if (!templateRaw) return new Response(JSON.stringify({ error: "Template not found for this day." }), { status: 500 });
+    if (!libRaw) return new Response(JSON.stringify({ error: "Biblioteca Pop não indexada." }), { status: 400 });
+    if (!templateLib || !templateMapping) return new Response(JSON.stringify({ error: "Modelos (.blm) não configurados." }), { status: 400 });
 
-    const library = libRaw; // Dictionary<Category, MusicFile[]>
-    const rules = rulesRaw || { favoriteArtists: [] };
-    const favoriteArtists = new Set((rules.favoriteArtists || []).map(a => a.toUpperCase()));
-
-    // 3. Generation Logic
-    const historyArtists = [];
-    const historySongs = [];
-    const maxHistArtists = 10;
-    const maxHistSongs = 50;
-
-    const lines = templateRaw.split('\n');
-    const finalLines = ["# Arquivo de roteiro da beAudio\t1\t550470001"];
+    const library = libRaw;
+    const rules = rulesRaw || { 
+      favoriteArtists: [], 
+      artistSeparation: 10, 
+      songSeparation: 50, 
+      substitutionMode: true 
+    };
     
-    for (let line of lines) {
-      line = line.trim();
-      if (!line || line.startsWith('#')) continue;
+    const favoriteArtists = new Set((rules.favoriteArtists || []).map(a => a.toUpperCase()));
+    const results = [];
+    const globalLogs = [];
 
-      // Keep block headers (HH:MM or HH:MM:SS)
-      if (/^\d{2}:\d{2}/.test(line)) {
-        finalLines.push(line);
+    // 2. Loop de Geração Multi-Dias
+    let currentDate = new Date(date + "T12:00:00");
+
+    for (let i = 0; i < days; i++) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const dow = currentDate.getDay(); // 0=Sun, 1=Mon...
+      const dateLabel = dateStr.replace(/-/g, '');
+      
+      const dayLogs = [];
+      const log = (msg) => dayLogs.push(`[${dateStr}] ${msg}`);
+      
+      log(`Iniciando geração para o dia ${dateStr}`);
+
+      // Selecionar Modelo conforme o dia da semana
+      const templateName = templateMapping[dow];
+      const templateRaw = templateLib[templateName];
+
+      if (!templateRaw) {
+        log(`ERRO: Nenhum modelo configurado para o dia da semana ${dow}. Pulando.`);
+        currentDate.setDate(currentDate.getDate() + 1);
         continue;
       }
 
-      // Keep fixed materials
-      if (line.includes('Reserva') || line.includes('Início') || line.includes('Término') || line.includes('PREFIXO')) {
-        finalLines.push(line);
-        continue;
-      }
+      // 3. Lógica Interna de Geração (Histórico por Dia)
+      const historyArtists = [];
+      const historySongs = [];
+      const maxHistArtists = rules.artistSeparation || 10;
+      const maxHistSongs = rules.songSeparation || 50;
 
-      // Process Placeholders (.apm)
-      if (line.endsWith('.apm')) {
-        const category = line.split('.apm')[0];
-        const selection = selectMusic(category, library, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs);
-        
-        if (selection) {
-          finalLines.push(generateBilLine(selection.FullPath, selection.DurationMs));
-        } else {
-          // Fallback if no music found for category
-          finalLines.push(`# MISSING: ${category}`);
+      // Fila de Jabás (Músicas Pagas) do dia
+      const activeJabas = (jabasRaw || []).filter(j => !j.dias_semana || j.dias_semana.includes(dow));
+
+      const lines = templateRaw.split(/\r?\n/);
+      const finalLines = ["# Arquivo de roteiro da beAudio\t1\t550470001"];
+      
+      let currentHour = "00";
+      let pendingJabaForHour = null;
+
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) continue;
+
+        // Header de Bloco (HH:MM)
+        const timeMatch = line.match(/^(\d{2}):\d{2}/);
+        if (timeMatch) {
+          currentHour = timeMatch[1];
+          finalLines.push(line);
+
+          // Verifica se há um Jabá para esta hora específica (agendamento simples)
+          pendingJabaForHour = activeJabas.find(j => {
+             const prog = j.programacao || [];
+             return prog.some(p => (p.janelas_de_horario || []).some(w => w.inicio.startsWith(currentHour)));
+          });
+          continue;
         }
-        continue;
+
+        // Itens Fixos
+        if (line.includes('Reserva') || line.includes('Início') || line.includes('Término') || line.includes('PREFIXO')) {
+          finalLines.push(line);
+          continue;
+        }
+
+        // PROCESSAMENTO DE SLOTS (.apm)
+        if (line.endsWith('.apm')) {
+          const category = line.split('.apm')[0].toUpperCase();
+          
+          // --- REGRA DE SUBSTITUIÇÃO (PYTHON STYLE) ---
+          if (pendingJabaForHour && rules.substitutionMode) {
+             log(`♻️ SUBSTITUIÇÃO: Slot '${category}' removido -> Entrou JABÁ: ${pendingJabaForHour.id}`);
+             finalLines.push(generateBilLine(pendingJabaForHour.caminho_arquivo, pendingJabaForHour.duracao_ms || 180000));
+             pendingJabaForHour = null; // Usado
+             continue;
+          }
+          
+          const selection = selectMusicPop(category, library, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, log);
+          
+          if (selection) {
+            finalLines.push(generateBilLine(selection.FullPath, selection.DurationMs));
+          } else {
+            finalLines.push(`# MISSING: ${category}`);
+          }
+          continue;
+        }
+
+        finalLines.push(line);
       }
 
-      // Default: keep line as is
-      finalLines.push(line);
+      const generatedContent = finalLines.join('\r\n');
+      const filename = `${dateLabel}_POP.bil`;
+
+      // Salvar cada dia individualmente no KV para o Agente baixar
+      const dlId = `pop_dl_${dateLabel}_${Date.now()}`;
+      await kv.put(dlId, JSON.stringify({
+        id: dlId,
+        filename: filename,
+        content: generatedContent,
+        timestamp: new Date().toISOString()
+      }), { expirationTtl: 86400 * 2 }); // 2 dias de validade
+
+      results.push({
+        date: dateStr,
+        filename: filename,
+        content: generatedContent
+      });
+
+      globalLogs.push(...dayLogs);
+      
+      // Ir para o próximo dia
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    const result = { 
+    return new Response(JSON.stringify({ 
       success: true, 
-      bil: finalLines.join('\r\n'),
-      date: date 
-    };
-
-    // Store in Queue for Agent Download
-    const bilName = `${date.replace(/-/g, '')}_POP.bil`;
-    const dlId = `pop_dl_${Date.now()}`;
-    
-    await kv.put(dlId, JSON.stringify({
-      id: dlId,
-      filename: bilName,
-      content: result.bil,
-      timestamp: new Date().toISOString()
-    }));
-
-    return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
+      results: results,
+      logs: globalLogs
+    }), { headers: { "Content-Type": "application/json" } });
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: "Generation failed", detail: e.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Falha na geração", detail: e.message }), { status: 500 });
   }
 }
 
-async function getTemplate(kv, dow) {
-  const [library, mapping] = await Promise.all([
-    kv.get("pop_templates_library", "json"),
-    kv.get("pop_templates_mapping", "json")
-  ]);
-
-  if (!library || !mapping) return null;
-
-  const templateName = mapping[dow];
-  if (!templateName || !library[templateName]) return null;
-
-  return library[templateName];
-}
-
-function selectMusic(category, library, favorites, histArtists, histSongs, maxA, maxS) {
+/**
+ * Seleção Musical Avançada com Parsing de Artistas
+ */
+function selectMusicPop(category, library, favorites, histArtists, histSongs, maxA, maxS, log) {
   const files = library[category] || [];
   if (files.length === 0) return null;
 
-  // Try to find a good candidate (weighted selection)
+  // Tentar encontrar um candidato ideal (50 tentativas)
   for (let i = 0; i < 50; i++) {
     const f = files[Math.floor(Math.random() * files.length)];
-    const artist = f.Artist.toUpperCase();
+    const artistRaw = f.Artist.toUpperCase();
     const title = f.Title.toUpperCase();
 
-    // 1. History Check
+    // 1. Quebrar Artistas (Parsing de Parcerias)
+    const currentArtists = artistRaw.split(/ PART\. | & | E /).map(a => a.trim());
+
+    // 2. Checagem de Histórico (Música e QUALQUER um dos artistas envolvidos)
     if (histSongs.includes(title)) continue;
-    if (histArtists.includes(artist)) continue;
+    if (currentArtists.some(a => histArtists.includes(a))) continue;
 
-    // 2. Weights (Favorite Artists have priority)
-    const isFav = favorites.has(artist);
-    if (!isFav && Math.random() < 0.6) continue; // 60% chance skip if not favorite
+    // 3. Pesos (Favoritos)
+    const isFav = currentArtists.some(a => favorites.has(a));
+    if (!isFav && Math.random() < 0.7) continue; // 70% de chance de pular se não for favorito
 
-    updateHistory(artist, title, histArtists, histSongs, maxA, maxS);
+    // Sucesso! Atualizar Histórico
+    updateHistory(currentArtists, title, histArtists, histSongs, maxA, maxS);
     return f;
   }
 
-  // Fallback: Pick any random one that doesn't repeat artists if possible
+  // Fallback: Pega um aleatório mas tenta não repetir música
   const fFallback = files[Math.floor(Math.random() * files.length)];
-  updateHistory(fFallback.Artist.toUpperCase(), fFallback.Title.toUpperCase(), histArtists, histSongs, maxA, maxS);
+  const fallbackArtists = fFallback.Artist.toUpperCase().split(/ PART\. | & | E /).map(a => a.trim());
+  updateHistory(fallbackArtists, fFallback.Title.toUpperCase(), histArtists, histSongs, maxA, maxS);
   return fFallback;
 }
 
-function updateHistory(artist, title, histArtists, histSongs, maxA, maxS) {
-  histArtists.push(artist);
-  if (histArtists.length > maxA) histArtists.shift();
+function updateHistory(artists, title, histArtists, histSongs, maxA, maxS) {
+  artists.forEach(a => {
+    histArtists.push(a);
+    if (histArtists.length > maxA) histArtists.shift();
+  });
+  
   histSongs.push(title);
   if (histSongs.length > maxS) histSongs.shift();
 }
 
 function generateBilLine(path, durationMs) {
-  // ensure backslashes for beAudio legacy paths if needed, though they come from C#
   const p = path.replace(/\//g, '\\');
-  // duration is in ms
   return `${p} /m:3000 /t:${durationMs} /i:0 /s:0 /f:${durationMs} /r:0 /d:0 /o:0 /n:1 /x:  /g:0`;
 }

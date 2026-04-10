@@ -336,117 +336,161 @@
         <!-- Tab: Pop Generator & Unified Dashboard -->
         <div id="tab-pop-generator" class="tab-content">
           <div class="page-header">
-            <h2>Painel Pop FM</h2>
+            <h2>Gerador Pop FM</h2>
             <div class="editor-toolbar">
-              <input type="date" id="popGenDate" class="btn btn-secondary">
+              <div style="display: flex; gap: 8px; align-items: center; background: white; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase;">Início:</label>
+                <input type="date" id="popGenDate" class="btn btn-secondary" style="border: none; padding: 4px;">
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; background: white; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase;">Dias:</label>
+                <input type="number" id="popGenDays" value="1" min="1" max="31" class="btn btn-secondary" style="border: none; padding: 4px; width: 60px;">
+              </div>
               <button class="btn btn-primary" onclick="generatePopProgramming()">
                 <ion-icon name="flash-outline"></ion-icon>
-                <span>Gerar Progr. Automática</span>
+                <span>Gerar Lote Pop</span>
               </button>
             </div>
           </div>
 
           <div class="grid-2-col" style="margin-bottom: 24px;">
-            <!-- Library Status & Global Config -->
+            <!-- Painel de Configurações de Plástica -->
             <div style="display: flex; flex-direction: column; gap: 24px;">
               <div class="card">
-                <div class="city-header" style="margin-bottom: 12px;">
-                  <h3>Agente Local</h3>
-                  <ion-icon name="hardware-chip-outline" style="color: var(--accent); font-size: 24px;"></ion-icon>
+                <div class="city-header" style="margin-bottom: 20px;">
+                  <h3>Regras de Plástica</h3>
+                  <ion-icon name="options-outline" style="color: var(--accent);"></ion-icon>
                 </div>
-                <div style="padding: 16px; background: #f1f5f9; border-radius: 12px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 8px;">
-                    <span>STATUS DO ÍNDICE</span>
-                    <span id="popLibraryStatus">CHECKING...</span>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                  <div class="form-group">
+                    <label>Afast. Artista (músicas)</label>
+                    <input type="number" id="popRuleArtistSep" value="10" min="0">
                   </div>
-                  <div style="font-size: 0.8125rem; color: var(--text-main); margin-bottom: 4px;">
-                    Músicas Indexadas: <strong id="popLibraryCount">0</strong>
+                  <div class="form-group">
+                    <label>Afast. Música (músicas)</label>
+                    <input type="number" id="popRuleSongSep" value="50" min="0">
                   </div>
-                  <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 12px;">
-                    Última Sincronia: <span id="popLastSyncTime">---</span>
-                  </div>
-                  <button id="btnTriggerSync" class="btn btn-secondary btn-sm" style="width: 100%; border-color: var(--accent); color: var(--accent);" onclick="triggerPopSync()">
-                    <ion-icon name="sync-outline"></ion-icon> Sincronizar Agora
-                  </button>
                 </div>
+
+                <div class="form-group" style="margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <label style="margin-bottom: 0;">Modo Substituição (Overlay)</label>
+                      <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 2px;">Substitui slots .apm por Jabás/Promos</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="popRuleSubstitution" checked>
+                      <span class="slider round"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Artistas Favoritos (Peso +)</label>
+                  <textarea id="popFavArtists" style="min-height: 80px; font-size: 0.8125rem;" placeholder="Ex: LEONARDO, DANIEL, GUSTTAVO LIMA..."></textarea>
+                </div>
+                
+                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 12px;" onclick="savePopRules()">
+                  <ion-icon name="save-outline"></ion-icon> Salvar Configurações
+                </button>
               </div>
 
               <div class="card">
-                <div class="city-header" style="margin-bottom: 20px;">
-                  <h4>Caminhos e Pastas (Locais)</h4>
-                  <ion-icon name="folder-open-outline"></ion-icon>
+                <div class="city-header" style="margin-bottom: 16px;">
+                  <h4>Status da Biblioteca</h4>
+                  <ion-icon name="library-outline"></ion-icon>
                 </div>
-                <div class="form-group">
-                  <label>Raiz de Músicas (M:)</label>
-                  <input type="text" id="popPathMusic" placeholder="M:\MUSICAS">
+                <div style="padding: 16px; background: #0f172a; border-radius: 12px; color: #38bdf8; font-family: monospace; font-size: 0.8125rem;">
+                   <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                     <span style="color: #94a3b8;">Músicas:</span>
+                     <span id="popLibraryCount" style="color: #fff; font-weight: bold;">0</span>
+                   </div>
+                   <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                     <span style="color: #94a3b8;">Última Sync:</span>
+                     <span id="popLastSyncTime" style="color: #fff;">---</span>
+                   </div>
+                   <div style="display: flex; justify-content: space-between;">
+                     <span style="color: #94a3b8;">Status:</span>
+                     <span id="popLibraryStatus" style="color: #10b981;">CONECTADO</span>
+                   </div>
                 </div>
-                <div class="form-group">
-                  <label>VHTs / Vinhetas (U:)</label>
-                  <input type="text" id="popPathSweepers" placeholder="U:\Materiais\Eventos Gerais\VHT - Geração">
-                </div>
-                <div class="form-group">
-                  <label>Destino dos Roteiros (.BIL)</label>
-                  <input type="text" id="popPathDownload" placeholder="U:\Materiais\Roteiros">
-                </div>
-                <button class="btn btn-secondary btn-sm" onclick="savePopPaths()">Salvar Caminhos</button>
+                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px; border-color: #38bdf8; color: #38bdf8;" onclick="triggerPopSync()">
+                  <ion-icon name="sync-outline"></ion-icon> Reindexar Biblioteca
+                </button>
               </div>
             </div>
 
-            <!-- Rules & Artist Focus -->
+            <!-- Terminal de Logs e Caminhos -->
             <div style="display: flex; flex-direction: column; gap: 24px;">
-              <div class="card">
-                <div class="city-header" style="margin-bottom: 20px;">
-                  <h4>Foco em Artistas</h4>
-                  <ion-icon name="star-outline" style="color: #f59e0b;"></ion-icon>
+              <div id="popProcessingLogsContainer" style="background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); flex: 1; display: flex; flex-direction: column; min-height: 400px;">
+                <div style="background: #1e293b; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155;">
+                  <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">LOG DE GERAÇÃO POP FM</span>
+                  <div style="display: flex; gap: 8px;">
+                    <button id="popDownloadZipBtn" class="btn btn-accent btn-sm" style="display: none;" onclick="downloadPopBatchZip()">
+                      <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
+                    </button>
+                    <button class="btn btn-secondary btn-sm" style="background: #334155; border: none; padding: 4px 8px;" onclick="document.getElementById('popProcessingLogs').innerHTML=''" title="Limpar Console">
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label>Artistas Favoritos (Peso +)</label>
-                  <textarea id="popFavArtists" style="min-height: 100px; border-radius: 8px; border: 1px solid var(--border); padding: 8px; width: 100%;" placeholder="DANIEL, LEONARDO..."></textarea>
+                <div id="popProcessingLogs" style="padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; overflow-y: auto; line-height: 1.6; flex: 1;">
+                   Aguardando comando de geração...
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="savePopRules()">Salvar Regras</button>
               </div>
 
-              <div class="card" style="background: var(--bg-main);">
-                 <h4 style="font-size: 0.875rem; color: var(--text-light); text-transform: uppercase; margin-bottom: 12px;">Dica</h4>
-                 <p style="font-size: 0.8125rem; color: var(--text-light); line-height: 1.5;">
-                   Os artistas acima terão o triplo de chance de serem selecionados no gerador. Separe os nomes por vírgula.
-                 </p>
+              <div class="card">
+                <div class="city-header" style="margin-bottom: 16px;">
+                  <h4>Caminhos do Sistema</h4>
+                  <ion-icon name="folder-open-outline"></ion-icon>
+                </div>
+                <div class="form-group">
+                  <label>Raiz M: (Músicas)</label>
+                  <input type="text" id="popPathMusic" placeholder="M:\">
+                </div>
+                <div class="form-group">
+                  <label>Raiz U: (VHTs)</label>
+                  <input type="text" id="popPathSweepers" placeholder="U:\Materiais\Eventos Gerais">
+                </div>
+                <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="savePopPaths()">Atualizar Caminhos</button>
               </div>
             </div>
           </div>
 
-          <!-- Template Management Section -->
-          <div class="card" style="margin-bottom: 24px; border: 1px solid var(--accent);">
+          <!-- Modelos e Escala (Full Width) -->
+          <div class="card" style="border: 1px solid var(--accent);">
             <div class="city-header" style="margin-bottom: 24px;">
               <div>
-                <h3 style="color: var(--primary);">Biblioteca de Modelos (.blm)</h3>
-                <p style="font-size: 0.875rem; color: var(--text-light); margin-top: 4px;">Gerencie seus arquivos de roteiro e defina a escala semanal.</p>
+                <h3 style="color: var(--primary);">Escala Semanal de Modelos (.blm)</h3>
+                <p style="font-size: 0.875rem; color: var(--text-light);">Arraste ou selecione novos modelos (.blm) para a biblioteca.</p>
               </div>
               <button class="btn btn-primary btn-sm" onclick="document.getElementById('blmUpload').click()">
-                <ion-icon name="cloud-upload-outline"></ion-icon> Adicionar Modelo
+                <ion-icon name="add-outline"></ion-icon> Subir .BLM
               </button>
               <input type="file" id="blmUpload" accept=".blm" style="display: none;" onchange="handleBlmUpload(event)">
             </div>
 
             <div class="grid-sidebar-layout">
               <div style="border-right: 1px solid var(--border); padding-right: 32px;">
-                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Arquivos na Biblioteca</h4>
-                <div id="popTemplateList" class="config-list">
-                  <!-- Templates will be listed here -->
+                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Biblioteca de Modelos</h4>
+                <div id="popTemplateList" class="config-list" style="max-height: 300px; overflow-y: auto;">
+                  <!-- Templates -->
                 </div>
               </div>
 
               <div>
-                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Escala da Semana</h4>
+                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Configuração da Agenda</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="weeklyMappingGrid">
-                  <!-- Mapping dropdowns will be here -->
+                  <!-- Dropdowns -->
                 </div>
                 <button class="btn btn-accent" style="width: 100%; margin-top: 24px;" onclick="saveTemplateMapping()">
-                  <ion-icon name="save-outline"></ion-icon> Salvar Escala Semanal
+                  <ion-icon name="save-outline"></ion-icon> Gravar Escala da Semana
                 </button>
               </div>
             </div>
           </div>
+        </div>
 
           <div id="popGenResultArea" style="display: none; margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -498,7 +542,15 @@
 
   <script>
     const API_URL = '/api/generate';
-    const sections = ['nacional', 'itapeva', 'itapetininga'];
+
+    function setupMusic() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      if (!password) return;
+      
+      // Load both configs (Isolated)
+      loadMusicConfig(); // Massa
+      loadPopConfig();   // Pop
+    }
 
     // --- TAB SYSTEM ---
     function showTab(tabId) {
@@ -506,17 +558,12 @@
       document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
       
       const targetTab = document.getElementById('tab-' + tabId);
-      if (targetTab) {
-        targetTab.classList.add('active');
-      }
+      if (targetTab) targetTab.classList.add('active');
       
       const targetNav = document.getElementById('nav-' + tabId);
-      if (targetNav) {
-        targetNav.classList.add('active');
-      }
+      if (targetNav) targetNav.classList.add('active');
 
-      // Theme toggle: if it's a pop tab, set data-theme="pop", otherwise remove it
-      if (tabId.startsWith('pop-')) {
+      if (tabId === 'pop-generator') {
         document.body.setAttribute('data-theme', 'pop');
       } else {
         document.body.removeAttribute('data-theme');
@@ -1814,63 +1861,122 @@
       }
     }
 
-    async function savePopPaths() {
+    // --- POP FM ADVANCED GENERATOR ---
+    async function loadPopConfig() {
       const password = sessionStorage.getItem('newsmaker_password');
-      const paths = {
-        music: document.getElementById('popPathMusic').value,
-        sweepers: document.getElementById('popPathSweepers').value,
-        download: document.getElementById('popPathDownload').value
-      };
-      const res = await fetch(`/api/config?key=pop_paths`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(paths)
-      });
-      if (res.ok) showToast('Caminhos Pop salvos!', 'success');
-    }
+      if (!password) return;
 
-    async function savePopRules() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const rules = {
-        favoriteArtists: document.getElementById('popFavArtists').value.split(',').map(s => s.trim()).filter(s => s)
-      };
-      const res = await fetch(`/api/config?key=pop_rules`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(rules)
-      });
-      if (res.ok) showToast('Regras Pop salvas!', 'success');
+      try {
+        const [paths, rules, libStatus] = await Promise.all([
+          fetch(`/api/config?key=pop_paths`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
+          fetch(`/api/config?key=pop_rules`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
+          fetch(`/api/pop/status`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({})))
+        ]);
+
+        document.getElementById('popPathMusic').value = paths.music || '';
+        document.getElementById('popPathSweepers').value = paths.sweepers || '';
+        document.getElementById('popFavArtists').value = (rules.favoriteArtists || []).join(', ');
+        document.getElementById('popRuleArtistSep').value = rules.artistSeparation || 10;
+        document.getElementById('popRuleSongSep').value = rules.songSeparation || 50;
+        document.getElementById('popRuleSubstitution').checked = rules.substitutionMode !== false;
+
+        document.getElementById('popLibraryCount').textContent = libStatus.count || 0;
+        document.getElementById('popLastSyncTime').textContent = libStatus.lastSync ? new Date(libStatus.lastSync).toLocaleString() : '---';
+        document.getElementById('popLibraryStatus').textContent = libStatus.count > 0 ? 'CONECTADO' : 'AGUARDANDO SYNC';
+        
+        loadPopTemplates();
+      } catch (e) {
+        console.error('Pop config load fail', e);
+      }
     }
 
     async function generatePopProgramming() {
       const password = sessionStorage.getItem('newsmaker_password');
       const date = document.getElementById('popGenDate').value;
-      if (!date) return showToast('Selecione uma data!', 'error');
+      const days = parseInt(document.getElementById('popGenDays').value) || 1;
+      const logArea = document.getElementById('popProcessingLogs');
+      const dlZipBtn = document.getElementById('popDownloadZipBtn');
+      
+      if (!date) return showToast('Selecione uma data inicial!', 'error');
 
-      const btn = event?.target || {};
-      const originalText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Gerando...';
+      logArea.innerHTML = '<div style="color: #94a3b8;">> Comunicando com o servidor Cloudflare...</div>';
+      dlZipBtn.style.display = 'none';
 
       try {
-        const res = await fetch(`/api/pop/generate`, {
+        const response = await fetch('/api/pop/generate', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date })
+          body: JSON.stringify({ date, days })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro na geração');
 
-        window.lastPopBil = data.bil;
-        document.getElementById('popGenResultBox').textContent = data.bil;
-        document.getElementById('popGenResultArea').style.display = 'block';
-        showToast('Programação Pop gerada!', 'success');
-      } catch (e) {
-        showToast(e.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erro na geração');
+
+        logArea.innerHTML = '';
+        if (data.logs) {
+          data.logs.forEach(msg => {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            if (msg.includes('ERRO')) div.style.color = '#ef4444';
+            if (msg.includes('Sucesso')) div.style.color = '#10b981';
+            logArea.appendChild(div);
+          });
+          logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        window.lastPopResults = data.results;
+        if (data.results && data.results.length > 0) {
+          dlZipBtn.style.display = 'inline-flex';
+          showToast(`Sucesso! ${data.results.length} dias prontos.`, 'success');
+        }
+      } catch (error) {
+        logArea.innerHTML += `<div style="color: #ef4444;">> ERROR: ${error.message}</div>`;
+        showToast(error.message, 'error');
       }
+    }
+
+    async function downloadPopBatchZip() {
+      if (!window.lastPopResults) return;
+      const zip = new JSZip();
+      window.lastPopResults.forEach(res => {
+        const bytes = stringToCP1252(res.content);
+        zip.file(res.filename, bytes);
+      });
+      const blob = await zip.generateAsync({type:"blob"});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `POP_PROGR_${document.getElementById('popGenDate').value}.zip`;
+      a.click();
+    }
+
+    async function savePopRules() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const payload = {
+        favoriteArtists: document.getElementById('popFavArtists').value.split(',').map(s => s.trim()).filter(s => s),
+        artistSeparation: parseInt(document.getElementById('popRuleArtistSep').value),
+        songSeparation: parseInt(document.getElementById('popRuleSongSep').value),
+        substitutionMode: document.getElementById('popRuleSubstitution').checked
+      };
+      const res = await fetch(`/api/config?key=pop_rules`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) showToast('Regras Pop salvas!', 'success');
+    }
+
+    async function savePopPaths() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const payload = {
+        music: document.getElementById('popPathMusic').value,
+        sweepers: document.getElementById('popPathSweepers').value
+      };
+      const res = await fetch(`/api/config?key=pop_paths`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) showToast('Caminhos Pop salvos!', 'success');
     }
 
     async function triggerPopSync() {
@@ -1880,27 +1986,8 @@
           method: 'POST',
           headers: { 'Authorization': `Bearer ${password}` } 
         });
-        if (res.ok) {
-          showToast('Sincronia solicitada ao Agente!', 'success');
-          loadPopConfig(); // Refresh button state
-        }
-      } catch (e) { showToast('Erro ao solicitar sincronia.', 'error'); }
-    }
-
-    function downloadPopBil() {
-      if (!window.lastPopBil) return;
-      const date = document.getElementById('popGenDate').value.replace(/-/g, '');
-      const blob = new Blob([window.lastPopBil], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${date}_POP.bil`;
-      a.click();
-    }
-
-    function copyPopBil() {
-      if (!window.lastPopBil) return;
-      navigator.clipboard.writeText(window.lastPopBil);
-      showToast('Copiado para a área de transferência!', 'success');
+        if (res.ok) showToast('Sincronia solicitada!', 'success');
+      } catch (e) { showToast('Erro na sincronia.', 'error'); }
     }
 
     // --- POP TEMPLATE LIBRARY LOGIC ---

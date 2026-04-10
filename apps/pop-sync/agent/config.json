@@ -1,0 +1,8 @@
+{
+  "ApiUrl": "https://site-radiopopfm.pages.dev/api/pop",
+  "ApiKey": "COLOQUE_API_KEY_AQUI",
+  "MusicPath": "M:\\MUSICAS",
+  "SweepersPath": "U:\\Materiais\\Eventos Gerais\\VHT - Geração",
+  "DownloadPath": "U:\\Materiais\\Roteiros",
+  "SyncIntervalMinutes": 5
+}

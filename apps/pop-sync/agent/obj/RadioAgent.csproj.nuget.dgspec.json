@@ -1,0 +1,72 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\netto\\Documents\\projetos\\site-radiopopfm\\apps\\pop-auto-musical\\agent\\RadioAgent.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\netto\\Documents\\projetos\\site-radiopopfm\\apps\\pop-auto-musical\\agent\\RadioAgent.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\netto\\Documents\\projetos\\site-radiopopfm\\apps\\pop-auto-musical\\agent\\RadioAgent.csproj",
+        "projectName": "RadioAgent",
+        "projectPath": "C:\\Users\\netto\\Documents\\projetos\\site-radiopopfm\\apps\\pop-auto-musical\\agent\\RadioAgent.csproj",
+        "packagesPath": "C:\\Users\\netto\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\netto\\Documents\\projetos\\site-radiopopfm\\apps\\pop-auto-musical\\agent\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\netto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "TagLibSharp": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.419/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

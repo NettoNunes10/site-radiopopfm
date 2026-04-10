@@ -335,4 +335,5 @@ export const MusicEngine = {
 if (typeof window !== 'undefined') {
   window.MusicEngine = MusicEngine;
   window.normalizeHHMM = normalizeHHMM;
+  window.stringToCP1252 = stringToCP1252;
 }
