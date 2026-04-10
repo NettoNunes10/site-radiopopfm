@@ -123,7 +123,8 @@ export async function onRequest(context) {
           const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, isMusicSlot, log);
           
           if (selection) {
-            log(`✅ SUBSTITUIÇÃO: '${category}' (${isMusicSlot ? 'Música' : 'Material'}) -> ${selection.FullPath}`);
+            // Log apenas para o que o Python logava (ou erros)
+            // Removido log genérico de SUBSTITUIÇÃO normal
             finalLines.push(generateBilLine(selection.FullPath, selection.DurationMs));
             continue;
           } else {
@@ -137,7 +138,7 @@ export async function onRequest(context) {
       }
 
       const generatedContent = finalLines.join('\r\n');
-      const filename = `${dateLabel}_POP.bil`;
+      const filename = `${dateLabel}.bil`; // Estritamente yyyyMMdd.bil
 
       // Upload Provisório para Download do Agente
       const dlId = `pop_dl_${dateLabel}_${Date.now()}`;
