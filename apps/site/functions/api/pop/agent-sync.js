@@ -3,10 +3,12 @@ export async function onRequest(context) {
   const kv = env.NEWSMAKER_KV;
   const { method } = request;
 
-  // 1. Auth (Bearer Token)
-  const authHeader = request.headers.get("Authorization");
+  // 1. Auth (Bearer Token or Raw)
+  const authHeader = request.headers.get("Authorization") || "";
   const password = env.NEWSMAKER_PASSWORD;
-  if (!authHeader || authHeader !== `Bearer ${password}`) {
+  const isAuthorized = authHeader === `Bearer ${password}` || authHeader === password;
+
+  if (!isAuthorized) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { 
       status: 401,
       headers: { "Content-Type": "application/json" }
