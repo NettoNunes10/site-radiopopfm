@@ -272,6 +272,7 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
 
   // 2. Localização da Pasta na Biblioteca
   let folderKey = null;
+  const keys = Object.keys(library);
 
   // A) Tenta Mapeamento Manual (Override por Caminho Completo)
   let mappingKey = Object.keys(mappingRules).find(k => k.split('.apm')[0].trim().toUpperCase() === category.toUpperCase());
