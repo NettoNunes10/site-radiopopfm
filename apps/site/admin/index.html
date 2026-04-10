@@ -353,140 +353,49 @@
             </div>
           </div>
 
-          <div class="grid-2-col" style="margin-bottom: 24px;">
-            <!-- Painel de Configurações de Plástica -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-              <div class="card">
-                <div class="city-header" style="margin-bottom: 20px;">
-                  <h3>Regras de Plástica</h3>
-                  <ion-icon name="options-outline" style="color: var(--accent);"></ion-icon>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                  <div class="form-group">
-                    <label>Afast. Artista (músicas)</label>
-                    <input type="number" id="popRuleArtistSep" value="10" min="0">
-                  </div>
-                  <div class="form-group">
-                    <label>Afast. Música (músicas)</label>
-                    <input type="number" id="popRuleSongSep" value="50" min="0">
-                  </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                      <label style="margin-bottom: 0;">Modo Substituição (Overlay)</label>
-                      <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 2px;">Substitui slots .apm por Jabás/Promos</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="popRuleSubstitution" checked>
-                      <span class="slider round"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Artistas Favoritos (Peso +)</label>
-                  <textarea id="popFavArtists" style="min-height: 80px; font-size: 0.8125rem;" placeholder="Ex: LEONARDO, DANIEL, GUSTTAVO LIMA..."></textarea>
-                </div>
-                
-                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 12px;" onclick="savePopRules()">
-                  <ion-icon name="save-outline"></ion-icon> Salvar Configurações
-                </button>
-              </div>
-
-              <div class="card">
-                <div class="city-header" style="margin-bottom: 16px;">
-                  <h4>Status da Biblioteca</h4>
-                  <ion-icon name="library-outline"></ion-icon>
-                </div>
-                <div style="padding: 16px; background: #0f172a; border-radius: 12px; color: #38bdf8; font-family: monospace; font-size: 0.8125rem;">
-                   <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                     <span style="color: #94a3b8;">Músicas:</span>
-                     <span id="popLibraryCount" style="color: #fff; font-weight: bold;">0</span>
-                   </div>
-                   <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                     <span style="color: #94a3b8;">Última Sync:</span>
-                     <span id="popLastSyncTime" style="color: #fff;">---</span>
-                   </div>
-                   <div style="display: flex; justify-content: space-between;">
-                     <span style="color: #94a3b8;">Status:</span>
-                     <span id="popLibraryStatus" style="color: #10b981;">CONECTADO</span>
-                   </div>
-                </div>
-                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px; border-color: #38bdf8; color: #38bdf8;" onclick="triggerPopSync()">
-                  <ion-icon name="sync-outline"></ion-icon> Reindexar Biblioteca
-                </button>
-              </div>
-            </div>
-
-            <!-- Terminal de Logs e Caminhos -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-              <div id="popProcessingLogsContainer" style="background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); flex: 1; display: flex; flex-direction: column; min-height: 400px;">
-                <div style="background: #1e293b; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155;">
-                  <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">LOG DE GERAÇÃO POP FM</span>
-                  <div style="display: flex; gap: 8px;">
-                    <button id="popDownloadZipBtn" class="btn btn-accent btn-sm" style="display: none;" onclick="downloadPopBatchZip()">
-                      <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
-                    </button>
-                    <button class="btn btn-secondary btn-sm" style="background: #334155; border: none; padding: 4px 8px;" onclick="document.getElementById('popProcessingLogs').innerHTML=''" title="Limpar Console">
-                      <ion-icon name="trash-outline"></ion-icon>
-                    </button>
-                  </div>
-                </div>
-                <div id="popProcessingLogs" style="padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; overflow-y: auto; line-height: 1.6; flex: 1;">
-                   Aguardando comando de geração...
-                </div>
-              </div>
-
-              <div class="card">
-                <div class="city-header" style="margin-bottom: 16px;">
-                  <h4>Caminhos do Sistema</h4>
-                  <ion-icon name="folder-open-outline"></ion-icon>
-                </div>
-                <div class="form-group">
-                  <label>Raiz M: (Músicas)</label>
-                  <input type="text" id="popPathMusic" placeholder="M:\">
-                </div>
-                <div class="form-group">
-                  <label>Raiz U: (VHTs)</label>
-                  <input type="text" id="popPathSweepers" placeholder="U:\Materiais\Eventos Gerais">
-                </div>
-                <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="savePopPaths()">Atualizar Caminhos</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Modelos e Escala (Full Width) -->
-          <div class="card" style="border: 1px solid var(--accent);">
-            <div class="city-header" style="margin-bottom: 24px;">
-              <div>
-                <h3 style="color: var(--primary);">Escala Semanal de Modelos (.blm)</h3>
-                <p style="font-size: 0.875rem; color: var(--text-light);">Arraste ou selecione novos modelos (.blm) para a biblioteca.</p>
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="document.getElementById('blmUpload').click()">
-                <ion-icon name="add-outline"></ion-icon> Subir .BLM
+          <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+            <!-- Barra de Ferramentas de Configuração -->
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
+              <button class="btn btn-secondary btn-sm" onclick="openModal('popJabaManagerModal'); renderPopJabaList();" style="border-color: #38bdf8; color: #38bdf8;">
+                <ion-icon name="musical-notes"></ion-icon> Gerenciar Jabás
               </button>
-              <input type="file" id="blmUpload" accept=".blm" style="display: none;" onchange="handleBlmUpload(event)">
+              <button class="btn btn-secondary btn-sm" onclick="openModal('popTemplatesModal');" style="border-color: var(--accent); color: var(--accent);">
+                <ion-icon name="calendar"></ion-icon> Modelos / Escala
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('popRulesModal');">
+                <ion-icon name="options"></ion-icon> Regras de Plástica
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openModal('popPathsModal');">
+                <ion-icon name="folder-open"></ion-icon> Caminhos (M: / U:)
+              </button>
+              <div style="width: 1px; background: var(--border); height: 24px; margin: 0 8px;"></div>
+              <button class="btn btn-secondary btn-sm" onclick="triggerPopSync()" title="Reindexar Biblioteca">
+                <ion-icon name="sync"></ion-icon> Reindexar
+              </button>
             </div>
 
-            <div class="grid-sidebar-layout">
-              <div style="border-right: 1px solid var(--border); padding-right: 32px;">
-                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Biblioteca de Modelos</h4>
-                <div id="popTemplateList" class="config-list" style="max-height: 300px; overflow-y: auto;">
-                  <!-- Templates -->
+            <!-- Terminal de Logs (Foco Principal) -->
+            <div id="popProcessingLogsContainer" style="background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; min-height: 450px;">
+              <div style="background: #1e293b; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="indicator-dot" style="background: #10b981; width: 8px; height: 8px; border-radius: 50%;"></div>
+                  <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">TERMINAL DE GERAÇÃO POP FM</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button id="popDownloadZipBtn" class="btn btn-accent btn-sm" style="display: none;" onclick="downloadPopBatchZip()">
+                    <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
+                  </button>
+                  <button class="btn btn-secondary btn-sm" style="background: #334155; border: none; padding: 4px 8px;" onclick="document.getElementById('popProcessingLogs').innerHTML='> Aguardando comando...'" title="Limpar">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
                 </div>
               </div>
-
-              <div>
-                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Configuração da Agenda</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="weeklyMappingGrid">
-                  <!-- Dropdowns -->
-                </div>
-                <button class="btn btn-accent" style="width: 100%; margin-top: 24px;" onclick="saveTemplateMapping()">
-                  <ion-icon name="save-outline"></ion-icon> Gravar Escala da Semana
-                </button>
+              <div id="popProcessingLogs" style="padding: 24px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; overflow-y: auto; line-height: 1.7; flex: 1;">
+                 > Pronto para iniciar a geração da POP FM.
+              </div>
+              <div style="background: #1e293b; padding: 8px 16px; border-top: 1px solid #334155; display: flex; justify-content: space-between;">
+                 <span id="popLibrarySummary" style="font-size: 0.6875rem; color: #64748b;">Músicas: 0 | Sincronia: ---</span>
+                 <span style="font-size: 0.6875rem; color: #38bdf8; opacity: 0.6;">v2.0 beAudio Engine</span>
               </div>
             </div>
           </div>
@@ -1873,21 +1782,118 @@
           fetch(`/api/pop/status`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({})))
         ]);
 
-        document.getElementById('popPathMusic').value = paths.music || '';
-        document.getElementById('popPathSweepers').value = paths.sweepers || '';
+        // Rules Modal
         document.getElementById('popFavArtists').value = (rules.favoriteArtists || []).join(', ');
         document.getElementById('popRuleArtistSep').value = rules.artistSeparation || 10;
         document.getElementById('popRuleSongSep').value = rules.songSeparation || 50;
         document.getElementById('popRuleSubstitution').checked = rules.substitutionMode !== false;
 
-        document.getElementById('popLibraryCount').textContent = libStatus.count || 0;
-        document.getElementById('popLastSyncTime').textContent = libStatus.lastSync ? new Date(libStatus.lastSync).toLocaleString() : '---';
-        document.getElementById('popLibraryStatus').textContent = libStatus.count > 0 ? 'CONECTADO' : 'AGUARDANDO SYNC';
+        // Paths Modal
+        document.getElementById('popPathMusic').value = paths.music || '';
+        document.getElementById('popPathSweepers').value = paths.sweepers || '';
+
+        // Status Summary in Main Tab
+        document.getElementById('popLibrarySummary').textContent = 
+          `Músicas: ${libStatus.count || 0} | Sincronia: ${libStatus.lastSync ? new Date(libStatus.lastSync).toLocaleString() : '---'}`;
         
         loadPopTemplates();
-      } catch (e) {
-        console.error('Pop config load fail', e);
-      }
+      } catch (e) { console.error('Pop config load fail', e); }
+    }
+
+    // --- POP JABA MANAGEMENT ---
+    let popJabas = [];
+    let currentPopJabaIndex = -1;
+
+    async function loadPopJabas() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        const res = await fetch('/api/config?key=pop_jabas', { headers: { 'Authorization': `Bearer ${password}` } });
+        const data = await res.json();
+        popJabas = Array.isArray(data) ? data : [];
+      } catch (e) { console.error('Load pop jabas fail', e); }
+    }
+
+    async function renderPopJabaList() {
+      await loadPopJabas();
+      const cont = document.getElementById('popJabasList');
+      cont.innerHTML = popJabas.map((j, i) => `
+        <div class="config-item">
+          <div class="config-item-info">
+            <h5>${j.id} ${!j.enabled ? '<span style="color:#ef4444">(INATIVO)</span>' : ''}</h5>
+            <p>${j.caminho_arquivo} | ${j.horas_ativas || 'Sem horário'}</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="editPopJaba(${i})"><ion-icon name="create-outline"></ion-icon></button>
+            <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePopJaba(${i})"><ion-icon name="trash-outline"></ion-icon></button>
+          </div>
+        </div>
+      `).join('') || '<p style="text-align: center; color: var(--text-light); padding: 20px;">Nenhum Jabá cadastrado para a POP.</p>';
+    }
+
+    function editPopJaba(index) {
+      currentPopJabaIndex = index;
+      const j = index === -1 ? { id: '', caminho_arquivo: '', duracao_ms: 180000, horas_ativas: '', enabled: true } : popJabas[index];
+      
+      document.getElementById('popJabaId').value = j.id;
+      document.getElementById('popJabaPath').value = j.caminho_arquivo;
+      document.getElementById('popJabaDuration').value = j.duracao_ms;
+      document.getElementById('popJabaHours').value = j.horas_ativas;
+      document.getElementById('popJabaEnabled').checked = j.enabled !== false;
+      
+      openModal('popJabaEditModal');
+    }
+
+    async function savePopJaba() {
+      const j = {
+        id: document.getElementById('popJabaId').value.toUpperCase().replace(/\s/g, '_'),
+        caminho_arquivo: document.getElementById('popJabaPath').value,
+        duracao_ms: parseInt(document.getElementById('popJabaDuration').value) || 180000,
+        horas_ativas: document.getElementById('popJabaHours').value,
+        enabled: document.getElementById('popJabaEnabled').checked
+      };
+
+      if (!j.id || !j.caminho_arquivo) return showToast('Preencha ID e Caminho!', 'error');
+
+      if (currentPopJabaIndex === -1) popJabas.push(j);
+      else popJabas[currentPopJabaIndex] = j;
+
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        const res = await fetch('/api/config?key=pop_jabas', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(popJabas)
+        });
+        if (res.ok) {
+          showToast('Jabá POP salvo!', 'success');
+          closeModal('popJabaEditModal');
+          renderPopJabaList();
+        }
+      } catch (e) { showToast('Erro ao salvar Jabá', 'error'); }
+    }
+
+    async function deletePopJaba(index) {
+      if (!confirm('Excluir este Jabá da POP?')) return;
+      popJabas.splice(index, 1);
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        await fetch('/api/config?key=pop_jabas', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(popJabas)
+        });
+        renderPopJabaList();
+      } catch (e) { showToast('Erro ao excluir', 'error'); }
+    }
+
+    function extractPopJabaAudioData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const audio = new Audio(URL.createObjectURL(file));
+      audio.onloadedmetadata = () => {
+        document.getElementById('popJabaDuration').value = Math.floor(audio.duration * 1000);
+        showToast('Duração extraída com sucesso!', 'success');
+      };
     }
 
     async function generatePopProgramming() {
@@ -1918,7 +1924,7 @@
             const div = document.createElement('div');
             div.textContent = `> ${msg}`;
             if (msg.includes('ERRO')) div.style.color = '#ef4444';
-            if (msg.includes('Sucesso')) div.style.color = '#10b981';
+            if (msg.includes('♻️') || msg.includes('Sucesso')) div.style.color = '#10b981';
             logArea.appendChild(div);
           });
           logArea.scrollTop = logArea.scrollHeight;
@@ -2361,5 +2367,150 @@
     .spin { animation: spin 1s linear infinite; }
     .day-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
   </style>
+  <div id="popJabaManagerModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Gerenciador de Jabás (POP FM)</h3>
+        <button class="btn btn-secondary" onclick="closeModal('popJabaManagerModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editPopJaba(-1)">+ Novo Jabá POP</button>
+        <div id="popJabasList" class="config-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="popJabaEditModal" class="modal-overlay" style="z-index: 1200;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Configurar Jabá POP</h3>
+        <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Identificador (Ex: LOJA_CEM_PROMO)</label>
+          <input type="text" id="popJabaId">
+        </div>
+        <div class="form-group">
+          <label>Caminho do Arquivo (Local)</label>
+          <input type="text" id="popJabaPath" placeholder="M:\Massa FM\JABAS\ARQUIVO.wav">
+        </div>
+        <div class="form-group">
+          <label>Duração Total (ms)</label>
+          <div style="display: flex; gap: 8px;">
+             <input type="number" id="popJabaDuration" style="flex: 1;">
+             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('popJabaAudioFile').click()">
+               <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
+             </button>
+             <input type="file" id="popJabaAudioFile" style="display: none;" accept="audio/*" onchange="extractPopJabaAudioData(event)">
+          </div>
+        </div>
+        <div class="news-inputs" style="margin-top: 16px;">
+          <div class="form-group">
+            <label>Horas Ativas (Seg-Sex)</label>
+            <input type="text" id="popJabaHours" placeholder="08, 10, 15">
+          </div>
+          <div class="form-group" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 0;">
+            <label style="margin: 0;">Ativo</label>
+            <input type="checkbox" id="popJabaEnabled" checked style="width: 20px; height: 20px;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="savePopJaba()">Salvar Jabá</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popRulesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Regras de Plástica (POP)</h3>
+        <button class="btn btn-secondary" onclick="closeModal('popRulesModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+          <div class="form-group">
+            <label>Afast. Artista</label>
+            <input type="number" id="popRuleArtistSep">
+          </div>
+          <div class="form-group">
+            <label>Afast. Música</label>
+            <input type="number" id="popRuleSongSep">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <label style="margin-bottom: 0;">Modo Substituição (Overlay)</label>
+              <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 2px;">Substitui slots .apm por Jabás/Promos</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="popRuleSubstitution">
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Artistas Favoritos (Peso +)</label>
+          <textarea id="popFavArtists" style="min-height: 120px;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="savePopRules(); closeModal('popRulesModal');">Salvar Regras</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popPathsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Caminhos do Sistema (POP)</h3>
+        <button class="btn btn-secondary" onclick="closeModal('popPathsModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Raiz M: (Músicas)</label>
+          <input type="text" id="popPathMusic">
+        </div>
+        <div class="form-group">
+          <label>Raiz U: (Materiais/Eventos)</label>
+          <input type="text" id="popPathSweepers">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="savePopPaths(); closeModal('popPathsModal');">Salvar Caminhos</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popTemplatesModal" class="modal-overlay">
+    <div class="modal" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>Biblioteca de Modelos e Escala (.blm)</h3>
+        <button class="btn btn-secondary" onclick="closeModal('popTemplatesModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body">
+         <div class="grid-sidebar-layout">
+            <div style="border-right: 1px solid var(--border); padding-right: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase;">Arquivos</h4>
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('blmUpload').click()">+ Subir</button>
+              </div>
+              <div id="popTemplateList" class="config-list"></div>
+            </div>
+            <div>
+              <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Escala da Semana</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="weeklyMappingGrid"></div>
+            </div>
+         </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="saveTemplateMapping()">Gravar Escala</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
