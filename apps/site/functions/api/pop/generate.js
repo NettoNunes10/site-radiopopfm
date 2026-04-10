@@ -105,20 +105,13 @@ export async function onRequest(context) {
           continue;
         }
         
-        // Identificação de Categoria (Ex: SERTANEJO A, VHT - GERAÇÃO)
-        const categoryMatch = line.match(/^([A-Z0-9 \-À-ÿ\?]+)$/i);
-        if (categoryMatch) {
-          const category = categoryMatch[1].trim();
+        // --- IDENTIFICAÇÃO DE CATEGORIA (Resiliente) ---
+        // Se a linha contém .apm, ela é um slot para substituição
+        if (line.toLowerCase().includes('.apm')) {
+          const category = line.split('.apm')[0].trim();
+          const isMusicSlot = line.includes('/m:3000');
 
-          // --- LOGICA DE SUBSTITUIÇÃO (PAGAS) ---
-          // Identifica se a categoria é música (para permitir substituição)
-          let folderKey = category;
-          if (category.includes('VHT')) folderKey = 'VHT';
-          else if (category.includes('CHAMADA')) folderKey = 'PROMOS';
-          else if (category.includes('INTERCOM')) folderKey = 'INTERCOM';
-          else if (category.includes('AMOSTRA')) folderKey = 'SAMPLES';
-          const isMusicSlot = !['VHT', 'PROMOS', 'INTERCOM', 'SAMPLES'].includes(folderKey);
-
+          // --- LÓGICA DE SUBSTITUIÇÃO (PAGAS) ---
           if (pendingPaidSongs.length > 0 && rules.substitutionMode && isMusicSlot) {
             const paidFile = pendingPaidSongs.shift();
             log(`♻️  SUBSTITUIÇÃO: '${category}' removido -> Entrou JABÁ: ${paidFile.path}`);
@@ -126,15 +119,18 @@ export async function onRequest(context) {
             continue;
           }
 
-          // --- LOGICA DE SELEÇÃO NORMAL ---
-          const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, log);
+          // Tenta selecionar áudio da biblioteca
+          const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, isMusicSlot, log);
+          
           if (selection) {
+            log(`✅ SUBSTITUIÇÃO: '${category}' (${isMusicSlot ? 'Música' : 'Material'}) -> ${selection.FullPath}`);
             finalLines.push(generateBilLine(selection.FullPath, selection.DurationMs));
+            continue;
           } else {
-            log(`⚠️  AVISO: Nenhuma opção para '${category}'. Mantendo slot.`);
-            finalLines.push(line); // Mantém .apm como fallback
+            log(`⚠️  AVISO: Nenhuma opção na biblioteca para '${category}'. Mantendo slot original.`);
+            finalLines.push(line);
+            continue;
           }
-          continue;
         }
 
         finalLines.push(line);
@@ -242,21 +238,19 @@ function schedulePaidMusicPop(blocks, jabas, dow, log) {
 /**
  * Seleção de Áudio com Inteligência Artificial e Histórico
  */
-function selectAudioPop(category, library, favorites, histArtists, histSongs, maxA, maxS, log) {
+function selectAudioPop(category, library, favorites, histArtists, histSongs, maxA, maxS, isMusicSlot, log) {
   // 1. Surpresa Sertanejo C (0.5% chance)
   if (category === 'SERTANEJO B' && Math.random() < 0.005) {
     category = 'SERTANEJO C';
     log(`🎲 SURPRESA! Slot SERTANEJO B trocado por SERTANEJO C`);
   }
 
-  // 2. Mapeamento de Pastas (Sweepers vs Music)
+  // 2. Localização da Pasta na Biblioteca (Normalizada para evitar ?? e acentos)
   const normCategory = normalizeKey(category);
   const folderKey = Object.keys(library).find(key => normalizeKey(key) === normCategory) || category;
 
   const files = library[folderKey] || [];
   if (files.length === 0) return null;
-
-  const isMusic = !['VHT', 'PROMOS', 'INTERCOM', 'SAMPLES'].includes(folderKey);
 
   // 3. Loop de Sorteio (50 tentativas para bater o histórico)
   for (let i = 0; i < 50; i++) {
@@ -267,7 +261,7 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
     // Parsing de Artistas (Separa duplas/parcerias)
     const currentArtists = artistRaw.split(/ PART\. | & | E /).map(a => a.trim());
 
-    if (isMusic) {
+    if (isMusicSlot) {
       if (histSongs.includes(title)) continue;
       if (currentArtists.some(a => histArtists.includes(a))) continue;
 
@@ -279,14 +273,14 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
       updateHistoryPop(currentArtists, title, histArtists, histSongs, maxA, maxS);
       return f;
     } else {
-      // Sweepers: Apenas sorteio simples (ou ciclo se o agente suportar)
+      // Materiais (Sweepers, Intercom, etc): Sorteio simples sem histórico rígido
       return f;
     }
   }
 
   // Fallback: Pega qualquer um se o histórico estiver muito apertado
   const fallback = files[Math.floor(Math.random() * files.length)];
-  if (isMusic) {
+  if (isMusicSlot) {
     const fArtists = (fallback.Artist || "").toUpperCase().split(/ PART\. | & | E /).map(a => a.trim());
     updateHistoryPop(fArtists, (fallback.Name || fallback.Title || "").toUpperCase(), histArtists, histSongs, maxA, maxS);
   }
@@ -305,4 +299,17 @@ function updateHistoryPop(artists, title, histArtists, histSongs, maxA, maxS) {
 function generateBilLine(path, durationMs) {
   const p = path.replace(/\//g, '\\');
   return `${p} /m:3000 /t:${durationMs} /i:0 /s:0 /f:${durationMs} /r:0 /d:0 /o:0 /n:1 /x:  /g:0`;
+}
+
+/**
+ * Utilitário de Normalização: Remove acentos, símbolos e trata o ?? da codificação corrompida
+ */
+function normalizeKey(str) {
+  if (!str) return "";
+  return str.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/\?\?/g, "")            // Remove lixo de codificação (??)
+    .replace(/[^a-zA-Z0-9]/g, "")    // Remove tudo que não for alfanumérico
+    .toUpperCase()
+    .trim();
 }
