@@ -32,6 +32,8 @@ namespace PopSync
             {
                 Log("Iniciando varredura da biblioteca...");
                 var library = new Dictionary<string, List<object>>();
+                int musicCount = 0;
+                int materialCount = 0;
                 int totalCount = 0;
 
                 // 1. Varrer Músicas (Drive M:)
@@ -42,42 +44,47 @@ namespace PopSync
                     foreach (var dir in dirs)
                     {
                         var dirInfo = new DirectoryInfo(dir);
-                        // Ignora pastas de sistema ou ocultas (ex: System Volume Information)
-                        if ((dirInfo.Attributes & FileAttributes.System) != 0 || 
-                            (dirInfo.Attributes & FileAttributes.Hidden) != 0 ||
-                            dirInfo.Name.StartsWith("$")) 
-                        {
+                        // Ignora lixeira e pastas de sistema
+                        if (dirInfo.Name.StartsWith("$") || dirInfo.Name.ToUpper().Contains("RECYCLE.BIN") || (dirInfo.Attributes & FileAttributes.System) != 0) 
                             continue;
-                        }
 
-                        var category = dirInfo.Name.ToUpper();
+                        var category = dirInfo.Name.ToUpper().Trim();
                         var files = ScanFolder(dir);
-                        if (files.Any())
+                        if (files.Count > 0)
                         {
                             library[category] = files;
-                            totalCount += files.Count;
+                            musicCount += files.Count;
                         }
                     }
                 }
 
-                // 2. Varrer Materiais (Drive U: - Vinhetas, etc)
+                // 2. Escanear Materiais (Drive U:)
                 if (Directory.Exists(_config.SweepersPath))
                 {
                     Log($"Escaneando materiais em: {_config.SweepersPath}");
-                    // Se o SweepersPath for uma pasta direto de VHT
-                    var category = "VHT";
-                    if (_config.SweepersPath.ToUpper().Contains("CHAMADA")) category = "PROMOS";
-                    
-                    var files = ScanFolder(_config.SweepersPath);
-                    if (files.Any())
+                    var dirs = Directory.GetDirectories(_config.SweepersPath);
+                    foreach (var dir in dirs)
                     {
-                        if (!library.ContainsKey(category)) library[category] = new List<object>();
-                        library[category].AddRange(files);
-                        totalCount += files.Count;
+                        var dirInfo = new DirectoryInfo(dir);
+                        if (dirInfo.Name.StartsWith("$") || dirInfo.Name.ToUpper().Contains("RECYCLE.BIN")) continue;
+
+                        var category = dirInfo.Name.ToUpper().Trim();
+                        var files = ScanFolder(dir);
+                        if (files.Count > 0)
+                        {
+                            // Se já existir no drive M, mescla.
+                            if (library.ContainsKey(category)) 
+                                library[category].AddRange(files);
+                            else 
+                                library[category] = files;
+                            
+                            materialCount += files.Count;
+                        }
                     }
                 }
 
-                Log($"Varredura concluída. Total de arquivos: {totalCount}");
+                totalCount = musicCount + materialCount;
+                Log($"Varredura concluída. Músicas: {musicCount}, Materiais: {materialCount}");
 
                 // 3. Verificar Mudanças
                 var currentHash = JsonSerializer.Serialize(library);
@@ -92,6 +99,8 @@ namespace PopSync
                     {
                         host = Environment.MachineName,
                         count = totalCount,
+                        musicCount = musicCount,
+                        materialCount = materialCount,
                         library = library
                     };
 

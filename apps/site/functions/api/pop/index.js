@@ -28,10 +28,12 @@ export async function onRequest(context) {
       const payload = await request.json();
       
       const status = {
-        lastUpdate: new Date().toISOString(),
-        host: payload.host || "unknown",
+        online: true,
         count: payload.count || 0,
-        online: true
+        musicCount: payload.musicCount || 0,
+        materialCount: payload.materialCount || 0,
+        lastSync: new Date().toISOString(),
+        host: payload.host || "Desconhecido"
       };
 
       await kv.put("pop_library_index", JSON.stringify(payload.library));

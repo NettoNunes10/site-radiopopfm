@@ -105,10 +105,10 @@ export async function onRequest(context) {
           continue;
         }
         
-        // Identificação de Categoria (Ex: SERTANEJO A)
-        const categoryMatch = line.match(/^([A-Z0-9 ]+)$/);
+        // Identificação de Categoria (Ex: SERTANEJO A, VHT - GERAÇÃO)
+        const categoryMatch = line.match(/^([A-Z0-9 \-À-ÿ]+)$/i);
         if (categoryMatch) {
-          const category = categoryMatch[1];
+          const category = categoryMatch[1].toUpperCase().trim();
 
           // --- LOGICA DE SUBSTITUIÇÃO (PAGAS) ---
           // Identifica se a categoria é música (para permitir substituição)

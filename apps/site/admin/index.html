@@ -1744,7 +1744,7 @@
         const summaryEl = document.getElementById('popLibrarySummary');
         if (summaryEl) {
           const syncDate = libStatus && libStatus.lastUpdate ? new Date(libStatus.lastUpdate).toLocaleString() : '---';
-          summaryEl.textContent = `Músicas: ${(libStatus && libStatus.count) || 0} | Sincronia: ${syncDate}`;
+          summaryEl.textContent = `Músicas: ${libStatus.musicCount || 0} | Materiais: ${libStatus.materialCount || 0} | Sincronia: ${syncDate}`;
         }
         
         loadPopTemplates();
