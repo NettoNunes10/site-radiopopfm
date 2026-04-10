@@ -1751,13 +1751,13 @@
         }
 
         window.debugLibrary = async () => {
-          const res = await fetch('/api/pop');
+          const res = await fetch('/api/pop?inspect=1');
           const data = await res.json();
           if (data.library) {
-            const keys = Object.keys(data.library).join('\n');
-            alert("Categorias na Nuvem:\n\n" + (keys || "Biblioteca Vazia"));
+            const keys = Object.keys(data.library).sort().join('\n');
+            alert("Categorias na Nuvem:\n\n" + (keys || "Biblioteca Vazia (Faça Sincronia no Agente)"));
           } else {
-            alert("Erro ao ler biblioteca.");
+            alert("Erro ao ler biblioteca. Verifique se o agente já sincronizou.");
           }
         };
         

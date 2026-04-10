@@ -49,15 +49,21 @@ export async function onRequest(context) {
 
   // GET -> Trata como consulta de STATUS
   if (method === "GET") {
-    const [data, forceSync, downloads] = await Promise.all([
+    const url = new URL(request.url);
+    const isInspect = url.searchParams.get("inspect") === "1";
+
+    const [data, forceSync, downloads, libraryIndex] = await Promise.all([
       kv.get("pop_library_status", "json"),
       kv.get("pop_force_sync_requested"),
-      kv.list({ prefix: 'pop_dl_' })
+      kv.list({ prefix: 'pop_dl_' }),
+      isInspect ? kv.get("pop_library_index", "json") : Promise.resolve(null)
     ]);
-
+    
     const statusJson = data || { online: false, count: 0 };
     statusJson.forceSyncRequested = forceSync === "true";
     statusJson.pendingDownloads = downloads.keys.map(k => k.name);
+    
+    if (isInspect) statusJson.library = libraryIndex || {};
 
     return new Response(JSON.stringify(statusJson), {
       headers: { "Content-Type": "application/json" }
