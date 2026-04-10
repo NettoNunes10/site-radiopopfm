@@ -259,8 +259,8 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
   // 3. Loop de Sorteio (50 tentativas para bater o histórico)
   for (let i = 0; i < 50; i++) {
     const f = files[Math.floor(Math.random() * files.length)];
-    const title = f.Title.toUpperCase();
-    const artistRaw = f.Artist.toUpperCase();
+    const title = (f.Name || f.Title || "").toUpperCase();
+    const artistRaw = (f.Artist || "").toUpperCase();
 
     // Parsing de Artistas (Separa duplas/parcerias)
     const currentArtists = artistRaw.split(/ PART\. | & | E /).map(a => a.trim());
@@ -285,8 +285,8 @@ function selectAudioPop(category, library, favorites, histArtists, histSongs, ma
   // Fallback: Pega qualquer um se o histórico estiver muito apertado
   const fallback = files[Math.floor(Math.random() * files.length)];
   if (isMusic) {
-    const fArtists = fallback.Artist.toUpperCase().split(/ PART\. | & | E /).map(a => a.trim());
-    updateHistoryPop(fArtists, fallback.Title.toUpperCase(), histArtists, histSongs, maxA, maxS);
+    const fArtists = (fallback.Artist || "").toUpperCase().split(/ PART\. | & | E /).map(a => a.trim());
+    updateHistoryPop(fArtists, (fallback.Name || fallback.Title || "").toUpperCase(), histArtists, histSongs, maxA, maxS);
   }
   return fallback;
 }
