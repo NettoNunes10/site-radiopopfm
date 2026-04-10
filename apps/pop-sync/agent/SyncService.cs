@@ -189,37 +189,67 @@ namespace PopSync
         private List<object> ScanFolder(string path)
         {
             var results = new List<object>();
-            try
+            var extensions = new HashSet<string> { ".mp3", ".wav", ".wma", ".m4a", ".aac", ".flac" };
+            
+            var stack = new Stack<string>();
+            stack.Push(path);
+
+            while (stack.Count > 0)
             {
-                var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
-                    .Where(f => new[] { ".mp3", ".wav", ".wma" }.Contains(Path.GetExtension(f).ToLower()));
-
-                foreach (var file in files)
+                var currentPath = stack.Pop();
+                
+                try
                 {
-                    var fileName = Path.GetFileNameWithoutExtension(file);
-                    var artist = "";
-                    var title = fileName;
-
-                    if (fileName.Contains(" - "))
+                    // 1. Processar arquivos na pasta atual
+                    var files = Directory.GetFiles(currentPath);
+                    foreach (var file in files)
                     {
-                        var parts = fileName.Split(new[] { " - " }, 2, StringSplitOptions.None);
-                        artist = parts[0];
-                        title = parts[1];
+                        var ext = Path.GetExtension(file).ToLower();
+                        if (extensions.Contains(ext))
+                        {
+                            var fileName = Path.GetFileNameWithoutExtension(file);
+                            var artist = "";
+                            var title = fileName;
+
+                            if (fileName.Contains(" - "))
+                            {
+                                var parts = fileName.Split(new[] { " - " }, 2, StringSplitOptions.None);
+                                artist = parts[0].Trim();
+                                title = parts[1].Trim();
+                            }
+
+                            results.Add(new
+                            {
+                                Name = title,
+                                Artist = artist,
+                                FullPath = file,
+                                DurationMs = 180000 
+                            });
+                        }
                     }
 
-                    results.Add(new
+                    // 2. Adicionar subpastas à pilha para processar depois
+                    var subDirs = Directory.GetDirectories(currentPath);
+                    foreach (var subDir in subDirs)
                     {
-                        Name = title,
-                        Artist = artist,
-                        FullPath = file,
-                        DurationMs = 180000 // Fallback se não tiver TagLib
-                    });
+                        var dirInfo = new DirectoryInfo(subDir);
+                        // Ignora lixeira e pastas de sistema
+                        if (dirInfo.Name.StartsWith("$") || dirInfo.Name.ToUpper().Contains("RECYCLE.BIN"))
+                            continue;
+                            
+                        stack.Push(subDir);
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Apenas ignora pastas sem permissão e continua
+                }
+                catch (Exception ex)
+                {
+                    Log($"Aviso: Falha ao ler pedaço de {currentPath}: {ex.Message}");
                 }
             }
-            catch (Exception ex)
-            {
-                Log($"Aviso: Falha ao ler pasta {path}: {ex.Message}");
-            }
+
             return results;
         }
 
