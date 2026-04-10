@@ -1921,9 +1921,16 @@
         if (data.logs) {
           data.logs.forEach(msg => {
             const div = document.createElement('div');
+            div.style.padding = '2px 0';
+            div.style.borderBottom = '1px solid #1e293b';
             div.textContent = `> ${msg}`;
-            if (msg.includes('ERRO')) div.style.color = '#ef4444';
-            if (msg.includes('♻️') || msg.includes('Sucesso')) div.style.color = '#10b981';
+            
+            if (msg.includes('ERRO')) div.style.color = '#ef4444'; // Red
+            else if (msg.includes('♻️') || msg.includes('Sucesso')) div.style.color = '#10b981'; // Green
+            else if (msg.includes('📅')) div.style.color = '#60a5fa'; // Blue
+            else if (msg.includes('🎲')) div.style.color = '#f59e0b'; // Amber
+            else if (msg.includes('⚠️')) div.style.color = '#fbbf24'; // Yellow
+            
             logArea.appendChild(div);
           });
           logArea.scrollTop = logArea.scrollHeight;

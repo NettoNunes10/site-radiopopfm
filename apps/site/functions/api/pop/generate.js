@@ -1,6 +1,6 @@
 /**
- * Cloudflare Pages Function - Gerador Pop FM (Versão Alta Performance)
- * Implementa paridade com a lógica legada Python.
+ * Cloudflare Pages Function - Gerador Pop FM (Versão Paridade Python)
+ * Implementa fielmente a lógica de negócio do sistema legada.
  */
 
 export async function onRequest(context) {
@@ -10,7 +10,9 @@ export async function onRequest(context) {
 
   const authHeader = request.headers.get("Authorization");
   const password = env.NEWSMAKER_PASSWORD;
-  if (!authHeader || authHeader !== `Bearer ${password}`) {
+  const isAuthorized = authHeader === `Bearer ${password}` || authHeader === password;
+
+  if (!isAuthorized) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { 
       status: 401,
       headers: { "Content-Type": "application/json" }
@@ -23,11 +25,10 @@ export async function onRequest(context) {
     const { date, days = 1 } = await request.json(); // YYYY-MM-DD
     if (!date) return new Response(JSON.stringify({ error: "Missing date" }), { status: 400 });
 
-    // 1. Carregar Configurações GLOBAIS da POP (Isoladas da Massa)
     const [libRaw, rulesRaw, jabasRaw, templateLib, templateMapping] = await Promise.all([
       kv.get("pop_library_index", "json"),
       kv.get("pop_rules", "json"),
-      kv.get("pop_jabas", "json"), // Chave exclusiva POP
+      kv.get("pop_jabas", "json"),
       kv.get("pop_templates_library", "json"),
       kv.get("pop_templates_mapping", "json")
     ]);
@@ -35,11 +36,10 @@ export async function onRequest(context) {
     if (!libRaw) return new Response(JSON.stringify({ error: "Biblioteca Pop não indexada." }), { status: 400 });
     if (!templateLib || !templateMapping) return new Response(JSON.stringify({ error: "Modelos (.blm) não configurados." }), { status: 400 });
 
-    const library = libRaw;
     const rules = rulesRaw || { 
       favoriteArtists: [], 
       artistSeparation: 10, 
-      songSeparation: 50, 
+      songSeparation: 80, 
       substitutionMode: true 
     };
     
@@ -47,100 +47,83 @@ export async function onRequest(context) {
     const results = [];
     const globalLogs = [];
 
-    // 2. Loop de Geração Multi-Dias
+    // 1. Loop de Geração Multi-Dias
     let currentDate = new Date(date + "T12:00:00");
 
     for (let i = 0; i < days; i++) {
       const dateStr = currentDate.toISOString().split('T')[0];
-      const dow = currentDate.getDay(); // 0=Sun, 1=Mon...
+      const dow = currentDate.getDay(); // 0=Sun...
       const dateLabel = dateStr.replace(/-/g, '');
-      
       const dayLogs = [];
       const log = (msg) => dayLogs.push(`[${dateStr}] ${msg}`);
       
       log(`Iniciando geração para o dia ${dateStr}`);
 
-      // Selecionar Modelo conforme o dia da semana
       const templateName = templateMapping[dow];
       const templateRaw = templateLib[templateName];
 
       if (!templateRaw) {
-        log(`ERRO: Nenhum modelo configurado para o dia da semana ${dow}. Pulando.`);
+        log(`ERRO: Nenhum modelo configurado para o dia ${dow}. Pulando.`);
         currentDate.setDate(currentDate.getDate() + 1);
         continue;
       }
 
-      // 3. Lógica Interna de Geração (Histórico por Dia)
+      // 2. Scan de Blocos para Agendamento de Jabás
+      const validBlocks = scanModelBlocksPop(templateRaw);
+      const paidReservations = schedulePaidMusicPop(validBlocks, jabasRaw || [], dow, log);
+
+      // 3. Loop de Processamento Final
       const historyArtists = [];
       const historySongs = [];
       const maxHistArtists = rules.artistSeparation || 10;
-      const maxHistSongs = rules.songSeparation || 50;
-
-      // Fila de Jabás (Músicas Pagas) do dia
-      const activeJabas = (jabasRaw || []).filter(j => !j.dias_semana || j.dias_semana.includes(dow));
+      const maxHistSongs = rules.songSeparation || 80;
 
       const lines = templateRaw.split(/\r?\n/);
       const finalLines = ["# Arquivo de roteiro da beAudio\t1\t550470001"];
-      
-      let currentHour = "00";
-      let pendingJabaForHour = null;
+      let currentBlockTime = "00:00";
+      let pendingPaidSongs = [];
 
       for (let line of lines) {
         line = line.trim();
         if (!line || line.startsWith('#')) continue;
 
         // Header de Bloco (HH:MM)
-        const timeMatch = line.match(/^(\d{2}):\d{2}/);
+        const timeMatch = line.match(/^(\d{2}:\d{2})/);
         if (timeMatch) {
-          currentHour = timeMatch[1];
+          currentBlockTime = timeMatch[1];
           finalLines.push(line);
-
-          // Verifica se há um Jabá para esta hora específica (Agendamento por Grade POP)
-          pendingJabaForHour = activeJabas.find(j => {
-             if (j.enabled === false) return false;
-             
-             // Verifica se o dia da semana bate
-             if (j.dias_semana && !j.dias_semana.includes(dow)) return false;
-
-             // Percorre as regras de programação (janelas)
-             const prog = j.programacao || [];
-             return prog.some(p => {
-               const windows = p.janelas_de_horario || [];
-               return windows.some(w => {
-                 // Verifica se currentHour (ex: "08") está no intervalo (ex: "08:00" e "10:00")
-                 const startH = w.inicio.split(':')[0];
-                 const endH = w.fim.split(':')[0];
-                 return currentHour >= startH && currentHour <= endH;
-               });
-             });
-          });
-          continue;
-        }
-
-        // Itens Fixos
-        if (line.includes('Reserva') || line.includes('Início') || line.includes('Término') || line.includes('PREFIXO')) {
-          finalLines.push(line);
-          continue;
-        }
-
-        // PROCESSAMENTO DE SLOTS (.apm)
-        if (line.endsWith('.apm')) {
-          const category = line.split('.apm')[0].toUpperCase();
           
-          // --- REGRA DE SUBSTITUIÇÃO (PYTHON STYLE) ---
-          if (pendingJabaForHour && rules.substitutionMode) {
-             log(`♻️ SUBSTITUIÇÃO: Slot '${category}' removido -> Entrou JABÁ: ${pendingJabaForHour.id}`);
-             finalLines.push(generateBilLine(pendingJabaForHour.caminho_arquivo, pendingJabaForHour.duracao_ms || 180000));
-             pendingJabaForHour = null; // Usado
-             continue;
+          // Carrega fila de pagas para este bloco
+          pendingPaidSongs = paidReservations[currentBlockTime] ? [...paidReservations[currentBlockTime]] : [];
+          continue;
+        }
+
+        // Itens Fixos / Vinhetas Fixas / Caminhos Diretos
+        if (line.includes('Início do bloco comercial') || line.includes('Término do bloco comercial') || 
+            line.includes('PREFIXO') || line.startsWith('U:\\')) {
+          finalLines.push(line);
+          continue;
+        }
+
+        // Processamento de Slots (.apm)
+        if (line.includes('.apm')) {
+          const category = line.split('.apm')[0].trim().toUpperCase();
+
+          // --- LOGICA DE SUBSTITUIÇÃO (PAGAS) ---
+          if (pendingPaidSongs.length > 0 && rules.substitutionMode) {
+            const paidFile = pendingPaidSongs.shift();
+            log(`♻️  SUBSTITUIÇÃO: '${category}' removido -> Entrou JABÁ: ${paidFile.path}`);
+            finalLines.push(generateBilLine(paidFile.path, paidFile.duration || 180000));
+            continue;
           }
-          
-          const selection = selectMusicPop(category, library, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, log);
-          
+
+          // --- LOGICA DE SELEÇÃO NORMAL ---
+          const selection = selectAudioPop(category, libRaw, favoriteArtists, historyArtists, historySongs, maxHistArtists, maxHistSongs, log);
           if (selection) {
             finalLines.push(generateBilLine(selection.FullPath, selection.DurationMs));
           } else {
-            finalLines.push(`# MISSING: ${category}`);
+            log(`⚠️  AVISO: Nenhuma opção para '${category}'. Mantendo slot.`);
+            finalLines.push(line); // Mantém .apm como fallback
           }
           continue;
         }
@@ -151,32 +134,23 @@ export async function onRequest(context) {
       const generatedContent = finalLines.join('\r\n');
       const filename = `${dateLabel}_POP.bil`;
 
-      // Salvar cada dia individualmente no KV para o Agente baixar
+      // Upload Provisório para Download do Agente
       const dlId = `pop_dl_${dateLabel}_${Date.now()}`;
       await kv.put(dlId, JSON.stringify({
         id: dlId,
         filename: filename,
         content: generatedContent,
         timestamp: new Date().toISOString()
-      }), { expirationTtl: 86400 * 2 }); // 2 dias de validade
+      }), { expirationTtl: 86400 * 2 });
 
-      results.push({
-        date: dateStr,
-        filename: filename,
-        content: generatedContent
-      });
-
+      results.push({ date: dateStr, filename: filename, content: generatedContent });
       globalLogs.push(...dayLogs);
-      
-      // Ir para o próximo dia
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      results: results,
-      logs: globalLogs
-    }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ success: true, results: results, logs: globalLogs }), { 
+      headers: { "Content-Type": "application/json" } 
+    });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: "Falha na geração", detail: e.message }), { status: 500 });
@@ -184,47 +158,140 @@ export async function onRequest(context) {
 }
 
 /**
- * Seleção Musical Avançada com Parsing de Artistas
+ * Escaneia o modelo para encontrar horários de blocos válidos
  */
-function selectMusicPop(category, library, favorites, histArtists, histSongs, maxA, maxS, log) {
-  const files = library[category] || [];
-  if (files.length === 0) return null;
-
-  // Tentar encontrar um candidato ideal (50 tentativas)
-  for (let i = 0; i < 50; i++) {
-    const f = files[Math.floor(Math.random() * files.length)];
-    const artistRaw = f.Artist.toUpperCase();
-    const title = f.Title.toUpperCase();
-
-    // 1. Quebrar Artistas (Parsing de Parcerias)
-    const currentArtists = artistRaw.split(/ PART\. | & | E /).map(a => a.trim());
-
-    // 2. Checagem de Histórico (Música e QUALQUER um dos artistas envolvidos)
-    if (histSongs.includes(title)) continue;
-    if (currentArtists.some(a => histArtists.includes(a))) continue;
-
-    // 3. Pesos (Favoritos)
-    const isFav = currentArtists.some(a => favorites.has(a));
-    if (!isFav && Math.random() < 0.7) continue; // 70% de chance de pular se não for favorito
-
-    // Sucesso! Atualizar Histórico
-    updateHistory(currentArtists, title, histArtists, histSongs, maxA, maxS);
-    return f;
+function scanModelBlocksPop(raw) {
+  const blocks = [];
+  const lines = raw.split(/\r?\n/);
+  for (let line of lines) {
+    const m = line.trim().match(/^(\d{2}:\d{2})/);
+    if (m) {
+      let t = m[1];
+      if (t === "24:00") t = "00:00";
+      blocks.push(t);
+    }
   }
-
-  // Fallback: Pega um aleatório mas tenta não repetir música
-  const fFallback = files[Math.floor(Math.random() * files.length)];
-  const fallbackArtists = fFallback.Artist.toUpperCase().split(/ PART\. | & | E /).map(a => a.trim());
-  updateHistory(fallbackArtists, fFallback.Title.toUpperCase(), histArtists, histSongs, maxA, maxS);
-  return fFallback;
+  return blocks;
 }
 
-function updateHistory(artists, title, histArtists, histSongs, maxA, maxS) {
+/**
+ * Pré-agendamento de músicas pagas nos blocos válidos (Janelas)
+ */
+function schedulePaidMusicPop(blocks, jabas, dow, log) {
+  const reservations = {};
+  const freeBlocks = [...blocks];
+  
+  log(`--- AGENDAMENTO DE MÚSICA PAGA ---`);
+
+  // Filtra jabas ativos para hoje
+  const activeJabas = jabas.filter(j => j.enabled !== false && (!j.dias_semana || j.dias_semana.includes(dow)));
+
+  for (const j of activeJabas) {
+    const rules = j.programacao || [];
+    for (const rule of rules) {
+      const qty = rule.quantidade_necessaria || 1;
+      const windows = rule.janelas_de_horario || [];
+      
+      // Encontra blocos que batem com as janelas
+      let candidates = freeBlocks.filter(b => {
+        const h = parseInt(b.split(':')[0]);
+        return windows.some(w => {
+          const startH = parseInt(w.inicio.split(':')[0]);
+          const endH = parseInt(w.fim.split(':')[0]);
+          return h >= startH && h <= endH;
+        });
+      });
+
+      // Se não houver blocos livres, tenta qualquer bloco
+      if (candidates.length === 0) {
+        candidates = blocks.filter(b => {
+          const h = parseInt(b.split(':')[0]);
+          return windows.some(w => h >= parseInt(w.inicio.split(':')[0]) && h <= parseInt(w.fim.split(':')[0]));
+        });
+      }
+
+      for (let q = 0; q < qty; q++) {
+        if (candidates.length === 0) break;
+        const idx = Math.floor(Math.random() * candidates.length);
+        const chosen = candidates.splice(idx, 1)[0];
+        
+        if (!reservations[chosen]) reservations[chosen] = [];
+        reservations[chosen].push({ id: j.id, path: j.caminho_arquivo, duration: j.duracao_ms });
+        
+        // Remove do freeBlocks para não encavalar música no mesmo bloco se possível
+        const fbIdx = freeBlocks.indexOf(chosen);
+        if (fbIdx > -1) freeBlocks.splice(fbIdx, 1);
+        
+        log(`📅 Agendado: ${j.id} para o bloco das ${chosen}`);
+      }
+    }
+  }
+  log(`-----------------------------------`);
+  return reservations;
+}
+
+/**
+ * Seleção de Áudio com Inteligência Artificial e Histórico
+ */
+function selectAudioPop(category, library, favorites, histArtists, histSongs, maxA, maxS, log) {
+  // 1. Surpresa Sertanejo C (0.5% chance)
+  if (category === 'SERTANEJO B' && Math.random() < 0.005) {
+    category = 'SERTANEJO C';
+    log(`🎲 SURPRESA! Slot SERTANEJO B trocado por SERTANEJO C`);
+  }
+
+  // 2. Mapeamento de Pastas (Sweepers vs Music)
+  let folderKey = category;
+  if (category.includes('VHT')) folderKey = 'VHT';
+  else if (category.includes('CHAMADA')) folderKey = 'PROMOS';
+  else if (category.includes('INTERCOM')) folderKey = 'INTERCOM';
+  else if (category.includes('AMOSTRA')) folderKey = 'SAMPLES';
+
+  const files = library[folderKey] || [];
+  if (files.length === 0) return null;
+
+  const isMusic = !['VHT', 'PROMOS', 'INTERCOM', 'SAMPLES'].includes(folderKey);
+
+  // 3. Loop de Sorteio (50 tentativas para bater o histórico)
+  for (let i = 0; i < 50; i++) {
+    const f = files[Math.floor(Math.random() * files.length)];
+    const title = f.Title.toUpperCase();
+    const artistRaw = f.Artist.toUpperCase();
+
+    // Parsing de Artistas (Separa duplas/parcerias)
+    const currentArtists = artistRaw.split(/ PART\. | & | E /).map(a => a.trim());
+
+    if (isMusic) {
+      if (histSongs.includes(title)) continue;
+      if (currentArtists.some(a => histArtists.includes(a))) continue;
+
+      // Peso para Favoritos (70% de chance de pular se NÃO for favorito)
+      const isFav = currentArtists.some(a => favorites.has(a));
+      if (!isFav && Math.random() < 0.7) continue;
+
+      // Sucesso!
+      updateHistoryPop(currentArtists, title, histArtists, histSongs, maxA, maxS);
+      return f;
+    } else {
+      // Sweepers: Apenas sorteio simples (ou ciclo se o agente suportar)
+      return f;
+    }
+  }
+
+  // Fallback: Pega qualquer um se o histórico estiver muito apertado
+  const fallback = files[Math.floor(Math.random() * files.length)];
+  if (isMusic) {
+    const fArtists = fallback.Artist.toUpperCase().split(/ PART\. | & | E /).map(a => a.trim());
+    updateHistoryPop(fArtists, fallback.Title.toUpperCase(), histArtists, histSongs, maxA, maxS);
+  }
+  return fallback;
+}
+
+function updateHistoryPop(artists, title, histArtists, histSongs, maxA, maxS) {
   artists.forEach(a => {
     histArtists.push(a);
     if (histArtists.length > maxA) histArtists.shift();
   });
-  
   histSongs.push(title);
   if (histSongs.length > maxS) histSongs.shift();
 }
