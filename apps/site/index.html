@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rádio POP FM - Em todo lugar com você!</title>
     <!-- Social Meta Tags -->
     <meta property="og:title" content="Rádio POP FM - A sua rádio!">
-    <meta property="og:description" content="Mergulhe na melhor rádio web! Ouça os maiores hits ao vivo, confira a programação e faça seu pedido musical direto do app ou site.">
+    <meta property="og:description"
+        content="Mergulhe na melhor rádio web! Ouça os maiores hits ao vivo, confira a programação e faça seu pedido musical direto do app ou site.">
     <meta property="og:image" content="https://radiopopfmbrasil.com/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://radiopopfmbrasil.com/">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png">
+    <link rel="icon" type="image/png"
+        href="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png">
     <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=K2D:wght@700;800&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=K2D:wght@700;800&family=Inter:wght@400;500;600;800&display=swap"
+        rel="stylesheet">
     <!-- Ícones do Ionicons compatíveis com o app -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    
+
     <style>
         :root {
             --primary-bg: #000;
@@ -40,7 +45,8 @@
             padding: 0;
         }
 
-        body, html {
+        body,
+        html {
             width: 100%;
             height: 100%;
             background-color: var(--primary-bg);
@@ -79,7 +85,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(20,0,30,0.75) 100%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(20, 0, 30, 0.75) 100%);
         }
 
         /* CONTEÚDO PRINCIPAL (Page Layout) */
@@ -111,7 +117,7 @@
         }
 
         .main-logo {
-            filter: drop-shadow(0px 5px 15px rgba(0,0,0,0.5));
+            filter: drop-shadow(0px 5px 15px rgba(0, 0, 0, 0.5));
         }
 
         .desktop-logo {
@@ -131,7 +137,8 @@
             font-size: 4.5rem;
             font-weight: 800;
             line-height: 1.1;
-            padding-bottom: 15px; /* Evita que o 'g' ou outras letras desçam além da borda recortada pelo background-clip */
+            padding-bottom: 15px;
+            /* Evita que o 'g' ou outras letras desçam além da borda recortada pelo background-clip */
             background: linear-gradient(45deg, #fff, var(--accent-color));
             -webkit-background-clip: text;
             background-clip: text;
@@ -174,7 +181,7 @@
         .app-btn:hover {
             background: rgba(255, 255, 255, 0.15);
             transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
             border-color: rgba(255, 255, 255, 0.4);
         }
 
@@ -184,7 +191,8 @@
 
         /* PLAYER CARD (Coluna da Direita) */
         .hero-player-col {
-            flex: 0 0 420px; /* Largura fixa para o player card */
+            flex: 0 0 420px;
+            /* Largura fixa para o player card */
             display: flex;
             justify-content: center;
         }
@@ -200,11 +208,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .album-wrapper {
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
             margin-bottom: 30px;
             border-radius: 20px;
         }
@@ -236,10 +244,11 @@
 
         .song-title {
             color: var(--text-main);
-            font-size: 20px; /* Reduzido de 26px para ficar mais delicado */
+            font-size: 20px;
+            /* Reduzido de 26px para ficar mais delicado */
             font-weight: 800;
             margin-bottom: 6px;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             display: -webkit-box;
             -webkit-line-clamp: 1;
             line-clamp: 1;
@@ -250,7 +259,8 @@
 
         .artist-name {
             color: var(--text-secondary);
-            font-size: 15px; /* Reduzido de 18px */
+            font-size: 15px;
+            /* Reduzido de 18px */
             font-weight: 500;
             display: -webkit-box;
             -webkit-line-clamp: 1;
@@ -315,7 +325,7 @@
         }
 
         .loading-spinner {
-            border: 3px solid rgba(255,255,255,0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-top: 3px solid #fff;
             border-radius: 50%;
             width: 32px;
@@ -325,14 +335,27 @@
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* AÇÕES SECUNDÁRIAS */
@@ -360,52 +383,173 @@
             max-width: 280px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
+
         .action-btn:hover {
             transform: translateY(-3px);
         }
-        .action-btn ion-icon { font-size: 24px; }
 
-        .btn-whatsapp { background-color: #25d366; color: #FFF; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2); }
-        .btn-schedule { background-color: rgba(255, 255, 255, 0.1); color: #FFF; backdrop-filter: blur(10px); }
-        .btn-whatsapp:hover { box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
-        .btn-schedule:hover { background-color: rgba(255, 255, 255, 0.2); box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1); }
+        .action-btn ion-icon {
+            font-size: 24px;
+        }
+
+        .btn-whatsapp {
+            background-color: #25d366;
+            color: #FFF;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+        }
+
+        .btn-schedule {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #FFF;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-whatsapp:hover {
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        }
+
+        .btn-schedule:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+        }
 
         /* MODAL DE PROGRAMAÇÃO */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); display: flex;
-            align-items: center; justify-content: center;
-            z-index: 2000; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(5px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .modal-content {
-            background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 24px; width: 90%; max-width: 450px; max-height: 85vh; padding: 25px; display: flex; flex-direction: column; 
-            transform: translateY(30px); transition: all 0.3s ease; box-shadow: 0 10px 40px rgba(0,0,0,0.5); color: #FFF;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 85vh;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(30px);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            color: #FFF;
         }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title { font-family: 'K2D', sans-serif; font-size: 1.5rem; font-weight: 800; color: #FFF; margin: 0; }
-        .close-btn { background: none; border: none; color: #FFF; font-size: 32px; cursor: pointer; opacity: 0.7; transition: 0.3s; line-height: 1; padding: 0; }
-        .close-btn:hover { opacity: 1; transform: scale(1.1); }
-        
-        .schedule-list { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 5px; }
-        .schedule-list::-webkit-scrollbar { width: 6px; }
-        .schedule-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
-        .schedule-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-family: 'K2D', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #FFF;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #FFF;
+            font-size: 32px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: 0.3s;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .schedule-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 5px;
+        }
+
+        .schedule-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .schedule-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .schedule-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
         .schedule-card {
-            background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 15px;
-            display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
         }
+
         .schedule-card.on-air {
-            background: rgba(255, 184, 0, 0.15); border: 1px solid #FFB800; box-shadow: 0 0 15px rgba(255, 184, 0, 0.2);
+            background: rgba(255, 184, 0, 0.15);
+            border: 1px solid #FFB800;
+            box-shadow: 0 0 15px rgba(255, 184, 0, 0.2);
         }
-        .schedule-prog { font-weight: 800; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
-        .schedule-card.on-air .schedule-prog { color: #FFB800; }
-        .on-air-badge { background: #FFB800; color: #000; font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; font-weight: 800; letter-spacing: 1px;}
+
+        .schedule-prog {
+            font-weight: 800;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .schedule-card.on-air .schedule-prog {
+            color: #FFB800;
+        }
+
+        .on-air-badge {
+            background: #FFB800;
+            color: #000;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
 
         /* RESPONSIVIDADE */
         @media (max-width: 968px) {
@@ -439,7 +583,8 @@
                 align-items: center;
             }
 
-            .hero-title, .hero-desc {
+            .hero-title,
+            .hero-desc {
                 display: none;
             }
 
@@ -463,7 +608,7 @@
                 width: 240px;
                 height: 240px;
             }
-            
+
             .song-title {
                 font-size: 18px;
             }
@@ -473,31 +618,160 @@
             }
 
         }
-        /* NAVBAR AND SIDEBAR */
-        .top-navbar { position: fixed; top: 0; left: 0; width: 100%; padding: 15px 5%; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
-        .nav-container { width: 100%; max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        .nav-logo { height: 45px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
-        .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #FFF; font-size: 28px; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); }
-        .menu-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
 
-        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1500; opacity: 0; visibility: hidden; transition: 0.3s ease; backdrop-filter: blur(5px); }
-        .sidebar-overlay.active { opacity: 1; visibility: visible; }
-        
-        .sidebar { position: fixed; top: 0; right: -320px; width: 320px; height: 100%; background: rgba(20, 10, 30, 0.7); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-left: 1px solid rgba(255,255,255,0.1); z-index: 1600; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; padding: 30px 20px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
-        .sidebar.active { right: 0; }
-        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; }
-        .sidebar-title { font-size: 1.5rem; font-weight: 800; color: #FFF; margin: 0;}
-        .sidebar-close { background: none; border: none; font-size: 32px; color: #FFF; cursor: pointer; }
-        .sidebar-links { display: flex; flex-direction: column; gap: 15px; }
-        .sidebar-link { display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 12px; color: #FFF; text-decoration: none; font-weight: 700; font-size: 1.1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
-        .sidebar-link ion-icon { font-size: 24px; color: #FFB800;}
-        .sidebar-link.whatsapp ion-icon { color: #25d366; }
-        .sidebar-link:hover { background: rgba(255,255,255,0.1); transform: translateX(-5px); }
+        /* NAVBAR AND SIDEBAR */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 5%;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            height: 45px;
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFF;
+            font-size: 28px;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: 100%;
+            background: rgba(20, 10, 30, 0.7);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1600;
+            transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #FFF;
+            margin: 0;
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 32px;
+            color: #FFF;
+            cursor: pointer;
+        }
+
+        .sidebar-links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            color: #FFF;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .sidebar-link ion-icon {
+            font-size: 24px;
+            color: #FFB800;
+        }
+
+        .sidebar-link.whatsapp ion-icon {
+            color: #25d366;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-5px);
+        }
 
         /* PONTO PISCANTE (LIVE) */
         .live-dot {
             display: inline-block;
-            width: 8px; height: 8px;
+            width: 8px;
+            height: 8px;
             background-color: #ff3b30;
             border-radius: 50%;
             margin-right: 8px;
@@ -506,17 +780,34 @@
             vertical-align: middle;
             margin-bottom: 2px;
         }
+
         @keyframes blink {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* FAIXINHA DO PROGRAMA AO VIVO */
-        .player-card { position: relative; } /* Necessário para a faixinha ancorar no card */
+        .player-card {
+            position: relative;
+        }
+
+        /* Necessário para a faixinha ancorar no card */
         .program-ribbon {
             position: absolute;
-            top: 22px; right: -12px;
+            top: 22px;
+            right: -12px;
             background: linear-gradient(135deg, #FFB800, #FF6B00);
             color: #111;
             padding: 8px 18px;
@@ -524,19 +815,24 @@
             font-size: 0.85rem;
             letter-spacing: 1px;
             text-transform: uppercase;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             border-radius: 6px 0 0 6px;
             z-index: 10;
             white-space: nowrap;
         }
+
         .program-ribbon::after {
-            content: ''; position: absolute; top: 100%; right: 0;
+            content: '';
+            position: absolute;
+            top: 100%;
+            right: 0;
             border-width: 10px 12px 0 0;
             border-style: solid;
             border-color: #a34c00 transparent transparent transparent;
         }
     </style>
 </head>
+
 <body>
 
     <!-- Background Fixo e Blur -->
@@ -547,10 +843,10 @@
 
     <!-- Conteúdo Principal com Rolagem -->
     <div class="page-container">
-        
+
         <!-- Hero Section -->
         <main class="hero-section">
-            
+
             <!-- Navbar Topo -->
             <header class="top-navbar">
                 <div class="nav-container" style="justify-content: flex-end;">
@@ -562,7 +858,7 @@
 
             <!-- Sidebar Overlay -->
             <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-            
+
             <!-- Sidebar Menu -->
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header">
@@ -573,38 +869,45 @@
                     <a href="javascript:void(0)" class="sidebar-link" onclick="toggleSidebar(); openScheduleModal()">
                         <ion-icon name="calendar-outline"></ion-icon> Ver Programação
                     </a>
-                    <a href="https://wa.me/5514998237378?text=Ol%C3%A1%2C%20queria%20fazer%20um%20pedido%20musical!" class="sidebar-link whatsapp" target="_blank" rel="noopener noreferrer">
+                    <a href="https://wa.me/5514998237378?text=Ol%C3%A1%2C%20queria%20fazer%20um%20pedido%20musical!"
+                        class="sidebar-link whatsapp" target="_blank" rel="noopener noreferrer">
                         <ion-icon name="logo-whatsapp"></ion-icon> Pedido Musical
                     </a>
                     <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
-                    <a href="https://apps.apple.com/br/app/pop-fm-brasil/id1636684530" target="_blank" class="sidebar-link">
+                    <a href="https://apps.apple.com/br/app/pop-fm-brasil/id1636684530" target="_blank"
+                        class="sidebar-link">
                         <ion-icon name="logo-apple"></ion-icon> App para iOS
                     </a>
-                    <a href="https://play.google.com/store/apps/details?id=br.com.brasilwork.popfmitapeva&hl=pt" target="_blank" class="sidebar-link">
+                    <a href="https://play.google.com/store/apps/details?id=br.com.brasilwork.popfmitapeva&hl=pt"
+                        target="_blank" class="sidebar-link">
                         <ion-icon name="logo-android"></ion-icon> App para Android
                     </a>
                 </div>
             </aside>
 
             <!-- Logo Mobile Restaurada -->
-            <img src="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png/v1/fill/w_260,h_194,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/POP%20FM%201075.png" alt="Pop FM Logo" class="main-logo mobile-logo">
+            <img src="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png/v1/fill/w_260,h_194,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/POP%20FM%201075.png"
+                alt="Pop FM Logo" class="main-logo mobile-logo">
 
             <!-- Coluna de Texto Original Restaurada (Esquerda) -->
             <div class="hero-text-col">
-                <img src="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png/v1/fill/w_260,h_194,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/POP%20FM%201075.png" alt="Pop FM Logo" class="main-logo desktop-logo">
+                <img src="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png/v1/fill/w_260,h_194,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/POP%20FM%201075.png"
+                    alt="Pop FM Logo" class="main-logo desktop-logo">
                 <h1 class="hero-title">A POP FM está em todo lugar!</h1>
-                <p class="hero-desc">Estamos preparando muitos conteúdos para unir o rádio às redes sociais, com muitos prêmios, promoções e uma equipe de primeira!</p>
+                <p class="hero-desc">Estamos preparando muitos conteúdos para unir o rádio às redes sociais, com muitos
+                    prêmios, promoções e uma equipe de primeira!</p>
             </div>
 
             <!-- Coluna do Player "Card" (Direita) -->
             <div class="hero-player-col">
                 <div class="player-card">
-                    
+
                     <!-- FAIXA LATERAL DO PROGRAMA AO VIVO -->
                     <div class="program-ribbon" id="program-ribbon">PROGRAMAÇÃO POP</div>
 
                     <div class="album-wrapper">
-                        <img src="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/88/b5/70/88b5704d-6e20-5142-55a2-2595857acd8a/06UMGIM12619.rgb.jpg/500x500bb.jpg" alt="Capa Album" class="album-art" id="album-art">
+                        <img src="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/88/b5/70/88b5704d-6e20-5142-55a2-2595857acd8a/06UMGIM12619.rgb.jpg/500x500bb.jpg"
+                            alt="Capa Album" class="album-art" id="album-art">
                     </div>
 
                     <div class="info-container">
@@ -650,17 +953,17 @@
 
     <!-- LÓGICA DO PLAYER E NOVA API SUPABASE -->
     <script>
-        const STREAM_URL = "https://9597.brasilstream.com.br/stream";
-        
+        const STREAM_URL = "https://sonicpanel.oficialserver.com:8134/stream";
+
         // Supabase Credentials
         const SUPABASE_URL = "https://uvesuhizitwlkbizjxlc.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZXN1aGl6aXR3bGtiaXpqeGxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTAwNzksImV4cCI6MjA5MDY2NjA3OX0.MPmV_TuX3z_i0_91VNRUwSMVeGBqDzGXNwMMeFOhF9w";
         const NOW_PLAYING_URL = `${SUPABASE_URL}/rest/v1/now_playing?select=*&order=created_at.desc&limit=1`;
-        
+
         const audio = new Audio();
         let isPlaying = false;
         let isMuted = false;
-        
+
         // Elementos DOM
         const btnPlay = document.getElementById("btn-play");
         const iconPlay = document.getElementById("icon-play");
@@ -716,7 +1019,7 @@
         function updatePlayButton() {
             spinner.style.display = "none";
             iconPlay.style.display = "block";
-            
+
             if (isPlaying) {
                 iconPlay.setAttribute("name", "pause");
                 iconPlay.style.marginLeft = "0px";
@@ -730,7 +1033,7 @@
         btnMute.addEventListener("click", () => {
             isMuted = !isMuted;
             audio.muted = isMuted;
-            
+
             if (isMuted) {
                 iconMute.setAttribute("name", "volume-mute");
                 btnMute.classList.add("active");
@@ -757,10 +1060,10 @@
                     const dataArray = await response.json();
                     if (dataArray && dataArray.length > 0) {
                         const current = dataArray[0];
-                        
+
                         lblTitle.textContent = current.music || "Rádio Pop FM";
                         lblArtist.textContent = current.artist || "Sua melhor rádio";
-                        
+
                         if (current.cover) {
                             imgCover.src = current.cover;
                             bgImage.style.backgroundImage = `url('${current.cover}')`;
@@ -787,7 +1090,7 @@
         // Inicia banco e carrega grade na faixinha central
         fetchNowPlaying();
         fetchSchedule();
-        
+
         // Atualiza a música a cada 10 segundos
         setInterval(fetchNowPlaying, 10000);
 
@@ -813,7 +1116,7 @@
         }
 
         scheduleModal.addEventListener("click", (e) => {
-            if(e.target === scheduleModal) closeScheduleModal();
+            if (e.target === scheduleModal) closeScheduleModal();
         });
 
         async function fetchSchedule() {
@@ -821,7 +1124,7 @@
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/schedule?order=ordem.asc`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' }
                 });
-                
+
                 if (response.ok) {
                     const programas = await response.json();
                     renderSchedule(programas);
@@ -842,7 +1145,7 @@
             const agora = new Date();
             const diaAtual = agora.getDay();
             const horaPadronizada = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0') + ':00';
-            
+
             let onAirProgram = "PROGRAMAÇÃO POP";
 
             if (programas && programas.length > 0) {
@@ -863,8 +1166,8 @@
             const agora = new Date();
             const diaAtual = agora.getDay();
             const horaPadronizada = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0') + ':00';
-            
-            if(programas.length === 0) {
+
+            if (programas.length === 0) {
                 scheduleList.innerHTML = `<div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">Nenhuma programação cadastrada ainda.</div>`;
                 return;
             }
@@ -894,4 +1197,5 @@
         }
     </script>
 </body>
+
 </html>
