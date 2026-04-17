@@ -57,9 +57,6 @@
     textarea { resize: none; font-family: inherit; }
     input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
     
-    /* Highlight Mandatory */
-    .required-field { border-left: 4px solid var(--primary); }
-
     button.primary { 
       width: 100%; padding: 16px; background: var(--primary); color: white; border: none; 
       border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; 
@@ -114,7 +111,7 @@
         <!-- Step 1: Cliente & Radio -->
         <div id="step-1" class="view active">
           <label>Emissora do Contrato</label>
-          <select id="radio" class="required-field" onchange="validateStep1()">
+          <select id="radio" onchange="validateStep1()">
             <option value="">Selecione a Rádio...</option>
             <option value="Pop FM">Pop FM</option>
             <option value="Massa Itapeva">Massa Itapeva</option>
@@ -127,16 +124,16 @@
           </div>
 
           <label id="docLabel">CNPJ</label>
-          <input type="text" id="document" class="required-field" placeholder="00.000.000/0000-00" oninput="validateStep1()">
+          <input type="text" id="document" placeholder="Apenas números" oninput="cleanNumberInput(this); validateStep1()">
 
           <label id="nameLabel">Razão Social</label>
-          <input type="text" id="companyName" class="required-field" placeholder="Nome completo..." oninput="validateStep1()">
+          <input type="text" id="companyName" placeholder="Nome completo..." oninput="validateStep1()">
 
           <label>Email de Contato</label>
-          <input type="email" id="email" class="required-field" placeholder="email@exemplo.com" oninput="validateStep1()">
+          <input type="email" id="email" placeholder="email@exemplo.com" oninput="validateStep1()">
 
           <label>Telefone</label>
-          <input type="text" id="phone" class="required-field" placeholder="(00) 00000-0000" oninput="validateStep1()">
+          <input type="text" id="phone" placeholder="DDD + Número (Apenas números)" oninput="cleanNumberInput(this); validateStep1()">
 
           <button id="nextBtn" class="primary" onclick="goToStep(2)" disabled>
             <span>Informações do Contrato</span>
@@ -147,7 +144,7 @@
         <!-- Step 2: Contract Details -->
         <div id="step-2" class="view">
           <label>Tipo de Mídia</label>
-          <select id="mediaType" class="required-field" onchange="validateStep2()">
+          <select id="mediaType" onchange="validateStep2()">
             <option value="">Selecione o tipo...</option>
             <option value="Spot">Spot</option>
             <option value="Testemunhal">Testemunhal</option>
@@ -157,19 +154,19 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
               <label>Data Início</label>
-              <input type="date" id="dateStart" class="required-field" onchange="validateStep2()">
+              <input type="date" id="dateStart" onchange="validateStep2()">
             </div>
             <div>
               <label>Data Fim</label>
-              <input type="date" id="dateEnd" class="required-field" onchange="validateStep2()">
+              <input type="date" id="dateEnd" onchange="validateStep2()">
             </div>
           </div>
 
           <label>Dias de Veiculação</label>
-          <textarea id="days" class="required-field" rows="2" placeholder="Ex: Seg à Sex / Todos os dias..." oninput="validateStep2()"></textarea>
+          <textarea id="days" rows="2" placeholder="Ex: Seg à Sex / Todos os dias..." oninput="validateStep2()"></textarea>
 
           <label>Horários de Veiculação</label>
-          <textarea id="hours" class="required-field" rows="2" placeholder="Ex: Manhã e Tarde / 08h às 18h..." oninput="validateStep2()"></textarea>
+          <textarea id="hours" rows="2" placeholder="Ex: Manhã e Tarde / 08h às 18h..." oninput="validateStep2()"></textarea>
 
           <label>Observações (Opcional)</label>
           <textarea id="obs" rows="3" placeholder="Informações adicionais se houver..."></textarea>
@@ -210,14 +207,23 @@
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       document.querySelector(`[onclick="setType('${type}')"]`).classList.add('active');
       document.getElementById('docLabel').textContent = type === 'pj' ? 'CNPJ' : 'CPF';
-      document.getElementById('document').placeholder = type === 'pj' ? '00.000.000/0000-00' : '000.000.000-00';
+      document.getElementById('document').placeholder = type === 'pj' ? 'Apenas números' : 'Apenas números';
       document.getElementById('nameLabel').textContent = type === 'pj' ? 'Razão Social' : 'Nome do Cliente';
       validateStep1();
     }
 
+    function cleanNumberInput(el) {
+      el.value = el.value.replace(/\D/g, '');
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
     function validateStep1() {
       const isFilled = (id) => document.getElementById(id).value.trim() !== '';
-      const valid = isFilled('radio') && isFilled('document') && isFilled('companyName') && isFilled('email') && isFilled('phone');
+      const emailVal = document.getElementById('email').value.trim();
+      const valid = isFilled('radio') && isFilled('document') && isFilled('companyName') && isValidEmail(emailVal) && isFilled('phone');
       document.getElementById('nextBtn').disabled = !valid;
     }
 
@@ -268,18 +274,18 @@
       const token = localStorage.getItem('pop_seller_token');
       
       const payload = {
-        radio: document.getElementById('radio').value,
-        type: contractType,
+        radio: document.getElementById('radio').value.toUpperCase(),
+        type: contractType.toUpperCase(),
         document: document.getElementById('document').value,
-        companyName: document.getElementById('companyName').value,
-        email: document.getElementById('email').value,
+        companyName: document.getElementById('companyName').value.toUpperCase(),
+        email: document.getElementById('email').value.toLowerCase(),
         phone: document.getElementById('phone').value,
-        mediaType: document.getElementById('mediaType').value,
+        mediaType: document.getElementById('mediaType').value.toUpperCase(),
         dateStart: document.getElementById('dateStart').value,
         dateEnd: document.getElementById('dateEnd').value,
-        days: document.getElementById('days').value,
-        hours: document.getElementById('hours').value,
-        obs: document.getElementById('obs').value
+        days: document.getElementById('days').value.toUpperCase(),
+        hours: document.getElementById('hours').value.toUpperCase(),
+        obs: document.getElementById('obs').value.toUpperCase()
       };
 
       btn.disabled = true;
