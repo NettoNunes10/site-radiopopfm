@@ -3,2699 +3,330 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Rádio POP FM</title>
+  <title>Gestão de Usuários - POP FM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="/admin/admin.css">
-  <script type="module" src="/admin/roteiro.js"></script>
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --error: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+    /* Login Overlay */
+    .login-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .login-card {
+      background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      width: 100%; max-width: 400px; text-align: center;
+    }
+    .login-card h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .login-card p { color: var(--text-light); margin-bottom: 32px; font-size: 0.875rem; }
+    input {
+      width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 16px; font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--primary); }
+    button {
+      width: 100%; padding: 12px; background: var(--primary); color: white; border: none;
+      border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    button:hover { background: var(--primary-dark); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    /* Main Layout */
+    .app-container { display: none; padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+    .header h2 { font-size: 1.875rem; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+    .header h2 ion-icon { color: var(--primary); }
+
+    .card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 16px; background: #f1f5f9; font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 16px; border-top: 1px solid var(--border); font-size: 0.875rem; }
+    
+    .user-name { font-weight: 600; color: var(--text); }
+    .user-handle { color: var(--text-light); font-size: 0.8125rem; }
+
+    .actions { display: flex; gap: 8px; }
+    .btn-icon {
+      padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: white;
+      color: var(--text-light); cursor: pointer; transition: all 0.2s; display: flex;
+    }
+    .btn-icon:hover { background: #f1f5f9; color: var(--text); }
+    .btn-icon.delete:hover { border-color: var(--error); color: var(--error); background: #fef2f2; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000;
+      backdrop-filter: blur(4px);
+    }
+    .modal { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 450px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+    .btn-secondary { background: #f1f5f9; color: var(--text); width: auto; padding: 10px 20px; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-primary { width: auto; padding: 10px 20px; }
+  </style>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="loginScreen" class="login-screen">
+
+  <!-- Login -->
+  <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
-      <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px;">
-        <ion-icon name="radio" style="font-size: 36px; color: #10b981;"></ion-icon>
-        <h1 style="font-size: 1.5rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1;">POP FM Admin</h1>
+      <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #ecfdf5; border-radius: 12px; color: var(--primary);">
+        <ion-icon name="people" style="font-size: 32px;"></ion-icon>
       </div>
-      <p style="color: #64748b; margin-bottom: 24px;">Acesse o painel restrito</p>
-      <div id="loginError" style="color: #ef4444; font-size: 0.875rem; margin-bottom: 16px; display: none;">Senha incorreta.</div>
-      <input type="password" id="passwordInput" placeholder="Digite a senha mestra...">
-      <button onclick="checkPassword()">Entrar no Painel</button>
+      <h1>Gestão POP</h1>
+      <p>Administração de usuários e vendedores</p>
+      <input type="password" id="masterPassword" placeholder="Senha Mestra...">
+      <button onclick="login()" id="loginBtn">Acessar Painel</button>
+      <div id="loginError" style="color: var(--error); font-size: 0.8125rem; margin-top: 16px; display: none;">Senha incorreta.</div>
     </div>
   </div>
 
-  <!-- Main App Shell -->
-  <div id="appShell" class="app-shell" style="display: none; width: 100%;">
-    <!-- Mobile Header -->
-    <header class="mobile-header">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <ion-icon name="menu-outline" id="menuBtn" onclick="toggleSidebar()"></ion-icon>
-        <h1 style="font-size: 1.1rem; font-weight: 800; color: white; margin: 0;">POP ADMIN</h1>
+  <!-- App -->
+  <div id="app" class="app-container">
+    <div class="header">
+      <h2><ion-icon name="people-circle"></ion-icon> Vendedores</h2>
+      <button class="btn-primary" onclick="openUserModal()">
+        <ion-icon name="add-outline"></ion-icon> Novo Vendedor
+      </button>
+    </div>
+
+    <div class="card">
+      <table id="userTable">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Nome/Identificação</th>
+            <th width="100">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Users will be injected here -->
+        </tbody>
+      </table>
+      <div id="emptyState" style="padding: 40px; text-align: center; color: var(--text-light); display: none;">
+        Nenhum vendedor cadastrado.
       </div>
-      <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
-    </header>
+    </div>
 
-    <!-- Sidebar Backdrop -->
-    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleSidebar()"></div>
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-          <ion-icon name="pulse" style="font-size: 24px; color: #10b981;"></ion-icon>
-          <h1>POP ADMIN</h1>
-        </div>
-        <ion-icon name="close-outline" class="close-sidebar-mobile" onclick="toggleSidebar()"></ion-icon>
-      </div>
-      
-      <nav class="nav-links">
-        <div class="nav-section-label massa">
-          <ion-icon name="radio"></ion-icon>
-          <span>Rede Massa</span>
-        </div>
-        <div class="nav-item">
-          <a class="nav-link active" onclick="showTab('dashboard')" id="nav-dashboard">
-            <ion-icon name="grid-outline"></ion-icon>
-            <span>Status Global</span>
-          </a>
-        </div>
-        <div class="nav-item">
-          <a class="nav-link" onclick="showTab('news')" id="nav-news">
-            <ion-icon name="newspaper-outline"></ion-icon>
-            <span>Boletins Massa</span>
-          </a>
-        </div>
-        <div class="nav-item">
-          <a class="nav-link" onclick="showTab('music')" id="nav-music">
-            <ion-icon name="musical-notes-outline"></ion-icon>
-            <span>Musical Massa</span>
-          </a>
-        </div>
-
-        <div class="nav-section-label pop">
-          <ion-icon name="pulse"></ion-icon>
-          <span>Rede Pop FM</span>
-        </div>
-        <div class="nav-item">
-          <a class="nav-link" onclick="showTab('pop-generator')" id="nav-pop-generator">
-            <ion-icon name="flash-outline"></ion-icon>
-            <span>Gerador & Painel Pop</span>
-          </a>
-        </div>
-
-        <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 16px 0;"></div>
-        <div class="nav-item">
-          <a class="nav-link" onclick="location.reload()">
-            <ion-icon name="log-out-outline"></ion-icon>
-            <span>Sair</span>
-          </a>
-        </div>
-      </nav>
-
-      <div style="margin-top: auto; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px;">
-        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">STATUS DA CONEXÃO</span>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-          <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
-          <span style="font-size: 0.8125rem; color: #e2e8f0;">Servidor Online</span>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <div class="container">
-        
-        <!-- Tab: Dashboard / Status -->
-        <div id="tab-dashboard" class="tab-content active">
-          <div class="page-header">
-            <h2>Status do Sistema</h2>
-            <div class="user-info">
-              <ion-icon name="time-outline"></ion-icon>
-              <span id="lastUpdateTime">Atualizando...</span>
-            </div>
-          </div>
-
-          <div class="stat-grid">
-            <!-- Itapeva Info -->
-            <div class="card city-card" id="card-itapeva">
-              <div class="city-header">
-                <h3>Itapeva (104.1)</h3>
-                <ion-icon name="navigate" style="color: var(--accent);"></ion-icon>
-              </div>
-              
-              <div class="status-row" id="row-news-itapeva">
-                <div class="status-label">
-                  <ion-icon name="mic-outline"></ion-icon>
-                  <span>Boletins de Notícias</span>
-                </div>
-                <div class="status-badge offline">
-                  <div class="indicator-dot"></div>
-                  <span>Checking...</span>
-                </div>
-              </div>
-
-              <div class="status-row" id="row-music-itapeva">
-                <div class="status-label">
-                  <ion-icon name="musical-note-outline"></ion-icon>
-                  <span>Sincronia Musical (.bil)</span>
-                </div>
-                <div class="status-badge offline">
-                  <div class="indicator-dot"></div>
-                  <span>Checking...</span>
-                </div>
-              </div>
-
-              <div style="font-size: 0.75rem; color: var(--text-light); border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 8px;">
-                <span id="meta-itapeva">Aguardando telemetria do Sync.exe...</span>
-              </div>
-            </div>
-
-            <!-- Itapetininga Info -->
-            <div class="card city-card" id="card-itapetininga">
-              <div class="city-header">
-                <h3>Itapetininga (106.5)</h3>
-                <ion-icon name="navigate" style="color: var(--accent);"></ion-icon>
-              </div>
-              
-              <div class="status-row" id="row-news-itapetininga">
-                <div class="status-label">
-                  <ion-icon name="mic-outline"></ion-icon>
-                  <span>Boletins de Notícias</span>
-                </div>
-                <div class="status-badge offline">
-                  <div class="indicator-dot"></div>
-                  <span>Checking...</span>
-                </div>
-              </div>
-
-              <div class="status-row" id="row-music-itapetininga">
-                <div class="status-label">
-                  <ion-icon name="musical-note-outline"></ion-icon>
-                  <span>Sincronia Musical (.bil)</span>
-                </div>
-                <div class="status-badge offline">
-                  <div class="indicator-dot"></div>
-                  <span>Checking...</span>
-                </div>
-              </div>
-
-              <div style="font-size: 0.75rem; color: var(--text-light); border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 8px;">
-                <span id="meta-itapetininga">Aguardando telemetria do Sync.exe...</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="card" style="margin-top: 24px; background: #fffbeb; border-color: #fde68a;">
-            <div style="display: flex; gap: 16px;">
-              <ion-icon name="alert-circle" style="font-size: 24px; color: #b45309;"></ion-icon>
-              <div>
-                <h4 style="color: #92400e; margin-bottom: 4px;">Monitoramento do Sync.exe</h4>
-                <p style="color: #b45309; font-size: 0.8125rem;">O sistema de telemetria verifica a cada 30 segundos se o aplicativo local nos estúdios está rodando e enviando/recebendo arquivos corretamente.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: News / Notícias -->
-        <div id="tab-news" class="tab-content">
-          <div class="page-header">
-            <h2>Gerador de Boletins</h2>
-            <div class="editor-toolbar">
-              <input type="date" id="dateInput" class="btn btn-secondary">
-              <button class="btn btn-primary" id="generateBtn" onclick="generate()">
-                <ion-icon name="flash-outline"></ion-icon>
-                <span>Gerar Noticias</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="card news-editor-card">
-            <div class="editor-header">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span id="statusLabel" style="font-size: 0.875rem; color: var(--text-light); font-weight: 500;">Pronto para edição.</span>
-              </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <button class="btn btn-secondary" onclick="exportNewsJSON()" title="Exportar JSON">
-                    <ion-icon name="download-outline"></ion-icon> Exportar
-                  </button>
-                  <button class="btn btn-secondary" onclick="openImportNewsModal()" title="Importar/Colar JSON">
-                    <ion-icon name="cloud-upload-outline"></ion-icon> Importar
-                  </button>
-                  <div style="width: 1px; background: var(--border); height: 24px; margin: 0 4px;" class="hide-mobile"></div>
-                  <button id="downloadBtn" class="btn" style="background: #059669; color: white; display: none;" onclick="downloadAllRTFs()">
-                    <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
-                  </button>
-                  <button id="dispatchBtn" class="btn btn-accent" style="display: none;" onclick="dispatchToStudios()">
-                    <ion-icon name="radio-outline"></ion-icon> Enviar Estúdios
-                  </button>
-                  <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
-                </div>
-            </div>
-
-            <div class="sections-container">
-              <!-- Nacional -->
-              <div class="section-group">
-                <h4><ion-icon name="globe-outline" style="color: var(--accent);"></ion-icon> Nacional</h4>
-                <div class="news-inputs">
-                  <div class="input-field"><label>Notícia 1</label><textarea id="nacional-1" placeholder="Texto da notícia..."></textarea></div>
-                  <div class="input-field"><label>Notícia 2</label><textarea id="nacional-2" placeholder="Texto da notícia..."></textarea></div>
-                  <div class="input-field"><label>Notícia 3</label><textarea id="nacional-3" placeholder="Texto da notícia..."></textarea></div>
-                </div>
-              </div>
-
-              <!-- Itapeva -->
-              <div class="section-group">
-                <h4><ion-icon name="pin-outline" style="color: var(--accent);"></ion-icon> Regional: Itapeva</h4>
-                <div class="news-inputs">
-                  <div class="input-field"><label>Notícia 1</label><textarea id="itapeva-1" placeholder="Texto da notícia..."></textarea></div>
-                  <div class="input-field"><label>Notícia 2</label><textarea id="itapeva-2" placeholder="Texto da notícia..."></textarea></div>
-                  <div class="input-field"><label>Notícia 3</label><textarea id="itapeva-3" placeholder="Texto da notícia..."></textarea></div>
-                </div>
-              </div>
-
-              <!-- Itapetininga -->
-              <div class="section-group">
-                <h4><ion-icon name="pin-outline" style="color: var(--accent);"></ion-icon> Regional: Itapetininga</h4>
-                <div class="news-inputs">
-                  <div class="input-field"><label>Notícia 1</label><textarea id="itapetininga-1" placeholder="Texto da notícia..."></textarea></div>
-                  <div class="input-field"><label>Notícia 2</label><textarea id="itapetininga-2" placeholder="Texto da notícia..."></textarea></div>
-                  <div class="input-field"><label>Notícia 3</label><textarea id="itapetininga-3" placeholder="Texto da notícia..."></textarea></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="resultArea" style="display: none; margin-bottom: 40px;">
-            <h4 style="margin: 24px 0 12px; font-size: 0.875rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">Prévia dos Textos</h4>
-            <div id="resultBox" class="result-box"></div>
-          </div>
-        </div>
-
-        <!-- Tab: Music / Roteiros -->
-        <div id="tab-music" class="tab-content">
-          <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
-            
-            <div class="card" style="padding: 32px; text-align: center; border: 2px dashed var(--border); background: #f8fafc; cursor: pointer;" onclick="document.getElementById('musicFile').click()">
-              <div style="font-size: 3rem; color: var(--primary); margin-bottom: 16px;">
-                <ion-icon name="cloud-upload-outline"></ion-icon>
-              </div>
-              <h3 style="margin-bottom: 8px;">Subir Roteiros .BIL</h3>
-              <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 24px;">Extraímos a data automaticamente do nome do arquivo (ex: 20260404_BASE.bil)</p>
-              
-              <div style="display: flex; gap: 8px; justify-content: center;">
-                <input type="file" id="musicFile" accept=".bil" style="display: none;" multiple onchange="generateMusicResult()">
-                <button class="btn btn-primary" style="padding: 12px 32px; font-weight: 600;">
-                  Selecionar Arquivos da Rede
-                </button>
-              </div>
-            </div>
-
-            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-              <button class="btn btn-secondary btn-sm" onclick="openModal('jabasManagerModal'); renderJabaList();" title="Jabás">
-                <ion-icon name="musical-notes"></ion-icon> Jabás
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('promoManagerModal'); renderPromosList();" style="border-color: #ec4899; color: #ec4899;" title="Promoções">
-                <ion-icon name="megaphone"></ion-icon> Promoções
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('rulesModal'); renderRulesLists();" title="Regras">
-                <ion-icon name="options"></ion-icon> Regras
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('vignettesModal'); renderVignetteList();" title="Substituições">
-                <ion-icon name="repeat"></ion-icon> Substituições
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('prefixesModal'); renderPrefixList();" title="Prefixos">
-                <ion-icon name="time"></ion-icon> Prefixos
-              </button>
-              <div style="width: 1px; background: var(--border); height: 24px; margin: 0 8px;"></div>
-              <button class="btn btn-secondary btn-sm" onclick="exportMusicConfig()" title="Exportar Backup">
-                <ion-icon name="download-outline"></ion-icon> Exportar
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()" title="Importar Backup">
-                <ion-icon name="cloud-upload-outline"></ion-icon> Importar
-              </button>
-              <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importMusicConfig(event)">
-              <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="restoreMusicDefaults()" title="Reset">
-                <ion-icon name="refresh-outline"></ion-icon> Reset
-              </button>
-            </div>
-
-            <div id="processingLogsContainer" style="display: none; background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-              <div style="background: #1e293b; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155;">
-                <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">TERMINAL DE PROCESSAMENTO</span>
-                <button onclick="document.getElementById('processingLogsContainer').style.display='none'" style="background: none; border: none; color: #94a3b8; cursor: pointer;"><ion-icon name="close"></ion-icon></button>
-              </div>
-              <div id="processingLogs" style="padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; max-height: 400px; overflow-y: auto; line-height: 1.6;"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Pop Generator & Unified Dashboard -->
-        <div id="tab-pop-generator" class="tab-content">
-          <div class="page-header">
-            <h2>Gerador Pop FM</h2>
-            <div class="editor-toolbar">
-              <div style="display: flex; gap: 8px; align-items: center; background: white; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border);">
-                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase;">Início:</label>
-                <input type="date" id="popGenDate" class="btn btn-secondary" style="border: none; padding: 4px;">
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center; background: white; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border);">
-                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase;">Dias:</label>
-                <input type="number" id="popGenDays" value="1" min="1" max="31" class="btn btn-secondary" style="border: none; padding: 4px; width: 60px;">
-              </div>
-              <button class="btn btn-primary" onclick="generatePopProgramming()">
-                <ion-icon name="flash-outline"></ion-icon>
-                <span>Gerar Lote Pop</span>
-              </button>
-            </div>
-          </div>
-
-          <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
-            <!-- Barra de Ferramentas de Configuração -->
-            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
-              <button class="btn btn-secondary btn-sm" onclick="openModal('popJabaManagerModal'); renderPopJabaList();" style="border-color: #38bdf8; color: #38bdf8;">
-                <ion-icon name="musical-notes"></ion-icon> Gerenciar Jabás
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('popTemplatesModal');" style="border-color: var(--accent); color: var(--accent);">
-                <ion-icon name="calendar"></ion-icon> Modelos / Escala
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('popRulesModal');">
-                <ion-icon name="options"></ion-icon> Regras de Plástica
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('popMappingModal'); loadPopMapping();" style="border-color: #10b981; color: #10b981;">
-                <ion-icon name="map-outline"></ion-icon> Mapear Materiais
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openModal('popPathsModal');">
-                <ion-icon name="folder-open"></ion-icon> Caminhos (M: / U:)
-              </button>
-              <div style="width: 1px; background: var(--border); height: 24px; margin: 0 8px;"></div>
-              <button class="btn btn-secondary btn-sm" onclick="triggerPopSync()" title="Reindexar Biblioteca">
-                <ion-icon name="sync"></ion-icon> Reindexar
-              </button>
-            </div>
-
-            <!-- Terminal de Logs (Foco Principal) -->
-            <div id="popProcessingLogsContainer" style="background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; min-height: 450px;">
-              <div style="background: #1e293b; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <div class="indicator-dot" style="background: #10b981; width: 8px; height: 8px; border-radius: 50%;"></div>
-                  <span style="font-family: monospace; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">TERMINAL DE GERAÇÃO POP FM</span>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                  <button id="popDownloadZipBtn" class="btn btn-accent btn-sm" style="display: none;" onclick="downloadPopBatchZip()">
-                    <ion-icon name="cloud-download-outline"></ion-icon> Baixar .ZIP
-                  </button>
-                  <button class="btn btn-secondary btn-sm" style="background: #334155; border: none; padding: 4px 8px;" onclick="document.getElementById('popProcessingLogs').innerHTML='> Aguardando comando...'" title="Limpar">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </button>
-                </div>
-              </div>
-              <div id="popProcessingLogs" style="padding: 24px; font-family: 'Fira Code', monospace; font-size: 0.8125rem; color: #38bdf8; overflow-y: auto; line-height: 1.7; flex: 1;">
-                 > Pronto para iniciar a geração da POP FM.
-              </div>
-              <div style="background: #1e293b; padding: 8px 16px; border-top: 1px solid #334155; display: flex; justify-content: space-between;">
-                 <span id="popLibrarySummary" style="font-size: 0.6875rem; color: #64748b;">Músicas: 0 | Sincronia: ---</span>
-                 <span style="font-size: 0.6875rem; color: #38bdf8; opacity: 0.6;">v2.0 beAudio Engine</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-          <div id="popGenResultArea" style="display: none; margin-top: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h4 style="font-size: 0.875rem; color: var(--text-light); text-transform: uppercase;">Roteiro Gerado</h4>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-secondary btn-sm" onclick="copyPopBil()">
-                  <ion-icon name="copy-outline"></ion-icon> Copiar
-                </button>
-                <button class="btn btn-accent btn-sm" onclick="downloadPopBil()">
-                  <ion-icon name="download-outline"></ion-icon> Baixar .BIL
-                </button>
-              </div>
-            </div>
-            <div id="popGenResultBox" class="result-box" style="max-height: 400px; overflow-y: auto;"></div>
-          </div>
-        </div>
-
-      </div>
-    </main>
+    <!-- Go to /rede link -->
+    <div style="margin-top: 40px; text-align: center;">
+      <a href="/rede" style="color: var(--text-light); text-decoration: none; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 4px;">
+        <ion-icon name="arrow-back-outline"></ion-icon> Voltar para Painel da Rede
+      </a>
+    </div>
   </div>
 
-  <!-- Modal: Importar Notícias -->
-  <div id="importNewsModal" class="modal-overlay">
+  <!-- Modal -->
+  <div id="userModal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
-        <h3>Importar Notícias (JSON)</h3>
-        <button onclick="closeModal('importNewsModal')" style="background: none; border: none; font-size: 24px; cursor: pointer;"><ion-icon name="close"></ion-icon></button>
+        <h3 id="modalTitle">Novo Vendedor</h3>
+        <ion-icon name="close-outline" style="font-size: 24px; cursor: pointer;" onclick="closeModal()"></ion-icon>
       </div>
-      <div class="modal-body">
-        <p style="color: var(--text-light); font-size: 0.875rem; margin-bottom: 16px;">Cole o JSON de importação abaixo ou selecione um arquivo.</p>
-        <textarea id="importNewsTextarea" style="width: 100%; min-height: 200px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 0.75rem; margin-bottom: 16px;" placeholder='{ "date": "...", "sections": { ... } }'></textarea>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase;">Ou suba um arquivo .json</label>
-          <input type="file" id="importNewsFile" accept=".json" onchange="handleNewsFileImport(event)">
+      <form id="userForm" onsubmit="saveUser(event)">
+        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; display: block;">NOME DE USUÁRIO (LOGIN)</label>
+        <input type="text" id="username" placeholder="ex: joao.silva" required>
+        
+        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; display: block;">NOME COMPLETO</label>
+        <input type="text" id="name" placeholder="ex: João Silva" required>
+        
+        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; display: block;">SENHA DE ACESSO</label>
+        <input type="text" id="password" placeholder="Defina uma senha..." required>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="saveBtn">Salvar Vendedor</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('importNewsModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="processNewsImport()">Importar Dados</button>
-      </div>
+      </form>
     </div>
-  </div>
-
-  <!-- Toast -->
-  <div id="toast" class="toast">
-    <div id="toastIcon"></div>
-    <span id="toastMessage"></span>
   </div>
 
   <script>
-    const API_URL = '/api/generate';
-    const sections = ['nacional', 'itapeva', 'itapetininga'];
+    let users = [];
+    let isEditing = false;
 
-    function setupMusic() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      if (!password) return;
-      
-      // Load both configs (Isolated)
-      loadMusicConfig(); // Massa
-      loadPopConfig();   // Pop
-    }
-
-    // --- TAB SYSTEM ---
-    function showTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-      
-      const targetTab = document.getElementById('tab-' + tabId);
-      if (targetTab) targetTab.classList.add('active');
-      
-      const targetNav = document.getElementById('nav-' + tabId);
-      if (targetNav) targetNav.classList.add('active');
-
-      if (tabId === 'pop-generator') {
-        document.body.setAttribute('data-theme', 'pop');
-      } else {
-        document.body.removeAttribute('data-theme');
-      }
-      
-      saveSidebarState(tabId);
-
-      // Close sidebar if on mobile
-      const sidebar = document.getElementById('sidebar');
-      const backdrop = document.getElementById('sidebarBackdrop');
-      if (sidebar) sidebar.classList.remove('open');
-      if (backdrop) backdrop.classList.remove('show');
-    }
-
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const backdrop = document.getElementById('sidebarBackdrop');
-      sidebar.classList.toggle('open');
-      backdrop.classList.toggle('show');
-    }
-
-    function saveSidebarState(tab) {
-      localStorage.setItem('admin_last_tab', tab);
-    }
-
-    // --- UTILS ---
-    function showToast(message, type) {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toastMessage');
-      toastMsg.textContent = message;
-      toast.className = `toast ${type} show`;
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    async function checkPassword() {
-      const password = document.getElementById('passwordInput').value;
-      const btn = document.querySelector('#loginScreen button');
-      const errorLabel = document.getElementById('loginError');
+    async function login() {
+      const password = document.getElementById('masterPassword').value;
+      const btn = document.getElementById('loginBtn');
+      const error = document.getElementById('loginError');
 
       if (!password) return;
 
       btn.disabled = true;
       btn.textContent = 'Autenticando...';
-      errorLabel.style.display = 'none';
+      error.style.display = 'none';
 
       try {
-        const response = await fetch(API_URL, {
-          method: 'GET',
+        const res = await fetch('/api/users', {
           headers: { 'Authorization': `Bearer ${password}` }
         });
 
-        if (response.ok) {
-          sessionStorage.setItem('newsmaker_password', password);
-          document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('appShell').style.display = 'flex';
-          loadState();
-          initDate();
-          startStatusPolling();
-          setupMusic();
-          
-          const lastTab = localStorage.getItem('admin_last_tab') || 'dashboard';
-          showTab(lastTab);
-        } else {
-          errorLabel.style.display = 'block';
-        }
-      } catch (error) {
-        errorLabel.textContent = 'Erro de rede ou servidor.';
-        errorLabel.style.display = 'block';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Entrar no Painel';
-      }
-    }
-
-    // Press Enter to login
-    document.getElementById('passwordInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') checkPassword();
-    });
-
-    // --- NEWS GENERATOR LOGIC (Ported from NewsMaker) ---
-    function getSavedState() {
-      try { return JSON.parse(localStorage.getItem('newsmaker_state') || '{}'); }
-      catch { return {}; }
-    }
-
-    function saveState() {
-      const state = {
-        date: document.getElementById('dateInput').value,
-        sections: {}
-      };
-      sections.forEach(sec => {
-        state.sections[sec] = [];
-        for (let i = 1; i <= 3; i++) {
-          state.sections[sec].push(document.getElementById(`${sec}-${i}`).value);
-        }
-      });
-      localStorage.setItem('newsmaker_state', JSON.stringify(state));
-    }
-
-    function loadState() {
-      const state = getSavedState();
-      if (state.date) document.getElementById('dateInput').value = state.date;
-      if (state.sections) {
-        sections.forEach(sec => {
-          if (state.sections[sec]) {
-            state.sections[sec].forEach((val, i) => {
-              const el = document.getElementById(`${sec}-${i + 1}`);
-              if (el) el.value = val || '';
-            });
-          }
-        });
-      }
-    }
-
-    function initDate() {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      const dateInput = document.getElementById('dateInput');
-      if (!dateInput.value) {
-        dateInput.value = today.toISOString().split('T')[0];
-      }
-    }
-
-    async function uploadPlaylist(city, date, content, filename) {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const logCont = document.getElementById('processingLogs');
-      
-      try {
-        const res = await fetch('/api/playlist', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city, date, content, filename })
-        });
-        
         if (res.ok) {
-          logCont.innerHTML += `<div style="color: #4ade80;">[KV OK] Enviado para ${city} com sucesso.</div>`;
+          localStorage.setItem('pop_admin_password', password);
+          users = await res.json();
+          renderUsers();
+          document.getElementById('loginOverlay').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
         } else {
-          logCont.innerHTML += `<div style="color: #f87171;">[ERRO KV] Falha ao enviar para ${city} (${res.status}).</div>`;
+          error.style.display = 'block';
         }
       } catch (e) {
-        logCont.innerHTML += `<div style="color: #f87171;">[ERRO REDE] Falha crítica de envio para ${city}.</div>`;
+        alert('Erro ao conectar com o servidor.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Acessar Painel';
       }
-      logCont.scrollTop = logCont.scrollHeight;
     }
 
-    document.querySelectorAll('textarea').forEach(el => {
-      el.addEventListener('input', saveState);
-    });
-    document.getElementById('dateInput').addEventListener('change', saveState);
-
-    async function generate() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      if (!password) { location.reload(); return; }
-
-      const btn = document.getElementById('generateBtn');
-      const statusLabel = document.getElementById('statusLabel');
-      const resultBox = document.getElementById('resultBox');
-      const resultArea = document.getElementById('resultArea');
-
-      btn.disabled = true;
-      btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> <span>Gerando...</span>';
-      resultArea.style.display = 'none';
-      statusLabel.textContent = 'Solicitando inteligência do Gemini...';
-      saveState();
-
-      const payload = {
-        nacional: [], itapeva: [], itapetininga: [],
-        date: document.getElementById('dateInput').value,
-      };
-
-      let hasEmpty = false;
-      sections.forEach(sec => {
-        for (let i = 1; i <= 3; i++) {
-          const val = document.getElementById(`${sec}-${i}`).value.trim();
-          if (!val) hasEmpty = true;
-          payload[sec].push(val);
-        }
-      });
-
-      if (hasEmpty) {
-        showToast('Preencha todas as 9 notícias!', 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<ion-icon name="flash-outline"></ion-icon> <span>Gerar Noticias</span>';
+    function renderUsers() {
+      const tbody = document.querySelector('#userTable tbody');
+      const empty = document.getElementById('emptyState');
+      tbody.innerHTML = '';
+      
+      if (users.length === 0) {
+        empty.style.display = 'block';
         return;
       }
-
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${password}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Erro na geração');
-
-        window.lastGenerationData = data;
-        document.getElementById('downloadBtn').style.display = 'inline-flex';
-        document.getElementById('dispatchBtn').style.display = 'inline-flex';
-
-        let output = '';
-        sections.forEach(sec => {
-          output += `\n--- ${sec.toUpperCase()} ---\n`;
-          data.notes[sec].forEach((note, idx) => {
-            output += `\nNotícia ${idx + 1}:\n${note.text}\n`;
-          });
-        });
-
-        resultBox.textContent = output.trim();
-        resultArea.style.display = 'block';
-        statusLabel.textContent = 'Sucesso! Arquivos preparados.';
-        showToast('Notícias geradas com sucesso!', 'success');
-
-      } catch (error) {
-        showToast(error.message, 'error');
-        statusLabel.textContent = 'Erro na geração.';
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<ion-icon name="flash-outline"></ion-icon> <span>Gerar Noticias</span>';
-      }
-    }
-
-    async function dispatchToStudios() {
-      if (!window.lastGenerationData) return;
-      const password = sessionStorage.getItem('newsmaker_password');
-      const btn = document.getElementById('dispatchBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Enviando...';
-
-      try {
-        const response = await fetch('/api/dispatch', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${password}`,
-          },
-          body: JSON.stringify({
-            date: window.lastGenerationData.date,
-            notes: window.lastGenerationData.notes,
-          }),
-        });
-        if (!response.ok) throw new Error('Falha no envio');
-        showToast('Enviado para os estúdios!', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<ion-icon name="radio-outline"></ion-icon> Enviar Estúdios';
-      }
-    }
-
-    function clearAll() {
-      if (!confirm('Deseja limpar todos os campos?')) return;
-      sections.forEach(sec => {
-        for (let i = 1; i <= 3; i++) document.getElementById(`${sec}-${i}`).value = '';
+      
+      empty.style.display = 'none';
+      users.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="user-handle">@${user.username}</div>
+          </td>
+          <td>
+            <div class="user-name">${user.name}</div>
+          </td>
+          <td>
+            <div class="actions">
+              <button class="btn-icon" onclick="editUser('${user.username}')" title="Editar">
+                <ion-icon name="create-outline"></ion-icon>
+              </button>
+              <button class="btn-icon delete" onclick="deleteUser('${user.username}')" title="Excluir">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
       });
-      document.getElementById('resultArea').style.display = 'none';
-      document.getElementById('downloadBtn').style.display = 'none';
-      document.getElementById('dispatchBtn').style.display = 'none';
-      localStorage.removeItem('newsmaker_state');
-      showToast('Campos limpos.', 'success');
     }
 
-    // --- RTF GENERATION LOGIC ---
-    const RTF_CONFIG = {
-      layout: {
-        paperw: 12240, paperh: 15840, margl: 1800, margr: 1800, margt: 1440, margb: 1440,
-        deftab: 708, sl: 360, sa: 200, sb_time: 100, sa_time: 100,
-        fi_blank: 708, tx_blank: 8128, fs_header: 44, fs_body: 44, f_header: 45, f_body: 1
-      },
-      output: {
-        header_template: "NOTICIAS DA MASSA - NACIONAL - {weekday} {day_month}",
-        time_pairs: [["08H55", "14H55"], ["09H55", "15H55"], ["10H55", "16H55"]],
-        cities: { itapeva: { name: "ITAPEVA" }, itapetininga: { name: "ITAPETININGA" } }
+    function openUserModal() {
+      isEditing = false;
+      document.getElementById('modalTitle').textContent = 'Novo Vendedor';
+      document.getElementById('userForm').reset();
+      document.getElementById('username').disabled = false;
+      document.getElementById('userModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('userModal').style.display = 'none';
+    }
+
+    function editUser(username) {
+      const user = users.find(u => u.username === username);
+      if (!user) return;
+      isEditing = true;
+      document.getElementById('modalTitle').textContent = 'Editar Vendedor';
+      document.getElementById('username').value = user.username;
+      document.getElementById('username').disabled = true;
+      document.getElementById('name').value = user.name;
+      document.getElementById('password').value = user.password;
+      document.getElementById('userModal').style.display = 'flex';
+    }
+
+    async function deleteUser(username) {
+      if (!confirm(`Tem certeza que deseja excluir o vendedor @${username}?`)) return;
+      
+      const pwd = localStorage.getItem('pop_admin_password');
+      try {
+        const res = await fetch(`/api/users?username=${username}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${pwd}` }
+        });
+        if (res.ok) {
+          users = users.filter(u => u.username !== username);
+          renderUsers();
+        }
+      } catch (e) {
+        alert('Erro ao excluir usuário.');
+      }
+    }
+
+    async function saveUser(e) {
+      e.preventDefault();
+      const pwd = localStorage.getItem('pop_admin_password');
+      const username = document.getElementById('username').value;
+      const name = document.getElementById('name').value;
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('saveBtn');
+
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${pwd}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, name, password })
+        });
+
+        if (res.ok) {
+          const updatedUsersRes = await fetch('/api/users', {
+            headers: { 'Authorization': `Bearer ${pwd}` }
+          });
+          users = await updatedUsersRes.json();
+          renderUsers();
+          closeModal();
+        } else {
+          alert('Erro ao salvar vendedor.');
+        }
+      } catch (error) {
+        alert('Erro de conexão.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar Vendedor';
+      }
+    }
+
+    // Enter to login
+    document.getElementById('masterPassword').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    // On Load: check if session exists
+    window.onload = () => {
+      const pwd = localStorage.getItem('pop_admin_password');
+      if (pwd) {
+        document.getElementById('masterPassword').value = pwd;
+        login();
       }
     };
-
-    function rtfEscape(text) {
-      if (!text) return "";
-      return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
-        .split('').map(char => {
-          const code = char.charCodeAt(0);
-          if (char === '\\' || char === '{' || char === '}') return '\\' + char;
-          if (char === '\n') return ' ';
-          return (code >= 32 && code <= 126) ? char : `\\u${code <= 32767 ? code : code - 65536}?`;
-        }).join('');
-    }
-
-    function buildRTFDocument(header, timeLabel, regional, national) {
-      const L = RTF_CONFIG.layout;
-      const h = rtfEscape(header); const t = rtfEscape(timeLabel);
-      const r = rtfEscape(regional); const n = rtfEscape(national);
-      return [
-        `{\\rtf1\\ansi\\ansicpg1252\\deff0`,
-        `{\\fonttbl{\\f0\\froman Times New Roman;}{\\f1\\fswiss Arial;}{\\f45\\fswiss Tahoma;}}`,
-        `\\paperw${L.paperw}\\paperh${L.paperh}\\margl${L.margl}\\margr${L.margr}\\margt${L.margt}\\margb${L.margb}\\deftab${L.deftab}`,
-        `\\pard\\qc\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\b\\f${L.f_header}\\fs${L.fs_header} ${h}\\par`,
-        `\\pard\\ql\\fi${L.fi_blank}\\li0\\ri0\\sa160\\sl${L.sl}\\slmult1\\tx${L.tx_blank}\\b\\f${L.f_header}\\fs${L.fs_header} \\tab \\par`,
-        `\\pard\\qc\\li0\\ri0\\sb${L.sb_time}\\sa${L.sa_time}\\sl${L.sl}\\slmult1\\b\\f${L.f_header}\\fs${L.fs_header} ${t}\\par`,
-        `\\pard\\qj\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\b0\\f${L.f_body}\\fs${L.fs_body} ${r}\\par`,
-        `\\pard\\qc\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\f${L.f_body}\\fs${L.fs_body} ...\\par`,
-        `\\pard\\qj\\li0\\ri0\\sa${L.sa}\\sl${L.sl}\\slmult1\\f${L.f_body}\\fs${L.fs_body} ${n}\\par`,
-        `}`
-      ].join('\n');
-    }
-
-    async function downloadAllRTFs() {
-      if (!window.lastGenerationData) return;
-      const zip = new JSZip();
-      const data = window.lastGenerationData;
-      const dateVal = document.getElementById('dateInput').value;
-      const dateObj = new Date(dateVal + 'T12:00:00');
-      const weekdays = ["DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO"];
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const headText = RTF_CONFIG.output.header_template
-        .replace('{weekday}', weekdays[dateObj.getDay()]).replace('{day_month}', `${day}.${month}`);
-
-      for (const cityKey in RTF_CONFIG.output.cities) {
-        if (!data.notes[cityKey]) continue;
-        const folder = zip.folder(RTF_CONFIG.output.cities[cityKey].name);
-        RTF_CONFIG.output.time_pairs.forEach((pair, i) => {
-          const regional = data.notes[cityKey][i].text;
-          const national = data.notes.nacional[i].text;
-          pair.forEach(slot => {
-            const rtf = buildRTFDocument(headText, slot.replace('H', 'h'), regional, national);
-            folder.file(`${slot}.rtf`, rtf);
-          });
-        });
-      }
-      const blob = await zip.generateAsync({type:"blob"});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `BOLETINS_${day}.${month}.zip`;
-      a.click();
-    }
-
-    // --- ENHANCED TELEMETRY POLL ---
-    async function updateAllStatuses() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      if (!password) return;
-
-      const cities = ['itapeva', 'itapetininga'];
-      for (const city of cities) {
-        try {
-          const resp = await fetch(`/api/status?city=${city}`, {
-            headers: { 'Authorization': `Bearer ${password}` }
-          });
-          const data = await resp.json();
-          
-          updateUIStatus(city, 'news', data.news);
-          updateUIStatus(city, 'music', data.playlist);
-          
-          document.getElementById(`meta-${city}`).textContent = 
-            `Host: ${data.news?.host || data.playlist?.host || '---'} | Versão: ${data.news?.version || '---'}`;
-        } catch (e) { console.error('Status fail', e); }
-      }
-      document.getElementById('lastUpdateTime').textContent = 'Atualizado em: ' + new Date().toLocaleTimeString();
-    }
-
-    function updateUIStatus(city, type, status) {
-      const row = document.getElementById(`row-${type}-${city}`);
-      const indicator = row.querySelector('.status-badge');
-      const span = indicator.querySelector('span');
-      
-      if (status && status.online) {
-        indicator.className = 'status-badge online';
-        span.textContent = 'ONLINE';
-      } else {
-        indicator.className = 'status-badge offline';
-        span.textContent = 'OFFLINE';
-      }
-    }
-
-    function startStatusPolling() {
-      updateAllStatuses();
-      setInterval(updateAllStatuses, 30000);
-    }
-
-    // --- MUSIC SCRIPT LOGIC ---
-    let musicConfig = { rules: {}, jabas: [], prefixes: {}, promos: [] };
-
-    async function loadMusicConfig() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        const fetchKey = async (key) => {
-          const r = await fetch(`/api/config?key=${key}`, { headers: { 'Authorization': `Bearer ${password}` } });
-          const text = await r.text();
-          try { return text ? JSON.parse(text) : null; } catch(e) { return null; }
-        };
-
-        const [r, j, p, v, pr] = await Promise.all([
-          fetchKey('config_music_rules'),
-          fetchKey('config_music_jabas'),
-          fetchKey('config_music_prefixes'),
-          fetchKey('config_music_substitutions'),
-          fetchKey('config_music_promos')
-        ]);
-        
-        musicConfig = { 
-          rules: r || { janelas_permitidas: {}, remover_blocos: {}, renomear_blocos: {} }, 
-          jabas: (j && (j.configuracao_jabas || j.jabas)) || [], 
-          prefixes: p || { options_by_day: {} }, 
-          vignettes: v || { substituicoes: [] },
-          promos: pr || []
-        };
-        
-        renderVignetteList();
-        renderJabaList();
-        console.log('Music config loaded successfully');
-      } catch (e) { 
-        console.error('Failed to load music config', e); 
-        showToast('Erro ao carregar configurações de nuvem.', 'error');
-      }
-    }
-
-    async function exportMusicConfig() {
-      const data = JSON.stringify(musicConfig, null, 2);
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `backup_radio_popfm_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Configurações exportadas!', 'success');
-    }
-
-    async function importMusicConfig(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      if (!confirm('ATENÇÃO: Importar este arquivo irá SUBSTITUIR todas as suas configurações atuais no sistema. Deseja continuar?')) return;
-
-      const text = await file.text();
-      try {
-        const imported = JSON.parse(text);
-        
-        // Save each part to KV
-        await Promise.all([
-          saveMusicConfig('rules', imported.rules),
-          saveMusicConfig('jabas', imported.jabas),
-          saveMusicConfig('prefixes', imported.prefixes),
-          saveMusicConfig('vignettes', imported.vignettes),
-          saveMusicConfig('promos', imported.promos || [])
-        ]);
-        
-        showToast('Configurações importadas com sucesso!', 'success');
-        setTimeout(() => location.reload(), 1000); // Reload to ensure clean state
-      } catch (e) {
-        showToast('Erro ao ler arquivo de backup: JSON inválido.', 'error');
-        console.error(e);
-      }
-    }
-
-    async function generateMusicResult() {
-      const fileInput = document.getElementById('musicFile');
-      if (!fileInput.files.length) return;
-      
-      const logCont = document.getElementById('processingLogs');
-      const logBox = document.getElementById('processingLogsContainer');
-      logBox.style.display = 'block';
-      logCont.innerHTML = `<div>[${new Date().toLocaleTimeString()}] <span style="color: #fbbf24;">>>> Lote de arquivos detectado. Iniciando...</span></div>`;
-      
-      const files = Array.from(fileInput.files);
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Auto-detect Date from FileName (YYYYMMDD)
-        const dateMatch = file.name.match(/(\d{8})/);
-        if (!dateMatch) {
-          logCont.innerHTML += `<div style="color: #ef4444; margin-top: 8px;">! Erro no arquivo ${file.name}: Data não encontrada no nome (padrão YYYYMMDD necessário).</div>`;
-          continue;
-        }
-        
-        const dateKey = dateMatch[1];
-        const date = new Date(`${dateKey.slice(0,4)}-${dateKey.slice(4,6)}-${dateKey.slice(6,8)}T12:00:00`);
-        const dateStr = dateKey; // Use for KV
-        
-        logCont.innerHTML += `<div style="color: white; margin-top: 12px; border-top: 1px solid #334155; padding-top: 8px;">> Processando ${i+1}/${files.length}: <b>${file.name}</b> (Data: ${date.toLocaleDateString('pt-BR')})</div>`;
-        
-        const buffer = await file.arrayBuffer();
-        const decoder = new TextDecoder('windows-1252');
-        const content = decoder.decode(buffer);
-
-        try {
-          const result = MusicEngine.process(content, musicConfig.rules, musicConfig.jabas, musicConfig.prefixes, musicConfig.vignettes, date, musicConfig.promos);
-          
-          logCont.innerHTML += result.logs.map(l => `<div>${l}</div>`).join('');
-          logCont.scrollTop = logCont.scrollHeight;
-          
-          const baseNameWithoutExt = file.name.split('.')[0];
-          
-          // UPLOAD PRIORITIZED - Using original file.name for KV sync
-          await uploadPlaylist(`ITAPEVA`, dateStr, result.itapeva, file.name);
-          await new Promise(r => setTimeout(r, 600));
-          await uploadPlaylist(`ITAPETININGA`, dateStr, result.itapetininga, file.name);
-          await new Promise(r => setTimeout(r, 600));
-
-          // LOCAL DOWNLOAD (Secondary Option) - Keeps suffix for user to distinguish between local files
-          window.lastGeneratedItapeva = window.lastGeneratedItapeva || {};
-          window.lastGeneratedItapetininga = window.lastGeneratedItapetininga || {};
-          window.lastGeneratedItapeva[baseNameWithoutExt] = result.itapeva;
-          window.lastGeneratedItapetininga[baseNameWithoutExt] = result.itapetininga;
-
-          logCont.innerHTML += `<div style="margin-top: 8px; font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPEVA.bil', window.lastGeneratedItapeva['${baseNameWithoutExt}']); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapeva (Backup Local)</a></div>`;
-          logCont.innerHTML += `<div style="font-size: 0.75rem;"><a href="#" onclick="MusicEngine.download('${baseNameWithoutExt}_ITAPETININGA.bil', window.lastGeneratedItapetininga['${baseNameWithoutExt}']); return false;" style="color: var(--accent);">⬇ Baixar Roteiro Itapetininga (Backup Local)</a></div>`;
-          
-        } catch (e) {
-          logCont.innerHTML += `<div style="color: #ef4444;">Erro interno: ${e.message}</div>`;
-        }
-      }
-      
-      showToast('Processamento concluído!', 'success');
-      fileInput.value = ''; // Reset input
-    }
-
-
-    async function saveMusicConfig(type, data) {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const key = type === 'jabas' ? 'config_music_jabas' : (type === 'rules' ? 'config_music_rules' : (type === 'prefixes' ? 'config_music_prefixes' : (type === 'vignettes' ? 'config_music_substitutions' : 'config_music_promos')));
-      const payload = type === 'jabas' ? { configuracao_jabas: data } : (type === 'vignettes' ? data : data);
-      
-      const res = await fetch(`/api/config?key=${key}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (res.ok) {
-        showToast('Configuração salva!', 'success');
-        loadMusicConfig();
-      } else {
-        showToast('Erro ao salvar.', 'error');
-      }
-    }
-
-    // Call after login
-    function setupMusic() {
-      loadMusicConfig();
-      loadPopConfig();
-    }
-
-    // --- VISUAL EDITORS LOGIC ---
-    function openModal(id) { document.getElementById(id).classList.add('show'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-
-    // --- PROMO LOGIC ---
-    function renderPromosList() {
-      const list = document.getElementById('promosList');
-      if (!Array.isArray(musicConfig.promos)) musicConfig.promos = [];
-      list.innerHTML = musicConfig.promos.map((p, idx) => `
-        <div class="config-item" style="border-left: 4px solid ${p.enabled ? '#ec4899' : '#cbd5e1'};">
-          <div class="config-item-info">
-            <h5>${p.id} ${p.enabled ? '' : '<span style="color: #ef4444; font-size: 0.75rem;">(Inativa)</span>'}</h5>
-            <p>${p.caminho_arquivo}</p>
-             <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 8px;">
-               <span>Até ${p.data_limite}</span>
-               <span>| Sem: ${(p.horas_dia_semana || p.horas_ativas || []).length}x</span>
-               <span>| Sáb: ${(p.horas_sabado || p.horas_ativas || []).length}x</span>
-               <span>| Dom: ${(p.horas_domingo || p.horas_ativas || []).length}x</span>
-               ${p.overlay ? '<span style="color: #0369a1; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; font-weight: bold;">OVERLAY</span>' : ''}
-             </div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary btn-sm" onclick="editPromo(${idx})">Editar</button>
-            <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePromo(${idx})">Remover</button>
-          </div>
-        </div>
-      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma promoção cadastrada.</p>';
-    }
-
-    let editingPromoIdx = -1;
-    let tempPromo = null;
-    let tempJaba = null; // Global for Jaba editor too
-
-    function editPromo(idx) {
-      editingPromoIdx = idx;
-      tempPromo = idx === -1 
-        ? { id: '', enabled: true, caminho_arquivo: '', duracao_ms: 0, data_limite: '', horas_ativas: [] } 
-        : JSON.parse(JSON.stringify(musicConfig.promos[idx]));
-      
-      document.getElementById('promoEnabled').checked = tempPromo.enabled;
-      document.getElementById('promoId').value = tempPromo.id;
-      document.getElementById('promoPath').value = tempPromo.caminho_arquivo;
-      document.getElementById('promoDuration').value = tempPromo.duracao_ms || 0;
-      document.getElementById('promoEndDate').value = tempPromo.data_limite;
-      document.getElementById('promoOverlay').checked = !!tempPromo.overlay;
-      document.getElementById('promoHoursDiaSemana').value = (tempPromo.horas_dia_semana || tempPromo.horas_ativas || []).join(', ');
-      document.getElementById('promoHoursSabado').value = (tempPromo.horas_sabado || tempPromo.horas_ativas || []).join(', ');
-      document.getElementById('promoHoursDomingo').value = (tempPromo.horas_domingo || tempPromo.horas_ativas || []).join(', ');
-      
-      openModal('promoModal');
-    }
-
-    function savePromo() {
-      tempPromo.enabled = document.getElementById('promoEnabled').checked;
-      tempPromo.overlay = document.getElementById('promoOverlay').checked;
-      tempPromo.id = document.getElementById('promoId').value;
-      tempPromo.caminho_arquivo = document.getElementById('promoPath').value;
-      tempPromo.duracao_ms = parseInt(document.getElementById('promoDuration').value || 0);
-      tempPromo.data_limite = document.getElementById('promoEndDate').value;
-      const parseHours = (val) => val.trim() === '' ? [] : val.split(',').map(s => s.trim().padStart(2, '0')).filter(s => s && s !== '000');
-      tempPromo.horas_dia_semana = parseHours(document.getElementById('promoHoursDiaSemana').value);
-      tempPromo.horas_sabado = parseHours(document.getElementById('promoHoursSabado').value);
-      tempPromo.horas_domingo = parseHours(document.getElementById('promoHoursDomingo').value);
-      
-      if (!tempPromo.id || !tempPromo.caminho_arquivo) return showToast('Preencha os campos essenciais!', 'error');
-
-      if (!Array.isArray(musicConfig.promos)) musicConfig.promos = [];
-      if (editingPromoIdx === -1) musicConfig.promos.push(tempPromo);
-      else musicConfig.promos[editingPromoIdx] = tempPromo;
-
-      saveMusicConfig('promos', musicConfig.promos);
-      closeModal('promoModal');
-      renderPromosList();
-    }
-
-    function deletePromo(idx) {
-      if (confirm('Remover esta promoção?')) {
-        musicConfig.promos.splice(idx, 1);
-        saveMusicConfig('promos', musicConfig.promos);
-        renderPromosList();
-      }
-    }
-
-    function extractPromoAudioData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const durField = document.getElementById('promoDuration');
-      const pathField = document.getElementById('promoPath');
-      const idField = document.getElementById('promoId');
-
-      // Default path based on name
-      pathField.value = `U:\\Materiais\\Vinhetas\\${file.name}`;
-      if (!idField.value) {
-        idField.value = file.name.split('.')[0].substring(0, 15).toUpperCase().replace(/\s/g, '');
-      }
-
-      showToast('Analisando arquivo de promoção...', 'info');
-
-      const audio = new Audio();
-      const objectUrl = URL.createObjectURL(file);
-      
-      audio.onloadedmetadata = () => {
-        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
-          const ms = Math.round(audio.duration * 1000);
-          durField.value = ms;
-          showToast(`Duração detectada: ${ms}ms`, 'success');
-        } else {
-          showToast('Duração não encontrada automaticamente.', 'info');
-        }
-        URL.revokeObjectURL(objectUrl);
-      };
-      
-      audio.onerror = () => {
-        showToast('Erro ao ler áudio. Insira a duração manualmente.', 'error');
-        URL.revokeObjectURL(objectUrl);
-      };
-
-      audio.preload = 'metadata';
-      audio.src = objectUrl;
-    }
-
-    function extractAudioData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const durField = document.getElementById('jabaDuration');
-      const pathField = document.getElementById('jabaPath');
-      const idField = document.getElementById('jabaId');
-
-      pathField.value = `M:\\Jabás\\${file.name}`;
-      if (!idField.value) {
-        idField.value = file.name.split('.')[0].substring(0, 15).toUpperCase().replace(/\s/g, '');
-      }
-
-      showToast('Analisando arquivo...', 'info');
-
-      const audio = new Audio();
-      const objectUrl = URL.createObjectURL(file);
-      
-      audio.onloadedmetadata = () => {
-        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
-          const ms = Math.round(audio.duration * 1000);
-          durField.value = ms;
-          showToast(`Duração detectada: ${ms}ms`, 'success');
-        } else {
-          showToast('Duração não encontrada.', 'error');
-        }
-        URL.revokeObjectURL(objectUrl);
-      };
-      
-      audio.onerror = () => {
-        showToast('Erro de codec ou arquivo inválido.', 'error');
-        URL.revokeObjectURL(objectUrl);
-      };
-
-      audio.preload = 'metadata';
-      audio.src = objectUrl;
-    }
-
-    function renderJabaList() {
-      const list = document.getElementById('jabasList');
-      list.innerHTML = musicConfig.jabas.map((j, idx) => `
-        <div class="config-item">
-          <div class="config-item-info">
-            <h5>${j.id}</h5>
-            <p>${j.caminho_arquivo}</p>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-              ${j.programacao.length} janelas | ${j.duracao_ms || 0}ms
-            </div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary btn-sm" onclick="editJaba(${idx})">Editar</button>
-            <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deleteJaba(${idx})">Remover</button>
-          </div>
-        </div>
-      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum jabá cadastrado.</p>';
-    }
-
-    let editingJabaIdx = -1;
-    function editJaba(idx) {
-      editingJabaIdx = idx;
-      tempJaba = idx === -1 
-        ? { id: '', caminho_arquivo: '', total_insercoes: 1, duracao_ms: 0, cue_intro_ms: 0, cue_segue_ms: 0, programacao: [] } 
-        : JSON.parse(JSON.stringify(musicConfig.jabas[idx])); // Clone to avoid direct mutation
-      
-      document.getElementById('jabaId').value = tempJaba.id;
-      document.getElementById('jabaPath').value = tempJaba.caminho_arquivo;
-      document.getElementById('jabaDuration').value = tempJaba.duracao_ms || 0;
-      document.getElementById('jabaIntro').value = tempJaba.cue_intro_ms || 0;
-      document.getElementById('jabaSegue').value = tempJaba.cue_segue_ms || 0;
-      
-      const dayChecks = document.querySelectorAll('.jaba-day-check');
-      const dias = tempJaba.dias_semana || [0,1,2,3,4,5,6];
-      dayChecks.forEach(c => c.checked = dias.includes(parseInt(c.value)));
-
-      renderJabaProg();
-      openModal('jabaModal');
-    }
-
-    function renderJabaProg() {
-      const cont = document.getElementById('jabaProgContainer');
-      cont.innerHTML = tempJaba.programacao.map((p, i) => `
-        <div class="jaba-prog-row">
-          <div class="form-group" style="flex: 1; margin: 0;">
-            <label>Horários (Ex: 08:00-11:00)</label>
-            <input type="text" value="${p.janelas_de_horario.map(w => w.inicio + '-' + w.fim).join(', ')}" onchange="updateJabaProg(${i}, 'windows', this.value)">
-          </div>
-          <div class="form-group" style="width: 80px; margin: 0;">
-            <label>Qtd</label>
-            <input type="number" value="${p.quantidade_necessaria}" onchange="updateJabaProg(${i}, 'qty', this.value)">
-          </div>
-          <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="removeJabaProg(${i})">X</button>
-        </div>
-      `).join('');
-    }
-
-    function updateJabaProg(idx, field, val) {
-      if (field === 'qty') {
-        tempJaba.programacao[idx].quantidade_necessaria = parseInt(val);
-      } else if (field === 'windows') {
-        tempJaba.programacao[idx].janelas_de_horario = val.split(',').map(s => {
-          const [start, end] = s.trim().split('-');
-          return start && end ? { inicio: normalizeHHMM(start), fim: normalizeHHMM(end) } : null;
-        }).filter(v => v);
-      }
-    }
-
-    function removeJabaProg(idx) {
-      tempJaba.programacao.splice(idx, 1);
-      renderJabaProg();
-    }
-
-    function addJabaProg() {
-      tempJaba.programacao.push({ quantidade_necessaria: 1, janelas_de_horario: [] });
-      renderJabaProg();
-    }
-
-    function saveJaba() {
-      tempJaba.id = document.getElementById('jabaId').value;
-      tempJaba.caminho_arquivo = document.getElementById('jabaPath').value;
-      tempJaba.duracao_ms = parseInt(document.getElementById('jabaDuration').value || 0);
-      tempJaba.cue_intro_ms = parseInt(document.getElementById('jabaIntro').value || 0);
-      tempJaba.cue_segue_ms = parseInt(document.getElementById('jabaSegue').value || 0);
-      
-      const dayChecks = document.querySelectorAll('.jaba-day-check');
-      tempJaba.dias_semana = Array.from(dayChecks).filter(c => c.checked).map(c => parseInt(c.value));
-
-      // Calcular o total de inserções baseado na soma das regras
-      tempJaba.total_insercoes = tempJaba.programacao.reduce((sum, p) => sum + (p.quantidade_necessaria || 0), 0);
-
-      if (editingJabaIdx === -1) musicConfig.jabas.push(tempJaba);
-      else musicConfig.jabas[editingJabaIdx] = tempJaba;
-
-      saveMusicConfig('jabas', musicConfig.jabas);
-      closeModal('jabaModal');
-      renderJabaList();
-    }
-
-    function extractAudioData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const durField = document.getElementById('jabaDuration');
-      const pathField = document.getElementById('jabaPath');
-      const idField = document.getElementById('jabaId');
-
-      pathField.value = `M:\\Jabás\\${file.name}`;
-      if (!idField.value) {
-        idField.value = file.name.split('.')[0].substring(0, 10).toUpperCase();
-      }
-
-      showToast('Analisando arquivo...', 'info');
-
-      const audio = new Audio();
-      const objectUrl = URL.createObjectURL(file);
-      
-      const timeout = setTimeout(() => {
-        if (durField.value == 0 || durField.value == "0") {
-          showToast('Tempo limite excedido.', 'error');
-        }
-        URL.revokeObjectURL(objectUrl);
-      }, 10000);
-
-      const handleSuccess = () => {
-        clearTimeout(timeout);
-        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
-          const ms = Math.round(audio.duration * 1000);
-          durField.value = ms;
-          showToast(`Duração detectada: ${ms}ms`, 'success');
-          URL.revokeObjectURL(objectUrl);
-        } else {
-          // Retry once in 500ms if duration is not settled
-          setTimeout(() => {
-            if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
-              const ms = Math.round(audio.duration * 1000);
-              durField.value = ms;
-              showToast(`Duração detectada: ${ms}ms`, 'success');
-            } else {
-              showToast('Duração não encontrada. Insira manualmente.', 'error');
-            }
-            URL.revokeObjectURL(objectUrl);
-          }, 500);
-        }
-      };
-
-      audio.onloadedmetadata = handleSuccess;
-      
-      audio.onerror = () => {
-        clearTimeout(timeout);
-        showToast('Erro de codec ou arquivo inválido.', 'error');
-        URL.revokeObjectURL(objectUrl);
-      };
-
-      audio.preload = 'metadata';
-      audio.src = objectUrl;
-    }
-
-    function deleteJaba(idx) {
-      if (confirm('Remover este jabá?')) {
-        musicConfig.jabas.splice(idx, 1);
-        saveMusicConfig('jabas', musicConfig.jabas);
-        renderJabaList();
-      }
-    }
-
-    // --- RULES EDITOR ---
-    let currentRuleDay = 'dia_semana';
-    function showRulesTab(day, event) {
-      currentRuleDay = day;
-      if (typeof event !== 'undefined' && event.target) {
-        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-      }
-      renderRulesLists();
-    }
-
-    function renderRulesLists() {
-      const rules = musicConfig.rules;
-      const day = currentRuleDay;
-      
-      // Removed Blocks
-      const remContainer = document.getElementById('rulesRemovedList');
-      const removed = rules.remover_blocos?.[day] || [];
-      remContainer.innerHTML = removed.map(t => `
-        <div class="time-tag">${t} <button onclick="removeTimeRule('remover_blocos', '${t}')">×</button></div>
-      `).join('') + `
-        <div class="time-tag" style="border: 1px dashed var(--accent); padding: 0;">
-          <input type="text" id="newRemInput" placeholder="00:00" style="border: none; background: transparent; width: 45px; font-size: 0.75rem; padding: 4px 8px; outline: none;">
-          <button onclick="addTimeRule('remover_blocos')" style="color: var(--accent); font-weight: bold; border: none; background: transparent; cursor: pointer; padding: 4px 8px;">+</button>
-        </div>
-      `;
-
-      // Windows
-      const winContainer = document.getElementById('rulesWindowsList');
-      const windows = rules.janelas_permitidas?.[day] || [];
-      winContainer.innerHTML = windows.map(w => `
-        <div class="time-tag">${w.inicio}-${w.fim} <button onclick="removeWindowRule('${w.inicio}')">×</button></div>
-      `).join('') + `
-        <div class="time-tag" style="border: 1px dashed var(--accent); padding: 0;">
-          <input type="text" id="newWinInput" placeholder="00:00-00:00" style="border: none; background: transparent; width: 80px; font-size: 0.75rem; padding: 4px 8px; outline: none;">
-          <button onclick="addWindowRule()" style="color: var(--accent); font-weight: bold; border: none; background: transparent; cursor: pointer; padding: 4px 8px;">+</button>
-        </div>
-      `;
-
-      // Renames
-      renderRenameList();
-    }
-
-    function renderRenameList() {
-      const day = currentRuleDay;
-      const rules = musicConfig.rules;
-      const cont = document.getElementById('rulesRenameList');
-      let html = '';
-      ['ITAPEVA', 'ITAPETININGA'].forEach(city => {
-        const map = (rules.renomear_blocos?.[day] || {})[city] || {};
-        html += `<h6 style="margin: 10px 0 5px; font-size: 0.75rem; color: #64748b;">${city}</h6>`;
-        for (const [old, val] of Object.entries(map)) {
-          html += `<div class="config-item" style="padding: 8px 12px; margin-bottom: 4px;">
-            <span style="font-size: 0.8125rem;">${old} → ${val}</span>
-            <button class="btn btn-secondary btn-sm" onclick="removeRenameRule('${city}', '${old}')">×</button>
-          </div>`;
-        }
-        html += `
-          <div class="jaba-prog-row" style="padding: 4px 8px; margin-top: 8px;">
-            <input type="text" id="renameOld_${city}" placeholder="De" style="width: 50px; font-size: 0.75rem; padding: 4px;">
-            <span style="color: var(--text-light)">→</span>
-            <input type="text" id="renameNew_${city}" placeholder="Para" style="width: 50px; font-size: 0.75rem; padding: 4px;">
-            <button class="btn btn-accent btn-sm" onclick="addRenameRule('${city}')">+</button>
-          </div>
-        `;
-      });
-      cont.innerHTML = html;
-    }
-
-    function addTimeRule(key) {
-      const input = document.getElementById('newRemInput');
-      const time = input.value.trim();
-      if (!time) return;
-      if (!musicConfig.rules[key]) musicConfig.rules[key] = {};
-      if (!musicConfig.rules[key][currentRuleDay]) musicConfig.rules[key][currentRuleDay] = [];
-      musicConfig.rules[key][currentRuleDay].push(normalizeHHMM(time));
-      saveMusicConfig('rules', musicConfig.rules);
-      renderRulesLists();
-    }
-
-    function addWindowRule() {
-      const input = document.getElementById('newWinInput');
-      const range = input.value.trim();
-      if (!range || !range.includes('-')) return;
-      const [start, end] = range.split('-');
-      if (!musicConfig.rules.janelas_permitidas) musicConfig.rules.janelas_permitidas = {};
-      if (!musicConfig.rules.janelas_permitidas[currentRuleDay]) musicConfig.rules.janelas_permitidas[currentRuleDay] = [];
-      musicConfig.rules.janelas_permitidas[currentRuleDay].push({ inicio: normalizeHHMM(start), fim: normalizeHHMM(end) });
-      saveMusicConfig('rules', musicConfig.rules);
-      renderRulesLists();
-    }
-
-    function addRenameRule(city) {
-      const old = document.getElementById(`renameOld_${city}`).value.trim();
-      const newT = document.getElementById(`renameNew_${city}`).value.trim();
-      if (!old || !newT) return;
-      if (!musicConfig.rules.renomear_blocos) musicConfig.rules.renomear_blocos = {};
-      if (!musicConfig.rules.renomear_blocos[currentRuleDay]) musicConfig.rules.renomear_blocos[currentRuleDay] = {};
-      if (!musicConfig.rules.renomear_blocos[currentRuleDay][city]) musicConfig.rules.renomear_blocos[currentRuleDay][city] = {};
-      musicConfig.rules.renomear_blocos[currentRuleDay][city][normalizeHHMM(old)] = normalizeHHMM(newT);
-      saveMusicConfig('rules', musicConfig.rules);
-      renderRulesLists();
-    }
-
-    function removeTimeRule(key, val) {
-      musicConfig.rules[key][currentRuleDay] = musicConfig.rules[key][currentRuleDay].filter(v => v !== val);
-      saveMusicConfig('rules', musicConfig.rules);
-      renderRulesLists();
-    }
-
-    function removeWindowRule(start) {
-      musicConfig.rules.janelas_permitidas[currentRuleDay] = musicConfig.rules.janelas_permitidas[currentRuleDay].filter(w => w.inicio !== start);
-      saveMusicConfig('rules', musicConfig.rules);
-      renderRulesLists();
-    }
-
-    function removeRenameRule(city, old) {
-      delete musicConfig.rules.renomear_blocos[currentRuleDay][city][old];
-      saveMusicConfig('rules', musicConfig.rules);
-      renderRulesLists();
-    }
-
-    // --- PREFIX EDITOR ---
-    function renderPrefixList() {
-      const day = currentRuleDay;
-      const cont = document.getElementById('rulesPrefixList');
-      const options = musicConfig.prefixes.options_by_day?.[day] || [];
-      cont.innerHTML = `
-        <div class="form-group">
-          <label>Prefixo Alvo (Regex)</label>
-          <input type="text" value="${musicConfig.prefixes.target_name || ''}" onchange="musicConfig.prefixes.target_name = this.value; saveMusicConfig('prefixes', musicConfig.prefixes);">
-        </div>
-        <div class="time-grid">
-          ${options.map((p, i) => `
-            <div class="time-tag" style="width: 100%; justify-content: space-between;">
-              ${p} <button onclick="removePrefixRule(${i})">×</button>
-            </div>
-          `).join('')}
-          <div class="time-tag" style="border: 1px dashed var(--accent); padding: 0; width: 100%;">
-            <input type="text" id="newPrefixInput" placeholder="Nome do arquivo..." style="border: none; background: transparent; flex: 1; font-size: 0.75rem; padding: 4px 8px; outline: none;">
-            <button onclick="addPrefixRule()" style="color: var(--accent); font-weight: bold; border: none; background: transparent; cursor: pointer; padding: 4px 8px;">+</button>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderVignetteList() {
-      const cont = document.getElementById('vignetteList');
-      const sub = musicConfig.vignettes?.substituicoes || [];
-      cont.innerHTML = sub.map((rule, idx) => `
-        <div class="config-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-          <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
-             <strong style="color: var(--text);">${rule.descricao}</strong>
-             <div style="display: flex; gap: 8px;">
-               <button class="btn btn-secondary btn-sm" onclick="editVignetteRule(${idx})">Editar</button>
-               <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="removeVignetteRule(${idx})">Remover</button>
-             </div>
-          </div>
-          <div style="font-size: 0.75rem; color: #64748b; display: flex; gap: 12px;">
-             <span><ion-icon name="sync-outline"></ion-icon> Modo: <b>${rule.modo}</b></span>
-             <span><ion-icon name="search-outline"></ion-icon> <b>${rule.buscar.length}</b> termos</span>
-             <span><ion-icon name="swap-horizontal-outline"></ion-icon> <b>${rule.substituir_por.length}</b> opções</span>
-          </div>
-        </div>
-      `).join('') || '<p style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma regra de substituição configurada.</p>';
-    }
-
-    let editingVignetteIdx = -1;
-    function editVignetteRule(idx) {
-      editingVignetteIdx = idx;
-      if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
-      if (!musicConfig.vignettes.substituicoes) musicConfig.vignettes.substituicoes = [];
-
-      const rule = idx === -1 
-        ? { descricao: '', buscar: [], substituir_por: [], modo: 'ciclo' }
-        : JSON.parse(JSON.stringify(musicConfig.vignettes.substituicoes[idx]));
-
-      document.getElementById('vigDesc').value = rule.descricao;
-      document.getElementById('vigBuscar').value = (rule.buscar || []).join(', ');
-      document.getElementById('vigTrocar').value = (rule.substituir_por || []).join(', ');
-      document.getElementById('vigModo').value = rule.modo;
-
-      openModal('vignetteEditModal');
-    }
-
-    function saveVignetteRule() {
-      try {
-        if (!musicConfig.vignettes) musicConfig.vignettes = { substituicoes: [] };
-        if (!musicConfig.vignettes.substituicoes) musicConfig.vignettes.substituicoes = [];
-
-        const desc = document.getElementById('vigDesc').value;
-        const buscarRaw = document.getElementById('vigBuscar').value;
-        const trocarRaw = document.getElementById('vigTrocar').value;
-        const modo = document.getElementById('vigModo').value;
-
-        if (!desc || !buscarRaw || !trocarRaw) {
-          showToast('Preencha todos os campos da regra!', 'error');
-          return;
-        }
-
-        const rule = {
-          descricao: desc,
-          buscar: buscarRaw.split(',').map(s => s.trim()).filter(s => s),
-          substituir_por: trocarRaw.split(',').map(s => s.trim()).filter(s => s),
-          modo: modo
-        };
-
-        if (editingVignetteIdx === -1) musicConfig.vignettes.substituicoes.push(rule);
-        else musicConfig.vignettes.substituicoes[editingVignetteIdx] = rule;
-
-        saveMusicConfig('vignettes', musicConfig.vignettes);
-        closeModal('vignetteEditModal');
-        renderVignetteList();
-      } catch (err) {
-        console.error('Save Vignette Rule Error:', err);
-        alert('Erro ao salvar regra: ' + err.message);
-      }
-    }
-
-    function removeVignetteRule(idx) {
-      if (confirm('Remover esta regra?')) {
-        musicConfig.vignettes.substituicoes.splice(idx, 1);
-        saveMusicConfig('vignettes', musicConfig.vignettes);
-        renderVignetteList();
-      }
-    }
-
-    function removePrefixRule(idx) {
-      musicConfig.prefixes.options_by_day[currentRuleDay].splice(idx, 1);
-      saveMusicConfig('prefixes', musicConfig.prefixes);
-      renderPrefixList();
-    }
-
-    // --- DEFAULTS ---
-    function restoreMusicDefaults() {
-      const check = prompt('ATENÇÃO: Isso irá APAGAR todas as suas regras atuais e restaurar os padrões do script original. Para continuar, digite CONFIRMA (em maiúsculas):');
-      if (check !== 'CONFIRMA') {
-        if (check !== null) showToast('Ação cancelada ou palavra incorreta.', 'error');
-        return;
-      }
-      
-      const defaultRules = {
-        janelas_permitidas: {
-          dia_semana: [{ inicio: "05:55", fim: "11:35" }, { inicio: "13:53", fim: "18:35" }],
-          sabado: [{ inicio: "07:55", fim: "11:35" }],
-          domingo: [{ inicio: "00:00", fim: "11:30" }]
-        },
-        remover_blocos: {
-          dia_semana: ["00:25", "01:25", "02:25", "03:25"],
-          sabado: ["00:25", "01:25", "02:25", "03:25", "04:25"],
-          domingo: ["00:25", "01:25", "02:25", "03:25", "04:25"]
-        },
-        renomear_blocos: {
-          dia_semana: { ITAPETININGA: { "18:50": "18:55", "20:55": "21:35" } },
-          sabado: { ITAPEVA: { "11:53": "11:55" }, ITAPETININGA: { "11:53": "11:55" } },
-          domingo: { ITAPEVA: { "11:53": "11:55" }, ITAPETININGA: { "11:53": "11:55" } }
-        }
-      };
-
-      const defaultPrefixes = {
-        target_name: "ABERTURA HORA CHEIA - NEUTRO",
-        options_by_day: {
-          dia_semana: ["ABERTURA HORA CHEIA - Outono (Geral) 1", "ABERTURA HORA CHEIA - Outono (Geral) 2"],
-          sabado: ["ABERTURA HORA CHEIA - Outono (Fim de Semana) 1", "ABERTURA HORA CHEIA - Outono (Fim de Semana) 2"],
-          domingo: ["ABERTURA HORA CHEIA - Outono (Fim de Semana) 1", "ABERTURA HORA CHEIA - Outono (Fim de Semana) 2"]
-        }
-      };
-
-      const defaultJabas = [
-        { id: "JRVILLA", caminho_arquivo: "M:\\Jabás\\Junior Villa - Buena Vibra.wav", total_insercoes: 1, duracao_ms: 180000, dias_semana: [0,1,2,3,4,5,6], programacao: [{ quantidade_necessaria: 1, janelas_de_horario: [{ inicio: "14:00", fim: "18:00" }] }] }
-      ];
-
-      const defaultVignettes = {
-        substituicoes: [{
-          descricao: "Vinheta Verão → Outono",
-          buscar: ["VH - ESTAÇÃO VERÃO_01(1).wav", "VH - ESTAÇÃO VERÃO_01(2).wav", "VH - ESTAÇÃO VERÃO_01.wav", "VH - ESTAÇÃO VERÃO_02(1).wav", "VH - ESTAÇÃO VERÃO_02.wav"],
-          substituir_por: ["VH - ESTAÇÃO OUTONO(1).wav", "VH - ESTAÇÃO OUTONO(2).wav", "VH - ESTAÇÃO OUTONO.wav"],
-          modo: "ciclo"
-        }]
-      };
-
-      Promise.all([
-        saveMusicConfig('rules', defaultRules),
-        saveMusicConfig('prefixes', defaultPrefixes),
-        saveMusicConfig('jabas', defaultJabas),
-        saveMusicConfig('vignettes', defaultVignettes)
-      ]).then(() => {
-        showToast('Padrões restaurados com sucesso!', 'success');
-      });
-    }
-
-    // --- MOBILE SIDEBAR ---
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      sidebar.classList.toggle('open');
-    }
-
-    // --- NEWS EXPORT/IMPORT ---
-    function exportNewsJSON() {
-      const state = {
-        date: document.getElementById('dateInput').value,
-        sections: {}
-      };
-      sections.forEach(sec => {
-        state.sections[sec] = [];
-        for (let i = 1; i <= 3; i++) {
-          state.sections[sec].push(document.getElementById(`${sec}-${i}`).value);
-        }
-      });
-      
-      const data = JSON.stringify(state, null, 2);
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `popfm_noticias_${state.date}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Exportado com sucesso!', 'success');
-    }
-
-    function openImportNewsModal() {
-      const textarea = document.getElementById('importNewsTextarea');
-      const fileInput = document.getElementById('importNewsFile');
-      if (textarea) textarea.value = '';
-      if (fileInput) fileInput.value = '';
-      openModal('importNewsModal');
-    }
-
-    function handleNewsFileImport(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject('Erro na leitura do arquivo');
-        reader.readAsText(file, "windows-1252"); // Força o charset de rádio (ANSI/Windows-1252)
-      }).then(content => {
-        document.getElementById('importNewsTextarea').value = content;
-      }).catch(err => showToast(err, 'error'));
-    }
-
-    function processNewsImport() {
-      const raw = document.getElementById('importNewsTextarea').value.trim();
-      if (!raw) {
-        showToast('Cole o JSON ou selecione um arquivo.', 'error');
-        return;
-      }
-
-      try {
-        const data = JSON.parse(raw);
-        if (!data.sections) throw new Error('Formato inválido: falta objeto "sections"');
-
-        if (!confirm('Isso irá substituir o conteúdo atual da tela. Deseja continuar?')) return;
-
-        if (data.date) {
-            document.getElementById('dateInput').value = data.date;
-        }
-             sections.forEach(sec => {
-          if (data.sections[sec]) {
-            data.sections[sec].forEach((val, i) => {
-              const el = document.getElementById(`${sec}-${i + 1}`);
-              if (el) el.value = val || '';
-            });
-          }
-        });
-
-        saveState();
-        showToast('Dados importados!', 'success');
-        closeModal('importNewsModal');
-      } catch (e) {
-        showToast('Erro no JSON: ' + e.message, 'error');
-      }
-    }
-
-    // --- POP FM SPECIFIC LOGIC ---
-    async function loadPopConfig() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      if (!password) return;
-
-      try {
-        const [paths, rules, libStatus] = await Promise.all([
-          fetch(`/api/config?key=pop_paths`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
-          fetch(`/api/config?key=pop_rules`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({}))),
-          fetch(`/api/pop/status`, { headers: { 'Authorization': `Bearer ${password}` } }).then(r => r.json().catch(() => ({})))
-        ]);
-
-        // Rules Modal
-        document.getElementById('popFavArtists').value = (rules.favoriteArtists || []).join(', ');
-        document.getElementById('popRuleArtistSep').value = rules.artistSeparation || 10;
-        document.getElementById('popRuleSongSep').value = rules.songSeparation || 50;
-        document.getElementById('popRuleSubstitution').checked = rules.substitutionMode !== false;
-
-        // Paths Modal
-        document.getElementById('popPathMusic').value = paths.music || '';
-        document.getElementById('popPathSweepers').value = paths.sweepers || '';
-
-        // Status Summary in Main Tab (Terminal Footer)
-        const summaryEl = document.getElementById('popLibrarySummary');
-        if (summaryEl) {
-          const syncDate = libStatus && libStatus.lastUpdate ? new Date(libStatus.lastUpdate).toLocaleString() : '---';
-          summaryEl.innerHTML = `Músicas: ${libStatus.musicCount || 0} | Materiais: ${libStatus.materialCount || 0} | Sincronia: ${syncDate} <button onclick="debugLibrary()" style="margin-left: 10px; background: none; border: 1px solid #cbd5e1; color: #64748b; font-size: 0.6rem; cursor: pointer; border-radius: 4px; padding: 1px 4px;">Inspecionar</button>`;
-        }
-
-        window.debugLibrary = async () => {
-          const password = sessionStorage.getItem('newsmaker_password');
-          const res = await fetch(`/api/pop?inspect=1&_=${Date.now()}`, {
-            headers: { 'Authorization': `Bearer ${password}` }
-          });
-          const data = await res.json();
-          if (data && data.library) {
-            const keys = Object.keys(data.library).sort();
-            if (keys.length === 0) {
-              alert("Biblioteca na nuvem está vazia.\n\nVerifique se o seu PopSync local concluiu a primeira sincronização.");
-            } else {
-              alert("Categorias na Nuvem:\n\n" + keys.join('\n'));
-            }
-          } else {
-            console.log("Response data:", data);
-            alert("Erro ao ler biblioteca detalhada. Verifique se a senha está correta.");
-          }
-        };
-        
-        loadPopTemplates();
-        loadPopJabas(); // Garante o carregamento dos Jabás também
-      } catch (e) {
-        console.error('Pop config load fail', e);
-      }
-    }
-
-    // --- POP JABA MANAGEMENT ---
-    let popJabas = [];
-    let currentPopJabaIndex = -1;
-
-    async function loadPopJabas() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        const res = await fetch('/api/config?key=pop_jabas', { headers: { 'Authorization': `Bearer ${password}` } });
-        const data = await res.json();
-        popJabas = Array.isArray(data) ? data : [];
-      } catch (e) { console.error('Load pop jabas fail', e); }
-    }
-
-    async function renderPopJabaList() {
-      await loadPopJabas();
-      const cont = document.getElementById('popJabasList');
-      cont.innerHTML = popJabas.map((j, i) => `
-        <div class="config-item">
-          <div class="config-item-info">
-            <h5>${j.id} ${!j.enabled ? '<span style="color:#ef4444">(INATIVO)</span>' : ''}</h5>
-            <p>${j.caminho_arquivo}</p>
-            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">
-               ${(j.programacao || []).length} Janela(s) configurada(s)
-            </div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary btn-sm" onclick="editPopJaba(${i})"><ion-icon name="create-outline"></ion-icon></button>
-            <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePopJaba(${i})"><ion-icon name="trash-outline"></ion-icon></button>
-          </div>
-        </div>
-      `).join('') || '<p style="text-align: center; color: var(--text-light); padding: 20px;">Nenhum Jabá cadastrado para a POP.</p>';
-    }
-
-    function editPopJaba(index) {
-      currentPopJabaIndex = index;
-      const j = index === -1 
-        ? { id: '', caminho_arquivo: '', duracao_ms: 180000, dias_semana: [0,1,2,3,4,5,6], enabled: true, programacao: [] } 
-        : JSON.parse(JSON.stringify(popJabas[index]));
-      
-      document.getElementById('popJabaId').value = j.id;
-      document.getElementById('popJabaPath').value = j.caminho_arquivo;
-      document.getElementById('popJabaDuration').value = j.duracao_ms || 180000;
-      document.getElementById('popJabaEnabled').checked = j.enabled !== false;
-
-      // Dias da semana
-      document.querySelectorAll('.pop-jaba-day-check').forEach(chk => {
-        chk.checked = (j.dias_semana || []).includes(parseInt(chk.value));
-      });
-
-      window.currentPopJabaProg = j.programacao || [];
-      renderPopJabaProg();
-      openModal('popJabaEditModal');
-    }
-
-    function addPopJabaProg() {
-      window.currentPopJabaProg.push({ quantidade_necessaria: 1, janelas_de_horario: [{ inicio: "00:00", fim: "23:59" }] });
-      renderPopJabaProg();
-    }
-
-    function removePopJabaProg(idx) {
-      window.currentPopJabaProg.splice(idx, 1);
-      renderPopJabaProg();
-    }
-
-    function renderPopJabaProg() {
-      const container = document.getElementById('popJabaProgContainer');
-      container.innerHTML = window.currentPopJabaProg.map((prog, idx) => `
-        <div style="background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; position: relative;">
-          <button style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer;" onclick="removePopJabaProg(${idx})"><ion-icon name="trash"></ion-icon></button>
-          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-            <label style="font-size: 0.75rem;">Inserções:</label>
-            <input type="number" value="${prog.quantidade_necessaria}" onchange="window.currentPopJabaProg[${idx}].quantidade_necessaria = parseInt(this.value)" style="width: 60px; padding: 4px; font-size: 0.75rem;">
-          </div>
-          ${prog.janelas_de_horario.map((w, wIdx) => `
-            <div style="display: flex; gap: 4px; align-items: center; font-size: 0.75rem;">
-              <input type="text" value="${w.inicio}" onchange="window.currentPopJabaProg[${idx}].janelas_de_horario[${wIdx}].inicio = this.value" style="width: 50px; padding: 4px; text-align: center;">
-              <span>até</span>
-              <input type="text" value="${w.fim}" onchange="window.currentPopJabaProg[${idx}].janelas_de_horario[${wIdx}].fim = this.value" style="width: 50px; padding: 4px; text-align: center;">
-            </div>
-          `).join('')}
-        </div>
-      `).join('');
-    }
-
-    async function savePopJaba() {
-      const days = [];
-      document.querySelectorAll('.pop-jaba-day-check:checked').forEach(chk => days.push(parseInt(chk.value)));
-
-      const j = {
-        id: document.getElementById('popJabaId').value.toUpperCase().replace(/\s/g, '_'),
-        caminho_arquivo: document.getElementById('popJabaPath').value,
-        duracao_ms: parseInt(document.getElementById('popJabaDuration').value) || 180000,
-        dias_semana: days,
-        enabled: document.getElementById('popJabaEnabled').checked,
-        programacao: window.currentPopJabaProg
-      };
-
-      if (!j.id || !j.caminho_arquivo) return showToast('Preencha ID e Caminho!', 'error');
-
-      if (currentPopJabaIndex === -1) popJabas.push(j);
-      else popJabas[currentPopJabaIndex] = j;
-
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        const res = await fetch('/api/config?key=pop_jabas', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(popJabas)
-        });
-        if (res.ok) {
-          showToast('Jabá POP salvo!', 'success');
-          closeModal('popJabaEditModal');
-          renderPopJabaList();
-        }
-      } catch (e) { showToast('Erro ao salvar Jabá', 'error'); }
-    }
-
-    async function deletePopJaba(index) {
-      if (!confirm('Excluir este Jabá da POP?')) return;
-      popJabas.splice(index, 1);
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        await fetch('/api/config?key=pop_jabas', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(popJabas)
-        });
-        renderPopJabaList();
-      } catch (e) { showToast('Erro ao excluir', 'error'); }
-    }
-
-    function extractPopJabaAudioData(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const audio = new Audio(URL.createObjectURL(file));
-      audio.onloadedmetadata = () => {
-        document.getElementById('popJabaDuration').value = Math.floor(audio.duration * 1000);
-        showToast('Duração extraída com sucesso!', 'success');
-      };
-    }
-
-    async function generatePopProgramming() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const date = document.getElementById('popGenDate').value;
-      const days = parseInt(document.getElementById('popGenDays').value) || 1;
-      const logArea = document.getElementById('popProcessingLogs');
-      const dlZipBtn = document.getElementById('popDownloadZipBtn');
-      
-      if (!date) return showToast('Selecione uma data inicial!', 'error');
-
-      logArea.innerHTML = '<div style="color: #94a3b8;">> Comunicando com o servidor Cloudflare...</div>';
-      dlZipBtn.style.display = 'none';
-
-      try {
-        const response = await fetch('/api/pop/generate', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date, days })
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Erro na geração');
-
-        logArea.innerHTML = '';
-        if (data.logs) {
-          data.logs.forEach(msg => {
-            const div = document.createElement('div');
-            div.style.padding = '2px 0';
-            div.style.borderBottom = '1px solid #1e293b';
-            div.textContent = `> ${msg}`;
-            
-            if (msg.includes('ERRO')) div.style.color = '#ef4444'; // Red
-            else if (msg.includes('♻️') || msg.includes('Sucesso')) div.style.color = '#10b981'; // Green
-            else if (msg.includes('📅')) div.style.color = '#60a5fa'; // Blue
-            else if (msg.includes('🎲')) div.style.color = '#f59e0b'; // Amber
-            else if (msg.includes('⚠️')) div.style.color = '#fbbf24'; // Yellow
-            
-            logArea.appendChild(div);
-          });
-          logArea.scrollTop = logArea.scrollHeight;
-        }
-
-        window.lastPopResults = data.results;
-        if (data.results && data.results.length > 0) {
-          dlZipBtn.style.display = 'inline-flex';
-          showToast(`Sucesso! ${data.results.length} dias prontos.`, 'success');
-        }
-      } catch (error) {
-        logArea.innerHTML += `<div style="color: #ef4444;">> ERROR: ${error.message}</div>`;
-        showToast(error.message, 'error');
-      }
-    }
-
-    async function downloadPopBatchZip() {
-      if (!window.lastPopResults) return;
-      const zip = new JSZip();
-      window.lastPopResults.forEach(res => {
-        const bytes = stringToCP1252(res.content);
-        zip.file(res.filename, bytes);
-      });
-      const blob = await zip.generateAsync({type:"blob"});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `POP_PROGR_${document.getElementById('popGenDate').value}.zip`;
-      a.click();
-    }
-
-    async function savePopRules() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const payload = {
-        favoriteArtists: document.getElementById('popFavArtists').value.split(',').map(s => s.trim()).filter(s => s),
-        artistSeparation: parseInt(document.getElementById('popRuleArtistSep').value),
-        songSeparation: parseInt(document.getElementById('popRuleSongSep').value),
-        substitutionMode: document.getElementById('popRuleSubstitution').checked
-      };
-      const res = await fetch(`/api/config?key=pop_rules`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) showToast('Regras Pop salvas!', 'success');
-    }
-
-    async function savePopPaths() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const payload = {
-        music: document.getElementById('popPathMusic').value,
-        sweepers: document.getElementById('popPathSweepers').value
-      };
-      const res = await fetch(`/api/config?key=pop_paths`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) showToast('Caminhos Pop salvos!', 'success');
-    }
-
-    async function triggerPopSync() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        const res = await fetch('/api/pop/sync-trigger', { 
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}` } 
-        });
-        if (res.ok) showToast('Sincronia solicitada!', 'success');
-      } catch (e) { showToast('Erro na sincronia.', 'error'); }
-    }
-
-    // --- POP TEMPLATE LIBRARY LOGIC ---
-    let popTemplates = { library: {}, mapping: [null,null,null,null,null,null,null] };
-
-    async function loadPopTemplates() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        const res = await fetch('/api/pop/templates', { headers: { 'Authorization': `Bearer ${password}` } });
-        const data = await res.json();
-        popTemplates = data;
-        renderTemplateLibrary();
-        renderWeeklyMapping();
-      } catch (e) {
-        console.error('Failed to load templates', e);
-      }
-    }
-
-    function renderTemplateLibrary() {
-      const cont = document.getElementById('popTemplateList');
-      const names = Object.keys(popTemplates.library);
-      
-      cont.innerHTML = names.map(name => `
-        <div class="config-item">
-          <div class="config-item-info">
-            <h5>${name}</h5>
-            <p>.blm carregado</p>
-          </div>
-          <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePopTemplate('${name}')">
-            <ion-icon name="trash-outline"></ion-icon>
-          </button>
-        </div>
-      `).join('') || '<p style="text-align: center; color: var(--text-light); padding: 12px;">Nenhum modelo na biblioteca.</p>';
-    }
-
-    function renderWeeklyMapping() {
-      const cont = document.getElementById('weeklyMappingGrid');
-      const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-      const libraryNames = Object.keys(popTemplates.library);
-
-      cont.innerHTML = days.map((day, idx) => `
-        <div class="form-group" style="margin-bottom: 0;">
-          <label>${day}</label>
-          <select id="map-day-${idx}" class="btn btn-secondary" style="width: 100%; text-align: left; background: white;">
-            <option value="">Não definido</option>
-            ${libraryNames.map(name => `
-              <option value="${name}" ${popTemplates.mapping[idx] === name ? 'selected' : ''}>${name}</option>
-            `).join('')}
-          </select>
-        </div>
-      `).join('');
-    }
-
-    async function handleBlmUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const name = prompt("Dê um nome para este modelo (ex: Normal, Feriado, Natal):", file.name.split('.')[0].toUpperCase());
-      if (!name) return;
-
-      const password = sessionStorage.getItem('newsmaker_password');
-      const buffer = await file.arrayBuffer();
-      const content = new TextDecoder('windows-1252').decode(buffer).trim();
-
-      try {
-        const res = await fetch('/api/pop/templates', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'upload', name, data: content })
-        });
-        if (res.ok) {
-          showToast(`Modelo "${name}" adicionado!`, 'success');
-          loadPopTemplates();
-        }
-      } catch (e) { showToast('Erro no upload.', 'error'); }
-      event.target.value = '';
-    }
-
-    async function deletePopTemplate(name) {
-      if (!confirm(`Excluir o modelo "${name}"?`)) return;
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        await fetch('/api/pop/templates', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'delete', name })
-        });
-        loadPopTemplates();
-      } catch (e) { showToast('Erro ao excluir.', 'error'); }
-    }
-
-    async function saveTemplateMapping() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const mapping = [];
-      for (let i = 0; i < 7; i++) {
-        mapping.push(document.getElementById(`map-day-${i}`).value || null);
-      }
-
-      try {
-        const res = await fetch('/api/pop/templates', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'mapping', data: mapping })
-        });
-        if (res.ok) showToast('Escala semanal salva!', 'success');
-      } catch (e) { showToast('Erro ao salvar escala.', 'error'); }
-    }
-
-    // --- POP MATERIAL MAPPING LOGIC ---
-    let popMapping = {};
-
-    async function loadPopMapping() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      try {
-        const res = await fetch('/api/pop/material-mapping', { headers: { 'Authorization': `Bearer ${password}` } });
-        const data = await res.json();
-        popMapping = data || {};
-        renderPopMappingList();
-      } catch (e) {
-        console.error('Failed to load mapping', e);
-      }
-    }
-
-    function renderPopMappingList() {
-      const cont = document.getElementById('popMappingList');
-      const keys = Object.keys(popMapping);
-      
-      if (keys.length === 0) {
-        cont.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 12px; font-size: 0.8125rem;">Nenhum mapeamento manual definido.</p>';
-        return;
-      }
-
-      cont.innerHTML = keys.map(original => `
-        <div style="display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <input type="text" class="mapping-key" value="${original}" placeholder="Nome no Modelo" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
-          <ion-icon name="arrow-forward-outline" style="color: #64748b;"></ion-icon>
-          <input type="text" class="mapping-val" value="${popMapping[original]}" placeholder="Pasta Real" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
-          <button onclick="removePopMappingRow(this)" style="background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;"><ion-icon name="trash-outline"></ion-icon></button>
-        </div>
-      `).join('');
-    }
-
-    function addPopMappingRow() {
-      const cont = document.getElementById('popMappingList');
-      if (cont.querySelector('p')) cont.innerHTML = '';
-      
-      const div = document.createElement('div');
-      div.style.display = 'flex';
-      div.style.gap = '8px';
-      div.style.alignItems = 'center';
-      div.style.background = '#f8fafc';
-      div.style.padding = '8px';
-      div.style.borderRadius = '8px';
-      div.style.border = '1px solid #e2e8f0';
-      div.style.marginBottom = '8px';
-      
-      div.innerHTML = `
-        <input type="text" class="mapping-key" placeholder="Nome no Modelo" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
-        <ion-icon name="arrow-forward-outline" style="color: #64748b;"></ion-icon>
-        <input type="text" class="mapping-val" placeholder="Pasta Real" style="flex: 1; padding: 6px; font-size: 0.8125rem; border: 1px solid #cbd5e1; border-radius: 4px;">
-        <button onclick="removePopMappingRow(this)" style="background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;"><ion-icon name="trash-outline"></ion-icon></button>
-      `;
-      cont.appendChild(div);
-    }
-
-    function removePopMappingRow(btn) {
-      btn.parentElement.remove();
-    }
-
-    async function savePopMapping() {
-      const password = sessionStorage.getItem('newsmaker_password');
-      const keys = document.querySelectorAll('.mapping-key');
-      const vals = document.querySelectorAll('.mapping-val');
-      const newMapping = {};
-
-      keys.forEach((k, i) => {
-        const keyVal = k.value.trim();
-        const valVal = vals[i].value.trim();
-        if (keyVal && valVal) newMapping[keyVal] = valVal;
-      });
-
-      try {
-        const res = await fetch('/api/pop/material-mapping', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${password}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(newMapping)
-        });
-        if (res.ok) {
-          showToast('Mapeamento salvo!', 'success');
-          closeModal('popMappingModal');
-        }
-      } catch (e) { showToast('Erro ao salvar.', 'error'); }
-    }
-
-    // --- AUTO INITIALIZATION ---
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedPass = sessionStorage.getItem('newsmaker_password');
-      if (savedPass) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appShell').style.display = 'flex';
-        loadState();
-        initDate();
-        startStatusPolling();
-        setupMusic();
-        
-        const lastTab = localStorage.getItem('admin_last_tab') || 'dashboard';
-        showTab(lastTab);
-      }
-    });
   </script>
-
-  <div id="vignettesModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Substituições de Vinhetas</h3>
-        <button class="btn btn-secondary" onclick="closeModal('vignettesModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editVignetteRule(-1)">+ Nova Regra</button>
-        <div id="vignetteList" class="config-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="vignetteEditModal" class="modal-overlay" style="z-index: 1300;">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Editar Regra de Substituição</h3>
-        <button class="btn btn-secondary" onclick="closeModal('vignetteEditModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Descrição da Regra (Ex: Verão para Outono)</label>
-          <input type="text" id="vigDesc" placeholder="Descreva a regra...">
-        </div>
-        <div class="form-group">
-          <label>Arquivos para Buscar (separe por vírgula)</label>
-          <textarea id="vigBuscar" style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit;" placeholder="ex: VINHETA_VERAO_01.wav, VINHETA_VERAO_02.wav"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Arquivos para Trocar (separe por vírgula)</label>
-          <textarea id="vigTrocar" style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit;" placeholder="ex: VINHETA_OUTONO_01.wav, VINHETA_OUTONO_02.wav"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Modo de Escolha</label>
-          <select id="vigModo" class="news-input" style="width: 100%;">
-            <option value="ciclo">🔁 Ciclo (Gira na ordem da lista)</option>
-            <option value="aleatorio">🎲 Aleatório (Sorteia da lista)</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('vignetteEditModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveVignetteRule()">Confirmar Regra</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Jaba Editor Modal (Higher z-index to appear over manager) -->
-  <div id="prefixesModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Prefixos de Hora Cheia</h3>
-        <button class="btn btn-secondary" onclick="closeModal('prefixesModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-         <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
-          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana', event); renderPrefixList();">Dia Semana</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado', event); renderPrefixList();">Sábado</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo', event); renderPrefixList();">Domingo</button>
-        </div>
-        <div id="rulesPrefixList"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="jabasManagerModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Gerenciador de Jabás</h3>
-        <button class="btn btn-secondary" onclick="closeModal('jabasManagerModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editJaba(-1)">+ Novo Jabá</button>
-        <div id="jabasList" class="config-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="promoManagerModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Gerenciador de Promoções</h3>
-        <button class="btn btn-secondary" onclick="closeModal('promoManagerModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editPromo(-1)">+ Nova Promoção</button>
-        <div id="promosList" class="config-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="promoModal" class="modal-overlay" style="z-index: 1200;">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Configurar Promoção</h3>
-        <button class="btn btn-secondary" onclick="closeModal('promoModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div class="news-inputs" style="margin-bottom: 16px; gap: 8px;">
-          <div class="form-group" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #fdf2f8; padding: 12px; border-radius: 8px; border: 1px solid #fbcfe8; margin: 0;">
-            <label style="margin: 0; color: #be185d;">Campanha Ativa</label>
-            <input type="checkbox" id="promoEnabled" style="width: 20px; height: 20px;">
-          </div>
-          <div class="form-group" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #f0f9ff; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin: 0;">
-            <label style="margin: 0; color: #0369a1;">Overlay (Sobrescrever Rede)</label>
-            <input type="checkbox" id="promoOverlay" style="width: 20px; height: 20px;">
-          </div>
-        </div>
-        <div class="news-inputs" style="margin-bottom: 24px;">
-          <div class="form-group">
-            <label>Identificador (Ex: DIADASMAES)</label>
-            <input type="text" id="promoId">
-          </div>
-          <div class="form-group">
-            <label>Duração Total (ms)</label>
-            <div style="display: flex; gap: 8px;">
-               <input type="number" id="promoDuration" style="flex: 1;">
-               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('promoAudioFile').click()">
-                 <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
-               </button>
-               <input type="file" id="promoAudioFile" style="display: none;" accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/x-flac" onchange="extractPromoAudioData(event)">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Caminho Completo do Arquivo (Ex: U:\Materiais\Vinhetas\...)</label>
-          <input type="text" id="promoPath">
-        </div>
-        <div class="form-group">
-          <label>Data Limite (Último dia da promo)</label>
-          <input type="date" id="promoEndDate">
-        </div>
-        <div class="news-inputs" style="margin-top: 16px;">
-          <div class="form-group">
-            <label>Dias de Semana (Seg-Sex)</label>
-            <input type="text" id="promoHoursDiaSemana" placeholder="08, 10, 12, 18">
-          </div>
-          <div class="form-group">
-            <label>Sábado</label>
-            <input type="text" id="promoHoursSabado" placeholder="09, 11, 15">
-          </div>
-          <div class="form-group">
-            <label>Domingo</label>
-            <input type="text" id="promoHoursDomingo" placeholder="10, 14">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('promoModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="savePromo()">Salvar Promoção</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="rulesModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Regras de Regionalização</h3>
-        <button class="btn btn-secondary" onclick="closeModal('rulesModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div style="display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
-          <button class="btn btn-secondary day-btn active" style="flex: 1;" onclick="showRulesTab('dia_semana', event)">Dia Semana</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('sabado', event)">Sábado</button>
-          <button class="btn btn-secondary day-btn" style="flex: 1;" onclick="showRulesTab('domingo', event)">Domingo</button>
-        </div>
-        
-        <div class="sections-container" style="padding: 0;">
-          <div class="section-group">
-            <h4><ion-icon name="time-outline"></ion-icon> Janelas de Conteúdo (Rede)</h4>
-            <div id="rulesWindowsList" class="time-grid"></div>
-          </div>
-          <div class="section-group">
-            <h4><ion-icon name="trash-outline"></ion-icon> Remover Blocos</h4>
-            <div id="rulesRemovedList" class="time-grid"></div>
-          </div>
-          <div class="section-group">
-            <h4><ion-icon name="swap-horizontal-outline"></ion-icon> Renomear Horários por Cidade</h4>
-            <div id="rulesRenameList"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Jaba Editor Modal (Higher z-index to appear over manager) -->
-  <div id="jabaModal" class="modal-overlay" style="z-index: 1200;">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Configurar Jabá (Música Comercial)</h3>
-        <button class="btn btn-secondary" onclick="closeModal('jabaModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div class="news-inputs" style="margin-bottom: 24px;">
-          <div class="form-group">
-            <label>Identificador (Ex: JRVILLA)</label>
-            <input type="text" id="jabaId">
-          </div>
-          <div class="form-group">
-            <label>Duração Total (ms)</label>
-            <div style="display: flex; gap: 8px;">
-               <input type="number" id="jabaDuration" style="flex: 1;">
-               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jabaAudioFile').click()">
-                 <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
-               </button>
-               <input type="file" id="jabaAudioFile" style="display: none;" accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/x-flac" onchange="extractAudioData(event)">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Dias da Semana</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="0"> Dom
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="1"> Seg
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="2"> Ter
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="3"> Qua
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="4"> Qui
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="5"> Sex
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="jaba-day-check" value="6"> Sáb
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Caminho Completo do Arquivo (Ex: M:\Jabás\...)</label>
-          <input type="text" id="jabaPath">
-        </div>
-        <div class="news-inputs">
-          <div class="form-group">
-            <label>Cue Intro (ms)</label>
-            <input type="number" id="jabaIntro">
-          </div>
-          <div class="form-group">
-            <label>Cue Segue (ms)</label>
-            <input type="number" id="jabaSegue">
-          </div>
-        </div>
-        <h4 style="font-size: 0.875rem; color: #64748b; text-transform: uppercase; margin-bottom: 12px; margin-top: 24px;">Programação por Janelas</h4>
-        <div id="jabaProgContainer"></div>
-        <button class="btn btn-secondary btn-sm" onclick="addJabaProg()" style="margin-top: 8px;">+ Adicionar Regra de Programação</button>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('jabaModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveJaba()">Salvar Jabá</button>
-      </div>
-    </div>
-  </div>
-
-  <style>
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .spin { animation: spin 1s linear infinite; }
-    .day-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-  </style>
-  <div id="popJabaManagerModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Gerenciador de Jabás (POP FM)</h3>
-        <button class="btn btn-secondary" onclick="closeModal('popJabaManagerModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <button class="btn btn-primary btn-sm" style="margin-bottom: 16px;" onclick="editPopJaba(-1)">+ Novo Jabá POP</button>
-        <div id="popJabasList" class="config-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="popJabaEditModal" class="modal-overlay" style="z-index: 1200;">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Configurar Jabá POP</h3>
-        <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div class="news-inputs" style="margin-bottom: 24px;">
-          <div class="form-group">
-            <label>Identificador (Ex: JRVILLA_POP)</label>
-            <input type="text" id="popJabaId">
-          </div>
-          <div class="form-group">
-            <label>Duração Total (ms)</label>
-            <div style="display: flex; gap: 8px;">
-               <input type="number" id="popJabaDuration" style="flex: 1;">
-               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('popJabaAudioFile').click()">
-                 <ion-icon name="musical-notes-outline"></ion-icon> Carregar Áudio
-               </button>
-               <input type="file" id="popJabaAudioFile" style="display: none;" accept="audio/*" onchange="extractPopJabaAudioData(event)">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Dias da Semana</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="0"> Dom
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="1"> Seg
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="2"> Ter
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="3"> Qua
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="4"> Qui
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="5"> Sex
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; text-transform: none; margin: 0;">
-              <input type="checkbox" class="pop-jaba-day-check" value="6"> Sáb
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Caminho Completo do Arquivo (Ex: M:\Jabás\...)</label>
-          <input type="text" id="popJabaPath">
-        </div>
-        <div class="news-inputs" style="margin-top: 16px;">
-          <div class="form-group">
-            <label>Ativo</label>
-            <input type="checkbox" id="popJabaEnabled" checked style="width: 20px; height: 20px;">
-          </div>
-        </div>
-        <h4 style="font-size: 0.875rem; color: #64748b; text-transform: uppercase; margin-bottom: 12px; margin-top: 24px;">Programação por Janelas</h4>
-        <div id="popJabaProgContainer"></div>
-        <button class="btn btn-secondary btn-sm" onclick="addPopJabaProg()" style="margin-top: 8px;">+ Adicionar Regra de Programação</button>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('popJabaEditModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="savePopJaba()">Salvar Jabá POP</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="popMappingModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Mapeamento de Materiais (Overide)</h3>
-        <button class="btn btn-secondary" onclick="closeModal('popMappingModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 0.8125rem; color: #64748b; margin-bottom: 16px;">
-          Se o motor não encontrar uma pasta automaticamente, ou se o nome no modelo for diferente da pasta real, configure aqui.
-        </p>
-        <div id="popMappingList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px;">
-           <!-- Linhas de mapeamento injetadas aqui -->
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="addPopMappingRow()">+ Adicionar Regra</button>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('popMappingModal')">Cancelar</button>
-        <button class="btn btn-primary" onclick="savePopMapping()">Salvar Mapeamento</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="popRulesModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Regras de Plástica (POP)</h3>
-        <button class="btn btn-secondary" onclick="closeModal('popRulesModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-          <div class="form-group">
-            <label>Afast. Artista</label>
-            <input type="number" id="popRuleArtistSep">
-          </div>
-          <div class="form-group">
-            <label>Afast. Música</label>
-            <input type="number" id="popRuleSongSep">
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border);">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <label style="margin-bottom: 0;">Modo Substituição (Overlay)</label>
-              <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 2px;">Substitui slots .apm por Jabás/Promos</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="popRuleSubstitution">
-              <span class="slider round"></span>
-            </label>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Artistas Favoritos (Peso +)</label>
-          <textarea id="popFavArtists" style="min-height: 120px;"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="savePopRules(); closeModal('popRulesModal');">Salvar Regras</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="popPathsModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Caminhos do Sistema (POP)</h3>
-        <button class="btn btn-secondary" onclick="closeModal('popPathsModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Raiz M: (Músicas)</label>
-          <input type="text" id="popPathMusic">
-        </div>
-        <div class="form-group">
-          <label>Raiz U: (Materiais/Eventos)</label>
-          <input type="text" id="popPathSweepers">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="savePopPaths(); closeModal('popPathsModal');">Salvar Caminhos</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="popTemplatesModal" class="modal-overlay">
-    <div class="modal" style="max-width: 800px;">
-      <div class="modal-header">
-        <h3>Biblioteca de Modelos e Escala (.blm)</h3>
-        <button class="btn btn-secondary" onclick="closeModal('popTemplatesModal')"><ion-icon name="close"></ion-icon></button>
-      </div>
-      <div class="modal-body">
-         <div class="grid-sidebar-layout">
-            <div style="border-right: 1px solid var(--border); padding-right: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase;">Arquivos</h4>
-                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('blmUpload').click()">+ Subir</button>
-                <input type="file" id="blmUpload" style="display: none;" accept=".blm" onchange="handleBlmUpload(event)">
-              </div>
-              <div id="popTemplateList" class="config-list"></div>
-            </div>
-            <div>
-              <h4 style="font-size: 0.75rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; margin-bottom: 16px;">Escala da Semana</h4>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="weeklyMappingGrid"></div>
-            </div>
-         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="saveTemplateMapping()">Gravar Escala</button>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>
