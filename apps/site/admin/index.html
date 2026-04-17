@@ -188,13 +188,20 @@
       }).join('');
     }
 
+    function formatDate(dateStr) {
+      if (!dateStr || dateStr === '-') return '-';
+      const [year, month, day] = dateStr.split('-');
+      if (!year || !month || !day) return dateStr;
+      return `${day}/${month}/${year}`;
+    }
+
     function viewDetails(dataStr) {
       const c = JSON.parse(decodeURIComponent(dataStr));
       const content = document.getElementById('detailsContent');
       const fields = [
         ['Rádio', c.radio || '-'], ['Tipo', c.type?.toUpperCase() || '-'], ['Documento', c.document], 
         ['Razão Social/Nome', c.companyName], ['E-mail', c.email], ['Telefone', c.phone],
-        ['Tipo de Mídia', c.mediaType || '-'], ['Data Início', c.dateStart || '-'], ['Data Fim', c.dateEnd || '-'],
+        ['Tipo de Mídia', c.mediaType || '-'], ['Data Início', formatDate(c.dateStart)], ['Data Fim', formatDate(c.dateEnd)],
         ['Dias Veiculação', c.days || '-'], ['Horários Veiculação', c.hours || '-'], ['Observações', c.obs || '-']
       ];
       content.innerHTML = fields.map(f => `<div class="detail-item"><span class="detail-label">${f[0]}</span><span class="detail-val">${f[1]}</span></div>`).join('');
