@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entrada de Contrato - POP FM</title>
+  <title>Novo Contrato - POP FM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -30,14 +30,18 @@
       z-index: -1;
     }
 
-    /* Login Area */
+    /* Auth Overlay */
     .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center; }
 
-    /* Form Layout */
-    .app-container { display: none; padding: 40px 20px; max-width: 800px; margin: 0 auto; }
+    /* App Layout */
+    .app-container { display: none; padding: 40px 20px; max-width: 600px; margin: 0 auto; }
     .header { text-align: center; margin-bottom: 32px; }
     .header h1 { font-size: 1.75rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+
+    .step-indicator { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; }
+    .step-dot { height: 8px; width: 40px; background: var(--border); border-radius: 100px; transition: all 0.3s; }
+    .step-dot.active { background: var(--primary); }
 
     .contract-card { background: white; padding: 32px; border-radius: 24px; border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); }
 
@@ -45,109 +49,157 @@
     .type-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; color: var(--text-light); background: transparent; }
     .type-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
 
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .full-width { grid-column: span 2; }
-
     label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
-    input, select { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 0.9375rem; outline: none; transition: all 0.2s; background: #f8fafc; }
-    input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
-    input:disabled { opacity: 0.6; cursor: not-allowed; }
+    input, select, textarea { 
+      width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; 
+      margin-bottom: 16px; font-size: 0.9375rem; outline: none; transition: all 0.2s; background: #f8fafc; 
+    }
+    textarea { resize: none; font-family: inherit; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
+    
+    /* Highlight Mandatory */
+    .required-field { border-left: 4px solid var(--primary); }
 
-    .search-input-wrapper { position: relative; }
-    .search-input-wrapper .spinner { position: absolute; right: 12px; top: 40px; display: none; color: var(--primary); }
-    .spinning { animation: spin 1s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    button.primary { 
+      width: 100%; padding: 16px; background: var(--primary); color: white; border: none; 
+      border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; 
+      display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 1rem; 
+    }
+    button.primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+    button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    button.secondary { 
+       background: none; border: 1px solid var(--border); color: var(--text-light); width: auto; 
+       padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 24px;
+    }
 
-    button.primary { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 1rem; }
-    button.primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .view { display: none; }
+    .view.active { display: block; animation: slideIn 0.3s ease-out; }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
     .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f1f5f9; border-radius: 100px; font-size: 0.75rem; font-weight: 600; color: var(--text-light); margin-bottom: 12px; }
 
     .success-panel { display: none; text-align: center; padding: 60px 20px; }
-    .success-icon { font-size: 64px; color: var(--success); margin-bottom: 24px; }
-
-    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
   </style>
 </head>
 <body>
 
-  <!-- Login Area -->
+  <!-- Auth -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
-      <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #f5f3ff; border-radius: 12px; color: var(--primary);"><ion-icon name="document-text" style="font-size: 32px;"></ion-icon></div>
       <h1>Acesso Vendedor</h1>
-      <p style="margin-bottom: 32px; font-size: 0.875rem; color: var(--text-light);">Identifique-se para inserir dados do contrato</p>
-      <div style="text-align: left;"><label>Usuário</label><input type="text" id="sellerUser" ><label>Senha</label><input type="password" id="sellerPass"></div>
-      <button onclick="loginSeller()" id="loginBtn" class="primary">Entrar no Sistema</button>
+      <p style="margin-bottom: 32px; font-size: 0.875rem; color: var(--text-light);">Identifique-se para continuar</p>
+      <div style="text-align: left;"><label>Usuário</label><input type="text" id="sellerUser"><label>Senha</label><input type="password" id="sellerPass"></div>
+      <button onclick="loginSeller()" id="loginBtn" class="primary">Entrar</button>
       <div id="loginError" style="color: var(--error); font-size: 0.8125rem; margin-top: 16px; display: none;">Credenciais inválidas.</div>
     </div>
   </div>
 
-  <!-- Form Area -->
+  <!-- Form Wizard -->
   <div id="app" class="app-container">
     <div class="header">
       <div class="status-badge"><ion-icon name="person-outline"></ion-icon><span id="welcomeMsg">Vendedor</span></div>
-      <h1>Novo Contrato</h1>
-      <p>Preencha os dados cadastrais do cliente</p>
+      <h1 id="pageTitle">Novo Lançamento</h1>
+    </div>
+
+    <div class="step-indicator">
+      <div id="dot1" class="step-dot active"></div>
+      <div id="dot2" class="step-dot"></div>
     </div>
 
     <div class="contract-card">
-      <div class="type-selector">
-        <button class="type-btn active" onclick="setType('pj')">Pessoa Jurídica</button>
-        <button class="type-btn" onclick="setType('pf')">Pessoa Física</button>
-      </div>
+      <form id="contractForm" onsubmit="return false">
+        
+        <!-- Step 1: Cliente & Radio -->
+        <div id="step-1" class="view active">
+          <label>Emissora do Contrato</label>
+          <select id="radio" class="required-field" onchange="validateStep1()">
+            <option value="">Selecione a Rádio...</option>
+            <option value="Pop FM">Pop FM</option>
+            <option value="Massa Itapeva">Massa Itapeva</option>
+            <option value="Massa Itapetininga">Massa Itapetininga</option>
+          </select>
 
-      <form id="contractForm" onsubmit="submitForm(event)">
-        <div class="grid">
-          <div class="search-input-wrapper">
-             <label id="docLabel">CNPJ</label>
-             <input type="text" id="document" placeholder="00.000.000/0000-00" required oninput="handleDocInput(this)">
-             <div class="spinner" id="docSpinner"><ion-icon name="sync-outline" class="spinning"></ion-icon></div>
-          </div>
-          
-          <div>
-            <label>Situação Cadastral</label>
-            <input type="text" id="sit_cadastral" placeholder="-" readonly>
-          </div>
-
-          <div class="full-width">
-            <label id="nameLabel">Razão Social / Nome Fantasia</label>
-            <input type="text" id="companyName" placeholder="Nome da empresa..." required>
+          <div class="type-selector">
+            <button class="type-btn active" onclick="setType('pj')">Pessoa Jurídica</button>
+            <button class="type-btn" onclick="setType('pf')">Pessoa Física</button>
           </div>
 
-          <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 12px 0;"></div>
+          <label id="docLabel">CNPJ</label>
+          <input type="text" id="document" class="required-field" placeholder="00.000.000/0000-00" oninput="validateStep1()">
 
-          <div class="full-width"><label>Email de Contato</label><input type="email" id="email" placeholder="email@exemplo.com"></div>
-          <div><label>Telefone</label><input type="text" id="phone" placeholder="(00) 0000-0000"></div>
-          <div><label>CEP</label><input type="text" id="cep" placeholder="00000-000"></div>
-          
-          <div class="full-width"><label>Logradouro / Rua</label><input type="text" id="logradouro" placeholder="Rua..."></div>
-          <div><label>Número</label><input type="text" id="numero" placeholder="123"></div>
-          <div><label>Bairro</label><input type="text" id="bairro" placeholder="Bairro..."></div>
-          <div><label>Cidade</label><input type="text" id="cidade" placeholder="Cidade..."></div>
-          <div><label>UF</label><input type="text" id="uf" placeholder="SP"></div>
+          <label id="nameLabel">Razão Social</label>
+          <input type="text" id="companyName" class="required-field" placeholder="Nome completo..." oninput="validateStep1()">
+
+          <label>Email de Contato</label>
+          <input type="email" id="email" class="required-field" placeholder="email@exemplo.com" oninput="validateStep1()">
+
+          <label>Telefone</label>
+          <input type="text" id="phone" class="required-field" placeholder="(00) 00000-0000" oninput="validateStep1()">
+
+          <button id="nextBtn" class="primary" onclick="goToStep(2)" disabled>
+            <span>Informações do Contrato</span>
+            <ion-icon name="arrow-forward-outline"></ion-icon>
+          </button>
         </div>
 
-        <button type="submit" id="submitBtn" class="primary">
-          <span>Enviar Dados do Contrato</span>
-          <ion-icon name="arrow-forward-outline"></ion-icon>
-        </button>
+        <!-- Step 2: Contract Details -->
+        <div id="step-2" class="view">
+          <label>Tipo de Mídia</label>
+          <select id="mediaType" class="required-field" onchange="validateStep2()">
+            <option value="">Selecione o tipo...</option>
+            <option value="Spot">Spot</option>
+            <option value="Testemunhal">Testemunhal</option>
+            <option value="Ambos">Ambos</option>
+          </select>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <label>Data Início</label>
+              <input type="date" id="dateStart" class="required-field" onchange="validateStep2()">
+            </div>
+            <div>
+              <label>Data Fim</label>
+              <input type="date" id="dateEnd" class="required-field" onchange="validateStep2()">
+            </div>
+          </div>
+
+          <label>Dias de Veiculação</label>
+          <textarea id="days" class="required-field" rows="2" placeholder="Ex: Seg à Sex / Todos os dias..." oninput="validateStep2()"></textarea>
+
+          <label>Horários de Veiculação</label>
+          <textarea id="hours" class="required-field" rows="2" placeholder="Ex: Manhã e Tarde / 08h às 18h..." oninput="validateStep2()"></textarea>
+
+          <label>Observações (Opcional)</label>
+          <textarea id="obs" rows="3" placeholder="Informações adicionais se houver..."></textarea>
+
+          <button id="submitBtn" class="primary" onclick="submitForm()" disabled>
+            <span>Finalizar e Enviar</span>
+            <ion-icon name="cloud-upload-outline"></ion-icon>
+          </button>
+
+          <button class="secondary" onclick="goToStep(1)">
+            <ion-icon name="arrow-back-outline"></ion-icon> Voltar
+          </button>
+        </div>
+
       </form>
     </div>
 
     <div style="margin-top: 32px; text-align: center;">
-      <button onclick="logout()" style="background: none; color: var(--text-light); width: auto; font-size: 0.8125rem; font-weight: 500; border: none; cursor: pointer;">
-        <ion-icon name="log-out-outline"></ion-icon> Sair da conta
+      <button onclick="logout()" style="background:none; border:none; color:var(--text-light); cursor:pointer; font-size:0.875rem;">
+        Sair da conta
       </button>
     </div>
   </div>
 
-  <!-- Success Area -->
-  <div id="successPanel" class="success-panel">
-    <div class="success-icon"><ion-icon name="checkmark-circle"></ion-icon></div>
-    <h1>Contrato Enviado!</h1>
-    <p style="color: var(--text-light); margin-bottom: 32px;">Os dados foram registrados com sucesso no sistema.</p>
-    <button onclick="location.reload()" class="primary" style="max-width: 250px; margin: 0 auto; background: #e2e8f0; color: #1e293b;">Novo Lançamento</button>
+  <!-- Success -->
+  <div id="successPanel" class="success-panel app-container" style="display:none; padding-top:100px;">
+    <ion-icon name="checkmark-circle" style="font-size:80px; color:var(--success); margin-bottom:24px;"></ion-icon>
+    <h1>Enviado com Sucesso!</h1>
+    <p style="color:var(--text-light); margin-bottom:32px;">A rádio recebeu os dados para faturamento do contrato.</p>
+    <button onclick="location.reload()" class="primary" style="max-width:260px; margin:0 auto;">Novo Contrato</button>
   </div>
 
   <script>
@@ -157,47 +209,31 @@
       contractType = type;
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       document.querySelector(`[onclick="setType('${type}')"]`).classList.add('active');
-      
       document.getElementById('docLabel').textContent = type === 'pj' ? 'CNPJ' : 'CPF';
       document.getElementById('document').placeholder = type === 'pj' ? '00.000.000/0000-00' : '000.000.000-00';
-      document.getElementById('nameLabel').textContent = type === 'pj' ? 'Razão Social / Nome Fantasia' : 'Nome Completo';
-      
-      // Clear fields on switch
-      // document.getElementById('contractForm').reset(); 
+      document.getElementById('nameLabel').textContent = type === 'pj' ? 'Razão Social' : 'Nome do Cliente';
+      validateStep1();
     }
 
-    async function handleDocInput(el) {
-      const val = el.value.replace(/\D/g, '');
-      if (contractType === 'pj' && val.length === 14) {
-        lookupCNPJ(val);
-      }
+    function validateStep1() {
+      const isFilled = (id) => document.getElementById(id).value.trim() !== '';
+      const valid = isFilled('radio') && isFilled('document') && isFilled('companyName') && isFilled('email') && isFilled('phone');
+      document.getElementById('nextBtn').disabled = !valid;
     }
 
-    async function lookupCNPJ(cnpj) {
-      const spinner = document.getElementById('docSpinner');
-      spinner.style.display = 'block';
-      
-      try {
-        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        
-        document.getElementById('companyName').value = data.nome_fantasia || data.razao_social || '';
-        document.getElementById('sit_cadastral').value = data.descricao_situacao_cadastral || '';
-        document.getElementById('cep').value = data.cep || '';
-        document.getElementById('logradouro').value = data.logradouro || '';
-        document.getElementById('numero').value = data.numero || '';
-        document.getElementById('bairro').value = data.bairro || '';
-        document.getElementById('cidade').value = data.municipio || '';
-        document.getElementById('uf').value = data.uf || '';
-        document.getElementById('phone').value = data.ddd_telefone_1 || '';
-        document.getElementById('email').value = data.email || '';
-        
-      } catch (e) {
-        console.error('Erro na busca do CNPJ');
-      } finally {
-        spinner.style.display = 'none';
-      }
+    function validateStep2() {
+      const isFilled = (id) => document.getElementById(id).value.trim() !== '';
+      const valid = isFilled('mediaType') && isFilled('dateStart') && isFilled('dateEnd') && isFilled('days') && isFilled('hours');
+      document.getElementById('submitBtn').disabled = !valid;
+    }
+
+    function goToStep(s) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.step-dot').forEach(d => d.classList.remove('active'));
+      document.getElementById(`step-${s}`).classList.add('active');
+      document.getElementById(`dot${s}`).classList.add('active');
+      document.getElementById('pageTitle').textContent = s === 1 ? 'Dados do Cliente' : 'Dados do Contrato';
+      window.scrollTo(0,0);
     }
 
     async function loginSeller() {
@@ -214,7 +250,7 @@
           localStorage.setItem('pop_seller_name', data.user.name);
           showApp();
         } else { document.getElementById('loginError').style.display = 'block'; }
-      } catch (e) { alert('Erro de conexão'); }
+      } catch (e) { alert('Erro de rede'); }
       finally { btn.disabled = false; }
     }
 
@@ -222,28 +258,28 @@
       document.getElementById('loginOverlay').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       document.getElementById('welcomeMsg').textContent = `Vendedor: ${localStorage.getItem('pop_seller_name')}`;
+      validateStep1();
     }
 
     function logout() { localStorage.clear(); location.reload(); }
 
-    async function submitForm(e) {
-      e.preventDefault();
+    async function submitForm() {
       const btn = document.getElementById('submitBtn');
       const token = localStorage.getItem('pop_seller_token');
       
       const payload = {
+        radio: document.getElementById('radio').value,
         type: contractType,
         document: document.getElementById('document').value,
-        status_cadastral: document.getElementById('sit_cadastral').value,
         companyName: document.getElementById('companyName').value,
         email: document.getElementById('email').value,
         phone: document.getElementById('phone').value,
-        cep: document.getElementById('cep').value,
-        logradouro: document.getElementById('logradouro').value,
-        numero: document.getElementById('numero').value,
-        bairro: document.getElementById('bairro').value,
-        cidade: document.getElementById('cidade').value,
-        uf: document.getElementById('uf').value
+        mediaType: document.getElementById('mediaType').value,
+        dateStart: document.getElementById('dateStart').value,
+        dateEnd: document.getElementById('dateEnd').value,
+        days: document.getElementById('days').value,
+        hours: document.getElementById('hours').value,
+        obs: document.getElementById('obs').value
       };
 
       btn.disabled = true;
@@ -256,7 +292,7 @@
         if (res.ok) {
           document.getElementById('app').style.display = 'none';
           document.getElementById('successPanel').style.display = 'block';
-        } else { alert('Erro ao enviar'); }
+        } else { alert('Erro ao enviar contrato'); }
       } catch (e) { alert('Erro de conexão'); }
       finally { btn.disabled = false; }
     }

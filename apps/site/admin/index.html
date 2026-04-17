@@ -55,7 +55,7 @@
     .details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
     .detail-item { display: flex; flex-direction: column; gap: 4px; }
     .detail-label { font-size: 0.6875rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
-    .detail-val { font-size: 0.9375rem; color: var(--text); font-weight: 500; }
+    .detail-val { font-size: 0.9375rem; color: var(--text); font-weight: 500; white-space: pre-wrap; }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
@@ -65,12 +65,12 @@
 </head>
 <body>
 
-  <!-- Login Area -->
+  <!-- Auth Area -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
       <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #ecfdf5; border-radius: 12px; color: var(--primary);"><ion-icon name="shield-checkmark" style="font-size: 32px;"></ion-icon></div>
-      <h1>Gestão POP Admin</h1>
-      <p>Administração e Controle de Contratos</p>
+      <h1>Gestão Administrador</h1>
+      <p>Controle de Contratos - Redes POP</p>
       <input type="password" id="masterPassword" placeholder="Senha Mestra...">
       <button onclick="login()" class="full" id="loginBtn">Acessar Painel</button>
       <div id="loginError" style="color: var(--error); font-size: 0.8125rem; margin-top: 16px; display: none;">Senha incorreta.</div>
@@ -81,34 +81,37 @@
   <div id="app" class="app-container">
     <nav class="tabs-nav">
       <button class="tab-btn active" onclick="showTab('users')"><ion-icon name="people-outline"></ion-icon><span>Vendedores</span></button>
-      <button class="tab-btn" onclick="showTab('contracts')"><ion-icon name="document-text-outline"></ion-icon><span>Ativos</span></button>
-      <button class="tab-btn" onclick="showTab('archived')"><ion-icon name="archive-outline"></ion-icon><span>Arquivados</span></button>
+      <button class="tab-btn" onclick="showTab('contracts')"><ion-icon name="document-text-outline"></ion-icon><span>Contratos Ativos</span></button>
+      <button class="tab-btn" onclick="showTab('archived')"><ion-icon name="archive-outline"></ion-icon><span>Arquivo</span></button>
     </nav>
 
     <!-- Content: Users -->
     <div id="tab-users" class="tab-content active">
-      <div class="header"><h2>Vendedores</h2><button class="btn-primary" onclick="openUserModal()">+ Novo Vendedor</button></div>
+      <div class="header"><h2>Vendedores</h2><button onclick="openUserModal()" class="btn-primary">+ Novo Vendedor</button></div>
       <div class="card"><table id="userTable"><thead><tr><th>Usuário</th><th>Nome</th><th width="100">Ações</th></tr></thead><tbody></tbody></table></div>
     </div>
 
     <!-- Content: Contracts -->
     <div id="tab-contracts" class="tab-content">
       <div class="header"><h2>Contratos Recebidos</h2><button class="btn-secondary" onclick="loadContracts('active')">Atualizar</button></div>
-      <div class="card"><table id="contractTable"><thead><tr><th>Data</th><th>Tipo</th><th>Documento</th><th>Empresa/Nome</th><th width="120">Ações</th></tr></thead><tbody></tbody></table><div id="activeEmpty" style="padding:40px;text-align:center;display:none;color:var(--text-light)">Nenhum contrato ativo.</div></div>
+      <div class="card"><table id="contractTable"><thead><tr><th>Data</th><th>Rádio</th><th>Documento</th><th>Empresa/Nome</th><th width="120">Ações</th></tr></thead><tbody></tbody></table><div id="activeEmpty" style="padding:40px;text-align:center;display:none;color:var(--text-light)">Nenhum contrato ativo.</div></div>
     </div>
 
     <!-- Content: Archived -->
     <div id="tab-archived" class="tab-content">
       <div class="header"><h2>Arquivo de Contratos</h2><button class="btn-secondary" onclick="loadContracts('archived')">Atualizar</button></div>
-      <div class="card"><table id="archivedTable"><thead><tr><th>Data</th><th>Tipo</th><th>Documento</th><th>Empresa/Nome</th><th width="120">Ações</th></tr></thead><tbody></tbody></table><div id="archivedEmpty" style="padding:40px;text-align:center;display:none;color:var(--text-light)">Arquivo vazio.</div></div>
+      <div class="card"><table id="archivedTable"><thead><tr><th>Data</th><th>Rádio</th><th>Documento</th><th>Empresa/Nome</th><th width="120">Ações</th></tr></thead><tbody></tbody></table><div id="archivedEmpty" style="padding:40px;text-align:center;display:none;color:var(--text-light)">Arquivo vazio.</div></div>
     </div>
   </div>
 
   <!-- Modal: Details -->
   <div id="detailsModal" class="modal-overlay">
     <div class="modal">
-      <div class="modal-header"><h3>Detalhes do Registro</h3><ion-icon name="close-outline" style="font-size:24px;cursor:pointer;" onclick="closeModal('detailsModal')"></ion-icon></div>
+      <div class="modal-header"><h3>Dados do Contrato</h3><ion-icon name="close-outline" style="font-size:24px;cursor:pointer;" onclick="closeModal('detailsModal')"></ion-icon></div>
       <div class="details-grid" id="detailsContent"></div>
+      <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border); text-align:right;">
+        <button class="btn-secondary" onclick="closeModal('detailsModal')">Fechar</button>
+      </div>
     </div>
   </div>
 
@@ -120,14 +123,12 @@
         <label>Usuário</label><input type="text" id="username" required>
         <label>Nome</label><input type="text" id="name" required>
         <label>Senha</label><input type="text" id="password" required>
-        <button type="submit" class="full" style="background:var(--primary)">Salvar</button>
+        <button type="submit" class="full">Salvar Vendedor</button>
       </form>
     </div>
   </div>
 
   <script>
-    let currentTab = 'users';
-
     async function login() {
       const pwd = document.getElementById('masterPassword').value;
       const res = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${pwd}` } });
@@ -140,7 +141,6 @@
     }
 
     function showTab(tab) {
-      currentTab = tab;
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`tab-${tab}`).classList.add('active');
@@ -168,7 +168,6 @@
       
       document.querySelector(target).innerHTML = list.map(c => {
         const date = new Date(c.submittedAt).toLocaleDateString('pt-BR');
-        const typeBadge = `<span class="badge ${c.type}">${c.type ? c.type.toUpperCase() : 'PJ'}</span>`;
         const archiveBtn = status === 'active' ? 
           `<button class="btn-icon" onclick="moveContract('${c.id}', 'archive')" title="Arquivar"><ion-icon name="archive-outline"></ion-icon></button>` :
           `<button class="btn-icon" onclick="moveContract('${c.id}', 'restore')" title="Restaurar"><ion-icon name="refresh-outline"></ion-icon></button>`;
@@ -177,8 +176,8 @@
 
         return `<tr>
           <td>${date}</td>
-          <td>${typeBadge}</td>
-          <td><span style="font-family:monospace;font-size:0.75rem">${c.document || c.cnpj}</span></td>
+          <td><span class="badge" style="background:#f5f3ff; color:var(--primary)">${c.radio || 'POP FM'}</span></td>
+          <td><span style="font-family:monospace;font-size:0.75rem">${c.document}</span></td>
           <td class="user-name">${c.companyName}</td>
           <td><div class="actions">
             <button class="btn-icon" onclick="viewDetails('${encodeURIComponent(JSON.stringify(c))}')"><ion-icon name="eye-outline"></ion-icon></button>
@@ -193,11 +192,10 @@
       const c = JSON.parse(decodeURIComponent(dataStr));
       const content = document.getElementById('detailsContent');
       const fields = [
-        ['Tipo', c.type?.toUpperCase() || 'PJ'], ['Documento', c.document || c.cnpj], ['Empresa/Nome', c.companyName],
-        ['Situação', c.status_cadastral || '-'], ['Email', c.email || '-'], ['Telefone', c.phone || '-'],
-        ['CEP', c.cep || '-'], ['Logradouro', c.logradouro || '-'], ['Número', c.numero || '-'],
-        ['Bairro', c.bairro || '-'], ['Cidade', c.cidade || '-'], ['UF', c.uf || '-'],
-        ['Enviado em', new Date(c.submittedAt).toLocaleString('pt-BR')]
+        ['Rádio', c.radio || '-'], ['Tipo', c.type?.toUpperCase() || '-'], ['Documento', c.document], 
+        ['Razão Social/Nome', c.companyName], ['E-mail', c.email], ['Telefone', c.phone],
+        ['Tipo de Mídia', c.mediaType || '-'], ['Data Início', c.dateStart || '-'], ['Data Fim', c.dateEnd || '-'],
+        ['Dias Veiculação', c.days || '-'], ['Horários Veiculação', c.hours || '-'], ['Observações', c.obs || '-']
       ];
       content.innerHTML = fields.map(f => `<div class="detail-item"><span class="detail-label">${f[0]}</span><span class="detail-val">${f[1]}</span></div>`).join('');
       document.getElementById('detailsModal').style.display = 'flex';
@@ -223,7 +221,6 @@
     function openUserModal() { document.getElementById('userModal').style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
-    // Auth persisted
     window.onload = () => { if (localStorage.getItem('pop_admin_password')) login(); };
   </script>
 </body>
