@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestão de Usuários - POP FM</title>
+  <title>Gestão Admin - POP FM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,6 +19,7 @@
       --text-light: #64748b;
       --border: #e2e8f0;
       --error: #ef4444;
+      --accent: #8b5cf6;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,17 +42,29 @@
     }
     input:focus { border-color: var(--primary); }
     button {
-      width: 100%; padding: 12px; background: var(--primary); color: white; border: none;
+      padding: 12px; background: var(--primary); color: white; border: none;
       border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
+    button.full { width: 100%; }
     button:hover { background: var(--primary-dark); }
     button:disabled { opacity: 0.7; cursor: not-allowed; }
 
     /* Main Layout */
-    .app-container { display: none; padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-    .header h2 { font-size: 1.875rem; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+    .app-container { display: none; padding: 40px 20px; max-width: 1100px; margin: 0 auto; }
+    
+    /* Tabs */
+    .tabs-nav { display: flex; gap: 12px; margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .tab-btn {
+      padding: 10px 20px; border-radius: 10px; border: none; background: transparent;
+      color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .tab-btn ion-icon { font-size: 20px; }
+
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .header h2 { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 12px; }
     .header h2 ion-icon { color: var(--primary); }
 
     .card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
@@ -71,6 +84,11 @@
     .btn-icon:hover { background: #f1f5f9; color: var(--text); }
     .btn-icon.delete:hover { border-color: var(--error); color: var(--error); background: #fef2f2; }
 
+    .badge {
+      display: inline-flex; padding: 4px 10px; border-radius: 100px;
+      font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: var(--text-light);
+    }
+
     /* Modal */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -83,6 +101,14 @@
     .btn-secondary { background: #f1f5f9; color: var(--text); width: auto; padding: 10px 20px; }
     .btn-secondary:hover { background: #e2e8f0; }
     .btn-primary { width: auto; padding: 10px 20px; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -91,44 +117,83 @@
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
       <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #ecfdf5; border-radius: 12px; color: var(--primary);">
-        <ion-icon name="people" style="font-size: 32px;"></ion-icon>
+        <ion-icon name="shield-checkmark" style="font-size: 32px;"></ion-icon>
       </div>
       <h1>Gestão POP</h1>
-      <p>Administração de usuários e vendedores</p>
+      <p>Administração de usuários e controle de contratos</p>
       <input type="password" id="masterPassword" placeholder="Senha Mestra...">
-      <button onclick="login()" id="loginBtn">Acessar Painel</button>
+      <button onclick="login()" id="loginBtn" class="full">Acessar Painel</button>
       <div id="loginError" style="color: var(--error); font-size: 0.8125rem; margin-top: 16px; display: none;">Senha incorreta.</div>
     </div>
   </div>
 
   <!-- App -->
   <div id="app" class="app-container">
-    <div class="header">
-      <h2><ion-icon name="people-circle"></ion-icon> Vendedores</h2>
-      <button class="btn-primary" onclick="openUserModal()">
-        <ion-icon name="add-outline"></ion-icon> Novo Vendedor
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="showTab('users')">
+        <ion-icon name="people-outline"></ion-icon>
+        <span>Vendedores</span>
       </button>
-    </div>
+      <button class="tab-btn" onclick="showTab('contracts')">
+        <ion-icon name="document-text-outline"></ion-icon>
+        <span>Contratos Recebidos</span>
+      </button>
+    </nav>
 
-    <div class="card">
-      <table id="userTable">
-        <thead>
-          <tr>
-            <th>Usuário</th>
-            <th>Nome/Identificação</th>
-            <th width="100">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Users will be injected here -->
-        </tbody>
-      </table>
-      <div id="emptyState" style="padding: 40px; text-align: center; color: var(--text-light); display: none;">
-        Nenhum vendedor cadastrado.
+    <!-- Tab: Users -->
+    <div id="tab-users" class="tab-content active">
+      <div class="header">
+        <h2><ion-icon name="people-circle"></ion-icon> Vendedores</h2>
+        <button class="btn-primary" onclick="openUserModal()">
+          <ion-icon name="add-outline"></ion-icon> Novo Vendedor
+        </button>
+      </div>
+
+      <div class="card">
+        <table id="userTable">
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Nome/Identificação</th>
+              <th width="100">Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="usersEmpty" style="padding: 40px; text-align: center; color: var(--text-light); display: none;">
+          Nenhum vendedor cadastrado.
+        </div>
       </div>
     </div>
 
-    <!-- Go to /rede link -->
+    <!-- Tab: Contracts -->
+    <div id="tab-contracts" class="tab-content">
+      <div class="header">
+        <h2 style="color: var(--accent);"><ion-icon name="clipboard" style="color: var(--accent);"></ion-icon> Contratos do Sistema</h2>
+        <button class="btn-secondary" onclick="loadContracts()" style="font-size: 0.8125rem;">
+          <ion-icon name="refresh-outline"></ion-icon> Atualizar
+        </button>
+      </div>
+
+      <div class="card">
+        <table id="contractTable">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>CNPJ</th>
+              <th>Nome da Empresa</th>
+              <th width="80">Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="contractsEmpty" style="padding: 40px; text-align: center; color: var(--text-light); display: none;">
+          Nenhum contrato recebido ainda.
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer link -->
     <div style="margin-top: 40px; text-align: center;">
       <a href="/rede" style="color: var(--text-light); text-decoration: none; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 4px;">
         <ion-icon name="arrow-back-outline"></ion-icon> Voltar para Painel da Rede
@@ -136,7 +201,7 @@
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- User Modal -->
   <div id="userModal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -163,6 +228,7 @@
 
   <script>
     let users = [];
+    let contracts = [];
     let isEditing = false;
 
     async function login() {
@@ -185,6 +251,7 @@
           localStorage.setItem('pop_admin_password', password);
           users = await res.json();
           renderUsers();
+          loadContracts(); // Pre-load contracts
           document.getElementById('loginOverlay').style.display = 'none';
           document.getElementById('app').style.display = 'block';
         } else {
@@ -198,9 +265,19 @@
       }
     }
 
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+
+      if (tabId === 'contracts') loadContracts();
+    }
+
     function renderUsers() {
       const tbody = document.querySelector('#userTable tbody');
-      const empty = document.getElementById('emptyState');
+      const empty = document.getElementById('usersEmpty');
       tbody.innerHTML = '';
       
       if (users.length === 0) {
@@ -212,20 +289,12 @@
       users.forEach(user => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>
-            <div class="user-handle">@${user.username}</div>
-          </td>
-          <td>
-            <div class="user-name">${user.name}</div>
-          </td>
+          <td><div class="user-handle">@${user.username}</div></td>
+          <td><div class="user-name">${user.name}</div></td>
           <td>
             <div class="actions">
-              <button class="btn-icon" onclick="editUser('${user.username}')" title="Editar">
-                <ion-icon name="create-outline"></ion-icon>
-              </button>
-              <button class="btn-icon delete" onclick="deleteUser('${user.username}')" title="Excluir">
-                <ion-icon name="trash-outline"></ion-icon>
-              </button>
+              <button class="btn-icon" onclick="editUser('${user.username}')" title="Editar"><ion-icon name="create-outline"></ion-icon></button>
+              <button class="btn-icon delete" onclick="deleteUser('${user.username}')" title="Excluir"><ion-icon name="trash-outline"></ion-icon></button>
             </div>
           </td>
         `;
@@ -233,6 +302,63 @@
       });
     }
 
+    async function loadContracts() {
+      const pwd = localStorage.getItem('pop_admin_password');
+      try {
+        const res = await fetch('/api/contracts', {
+          headers: { 'Authorization': `Bearer ${pwd}` }
+        });
+        if (res.ok) {
+          contracts = await res.json();
+          renderContracts();
+        }
+      } catch (e) { console.error('Erro ao carregar contratos'); }
+    }
+
+    function renderContracts() {
+      const tbody = document.querySelector('#contractTable tbody');
+      const empty = document.getElementById('contractsEmpty');
+      tbody.innerHTML = '';
+
+      if (contracts.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      contracts.forEach(c => {
+        const date = new Date(c.submittedAt).toLocaleString('pt-BR');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><div style="font-size: 0.75rem; color: var(--text-light); font-family: monospace;">${date}</div></td>
+          <td><div class="badge">${c.cnpj}</div></td>
+          <td><div class="user-name">${c.companyName}</div></td>
+          <td>
+            <button class="btn-icon delete" onclick="deleteContract('${c.id}')" title="Arquivar">
+              <ion-icon name="archive-outline"></ion-icon>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function deleteContract(id) {
+       if (!confirm('Deseja arquivar/remover este registro de contrato?')) return;
+       const pwd = localStorage.getItem('pop_admin_password');
+       try {
+         const res = await fetch(`/api/contracts?id=${id}`, {
+           method: 'DELETE',
+           headers: { 'Authorization': `Bearer ${pwd}` }
+         });
+         if (res.ok) {
+           contracts = contracts.filter(c => c.id !== id);
+           renderContracts();
+         }
+       } catch (e) { alert('Erro ao remover contrato.'); }
+    }
+
+    // --- USER CRUD ---
     function openUserModal() {
       isEditing = false;
       document.getElementById('modalTitle').textContent = 'Novo Vendedor';
@@ -241,9 +367,7 @@
       document.getElementById('userModal').style.display = 'flex';
     }
 
-    function closeModal() {
-      document.getElementById('userModal').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
 
     function editUser(username) {
       const user = users.find(u => u.username === username);
@@ -259,7 +383,6 @@
 
     async function deleteUser(username) {
       if (!confirm(`Tem certeza que deseja excluir o vendedor @${username}?`)) return;
-      
       const pwd = localStorage.getItem('pop_admin_password');
       try {
         const res = await fetch(`/api/users?username=${username}`, {
@@ -270,9 +393,7 @@
           users = users.filter(u => u.username !== username);
           renderUsers();
         }
-      } catch (e) {
-        alert('Erro ao excluir usuário.');
-      }
+      } catch (e) { alert('Erro ao excluir usuário.'); }
     }
 
     async function saveUser(e) {
@@ -289,37 +410,26 @@
       try {
         const res = await fetch('/api/users', {
           method: 'POST',
-          headers: { 
-            'Authorization': `Bearer ${pwd}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': `Bearer ${pwd}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, name, password })
         });
 
         if (res.ok) {
-          const updatedUsersRes = await fetch('/api/users', {
-            headers: { 'Authorization': `Bearer ${pwd}` }
-          });
+          const updatedUsersRes = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${pwd}` } });
           users = await updatedUsersRes.json();
           renderUsers();
           closeModal();
-        } else {
-          alert('Erro ao salvar vendedor.');
-        }
-      } catch (error) {
-        alert('Erro de conexão.');
-      } finally {
+        } else { alert('Erro ao salvar vendedor.'); }
+      } catch (error) { alert('Erro de conexão.'); } finally {
         btn.disabled = false;
         btn.textContent = 'Salvar Vendedor';
       }
     }
 
-    // Enter to login
     document.getElementById('masterPassword').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') login();
     });
 
-    // On Load: check if session exists
     window.onload = () => {
       const pwd = localStorage.getItem('pop_admin_password');
       if (pwd) {
