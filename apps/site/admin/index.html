@@ -155,7 +155,10 @@
       const res = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${pwd}` } });
       const users = await res.json();
       const tbody = document.querySelector('#userTable tbody');
-      tbody.innerHTML = users.map(u => `<tr><td>@${u.username}</td><td>${u.name}</td><td><button class="btn-icon delete" onclick="deleteUser('${u.username}')"><ion-icon name="trash-outline"></ion-icon></button></td></tr>`).join('');
+      tbody.innerHTML = users.map(u => `<tr><td>@${u.username}</td><td>${u.name}</td><td><div class="actions">
+        <button class="btn-icon" onclick="editUser('${encodeURIComponent(JSON.stringify(u))}')"><ion-icon name="create-outline"></ion-icon></button>
+        <button class="btn-icon delete" onclick="deleteUser('${u.username}')"><ion-icon name="trash-outline"></ion-icon></button>
+      </div></td></tr>`).join('');
     }
 
     async function loadContracts(status) {
@@ -225,7 +228,47 @@
       loadContracts('archived');
     }
 
-    function openUserModal() { document.getElementById('userModal').style.display = 'flex'; }
+    async function saveUser(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const name = document.getElementById('name').value;
+      const password = document.getElementById('password').value;
+      const pwd = localStorage.getItem('pop_admin_password');
+
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${pwd}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, name, password })
+      });
+      if (res.ok) { closeModal('userModal'); loadUsers(); }
+      else { alert('Erro ao salvar vendedor.'); }
+    }
+
+    function editUser(dataStr) {
+      const u = JSON.parse(decodeURIComponent(dataStr));
+      document.getElementById('modalTitle').textContent = 'Editar Vendedor';
+      document.getElementById('username').value = u.username;
+      document.getElementById('username').disabled = true;
+      document.getElementById('name').value = u.name;
+      document.getElementById('password').value = u.password;
+      document.getElementById('userModal').style.display = 'flex';
+    }
+
+    function openUserModal() { 
+      document.getElementById('modalTitle').textContent = 'Novo Vendedor';
+      document.getElementById('username').value = '';
+      document.getElementById('username').disabled = false;
+      document.getElementById('name').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('userModal').style.display = 'flex'; 
+    }
+    
+    function deleteUser(username) {
+      if (!confirm(`Excluir o vendedor @${username}?`)) return;
+      const pwd = localStorage.getItem('pop_admin_password');
+      fetch(`/api/users?username=${username}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${pwd}` } }).then(loadUsers);
+    }
+
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
     window.onload = () => { if (localStorage.getItem('pop_admin_password')) login(); };
