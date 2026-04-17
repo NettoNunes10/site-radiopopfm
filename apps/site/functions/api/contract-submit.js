@@ -8,15 +8,19 @@ export async function onRequest(context) {
       const authHeader = request.headers.get("Authorization");
       if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-      const { cnpj, companyName } = await request.json();
+      const data = await request.json();
+      const { type, document, companyName } = data;
+      
+      if (!document || !companyName) {
+        return new Response(JSON.stringify({ error: "Document and Name are required" }), { status: 400 });
+      }
+
       const timestamp = new Date().getTime();
       const key = `contract:${timestamp}`;
       
       await kv.put(key, JSON.stringify({ 
-        cnpj, 
-        companyName, 
+        ...data,
         submittedAt: new Date().toISOString(),
-        // Extra meta can be added here
       }));
 
       return new Response(JSON.stringify({ success: true }), {

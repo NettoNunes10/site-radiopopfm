@@ -11,432 +11,220 @@
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <style>
     :root {
-      --primary: #10b981;
-      --primary-dark: #059669;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-light: #64748b;
-      --border: #e2e8f0;
-      --error: #ef4444;
-      --accent: #8b5cf6;
+      --primary: #10b981; --primary-dark: #059669; --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; --error: #ef4444; --accent: #8b5cf6;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
 
-    /* Login Overlay */
-    .login-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000;
-    }
-    .login-card {
-      background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-      width: 100%; max-width: 400px; text-align: center;
-    }
-    .login-card h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
-    .login-card p { color: var(--text-light); margin-bottom: 32px; font-size: 0.875rem; }
-    input {
-      width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
-      margin-bottom: 16px; font-size: 1rem; outline: none; transition: border-color 0.2s;
-    }
+    .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
+    input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; font-size: 1rem; outline: none; transition: border-color 0.2s; }
     input:focus { border-color: var(--primary); }
-    button {
-      padding: 12px; background: var(--primary); color: white; border: none;
-      border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
+    button { padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     button.full { width: 100%; }
     button:hover { background: var(--primary-dark); }
     button:disabled { opacity: 0.7; cursor: not-allowed; }
 
-    /* Main Layout */
-    .app-container { display: none; padding: 40px 20px; max-width: 1100px; margin: 0 auto; }
-    
-    /* Tabs */
+    .app-container { display: none; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
     .tabs-nav { display: flex; gap: 12px; margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-    .tab-btn {
-      padding: 10px 20px; border-radius: 10px; border: none; background: transparent;
-      color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;
-      display: flex; align-items: center; gap: 8px;
-    }
+    .tab-btn { padding: 10px 20px; border-radius: 10px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
     .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .tab-btn ion-icon { font-size: 20px; }
 
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .header h2 { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-    .header h2 ion-icon { color: var(--primary); }
 
     .card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    
     table { width: 100%; border-collapse: collapse; }
     th { text-align: left; padding: 16px; background: #f1f5f9; font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
     td { padding: 16px; border-top: 1px solid var(--border); font-size: 0.875rem; }
     
-    .user-name { font-weight: 600; color: var(--text); }
-    .user-handle { color: var(--text-light); font-size: 0.8125rem; }
+    .badge { display: inline-flex; padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: var(--text-light); }
+    .badge.pj { background: #ede9fe; color: #7c3aed; }
+    .badge.pf { background: #fef3c7; color: #b45309; }
 
     .actions { display: flex; gap: 8px; }
-    .btn-icon {
-      padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: white;
-      color: var(--text-light); cursor: pointer; transition: all 0.2s; display: flex;
-    }
+    .btn-icon { padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: white; color: var(--text-light); cursor: pointer; transition: all 0.2s; display: flex; }
     .btn-icon:hover { background: #f1f5f9; color: var(--text); }
     .btn-icon.delete:hover { border-color: var(--error); color: var(--error); background: #fef2f2; }
 
-    .badge {
-      display: inline-flex; padding: 4px 10px; border-radius: 100px;
-      font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: var(--text-light);
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000;
-      backdrop-filter: blur(4px);
-    }
-    .modal { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 450px; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+    .modal { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-    .btn-secondary { background: #f1f5f9; color: var(--text); width: auto; padding: 10px 20px; }
-    .btn-secondary:hover { background: #e2e8f0; }
-    .btn-primary { width: auto; padding: 10px 20px; }
+    .btn-secondary { background: #f1f5f9; color: var(--text); padding: 10px 20px; }
+    
+    .details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .detail-item { display: flex; flex-direction: column; gap: 4px; }
+    .detail-label { font-size: 0.6875rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
+    .detail-val { font-size: 0.9375rem; color: var(--text); font-weight: 500; }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
 
-  <!-- Login -->
+  <!-- Login Area -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
-      <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #ecfdf5; border-radius: 12px; color: var(--primary);">
-        <ion-icon name="shield-checkmark" style="font-size: 32px;"></ion-icon>
-      </div>
-      <h1>Gestão POP</h1>
-      <p>Administração de usuários e controle de contratos</p>
+      <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #ecfdf5; border-radius: 12px; color: var(--primary);"><ion-icon name="shield-checkmark" style="font-size: 32px;"></ion-icon></div>
+      <h1>Gestão POP Admin</h1>
+      <p>Administração e Controle de Contratos</p>
       <input type="password" id="masterPassword" placeholder="Senha Mestra...">
-      <button onclick="login()" id="loginBtn" class="full">Acessar Painel</button>
+      <button onclick="login()" class="full" id="loginBtn">Acessar Painel</button>
       <div id="loginError" style="color: var(--error); font-size: 0.8125rem; margin-top: 16px; display: none;">Senha incorreta.</div>
     </div>
   </div>
 
-  <!-- App -->
+  <!-- App Area -->
   <div id="app" class="app-container">
     <nav class="tabs-nav">
-      <button class="tab-btn active" onclick="showTab('users')">
-        <ion-icon name="people-outline"></ion-icon>
-        <span>Vendedores</span>
-      </button>
-      <button class="tab-btn" onclick="showTab('contracts')">
-        <ion-icon name="document-text-outline"></ion-icon>
-        <span>Contratos Recebidos</span>
-      </button>
+      <button class="tab-btn active" onclick="showTab('users')"><ion-icon name="people-outline"></ion-icon><span>Vendedores</span></button>
+      <button class="tab-btn" onclick="showTab('contracts')"><ion-icon name="document-text-outline"></ion-icon><span>Ativos</span></button>
+      <button class="tab-btn" onclick="showTab('archived')"><ion-icon name="archive-outline"></ion-icon><span>Arquivados</span></button>
     </nav>
 
-    <!-- Tab: Users -->
+    <!-- Content: Users -->
     <div id="tab-users" class="tab-content active">
-      <div class="header">
-        <h2><ion-icon name="people-circle"></ion-icon> Vendedores</h2>
-        <button class="btn-primary" onclick="openUserModal()">
-          <ion-icon name="add-outline"></ion-icon> Novo Vendedor
-        </button>
-      </div>
-
-      <div class="card">
-        <table id="userTable">
-          <thead>
-            <tr>
-              <th>Usuário</th>
-              <th>Nome/Identificação</th>
-              <th width="100">Ações</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div id="usersEmpty" style="padding: 40px; text-align: center; color: var(--text-light); display: none;">
-          Nenhum vendedor cadastrado.
-        </div>
-      </div>
+      <div class="header"><h2>Vendedores</h2><button class="btn-primary" onclick="openUserModal()">+ Novo Vendedor</button></div>
+      <div class="card"><table id="userTable"><thead><tr><th>Usuário</th><th>Nome</th><th width="100">Ações</th></tr></thead><tbody></tbody></table></div>
     </div>
 
-    <!-- Tab: Contracts -->
+    <!-- Content: Contracts -->
     <div id="tab-contracts" class="tab-content">
-      <div class="header">
-        <h2 style="color: var(--accent);"><ion-icon name="clipboard" style="color: var(--accent);"></ion-icon> Contratos do Sistema</h2>
-        <button class="btn-secondary" onclick="loadContracts()" style="font-size: 0.8125rem;">
-          <ion-icon name="refresh-outline"></ion-icon> Atualizar
-        </button>
-      </div>
-
-      <div class="card">
-        <table id="contractTable">
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>CNPJ</th>
-              <th>Nome da Empresa</th>
-              <th width="80">Ações</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div id="contractsEmpty" style="padding: 40px; text-align: center; color: var(--text-light); display: none;">
-          Nenhum contrato recebido ainda.
-        </div>
-      </div>
+      <div class="header"><h2>Contratos Recebidos</h2><button class="btn-secondary" onclick="loadContracts('active')">Atualizar</button></div>
+      <div class="card"><table id="contractTable"><thead><tr><th>Data</th><th>Tipo</th><th>Documento</th><th>Empresa/Nome</th><th width="120">Ações</th></tr></thead><tbody></tbody></table><div id="activeEmpty" style="padding:40px;text-align:center;display:none;color:var(--text-light)">Nenhum contrato ativo.</div></div>
     </div>
 
-    <!-- Footer link -->
-    <div style="margin-top: 40px; text-align: center;">
-      <a href="/rede" style="color: var(--text-light); text-decoration: none; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 4px;">
-        <ion-icon name="arrow-back-outline"></ion-icon> Voltar para Painel da Rede
-      </a>
+    <!-- Content: Archived -->
+    <div id="tab-archived" class="tab-content">
+      <div class="header"><h2>Arquivo de Contratos</h2><button class="btn-secondary" onclick="loadContracts('archived')">Atualizar</button></div>
+      <div class="card"><table id="archivedTable"><thead><tr><th>Data</th><th>Tipo</th><th>Documento</th><th>Empresa/Nome</th><th width="120">Ações</th></tr></thead><tbody></tbody></table><div id="archivedEmpty" style="padding:40px;text-align:center;display:none;color:var(--text-light)">Arquivo vazio.</div></div>
     </div>
   </div>
 
-  <!-- User Modal -->
+  <!-- Modal: Details -->
+  <div id="detailsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header"><h3>Detalhes do Registro</h3><ion-icon name="close-outline" style="font-size:24px;cursor:pointer;" onclick="closeModal('detailsModal')"></ion-icon></div>
+      <div class="details-grid" id="detailsContent"></div>
+    </div>
+  </div>
+
+  <!-- Modal: User -->
   <div id="userModal" class="modal-overlay">
     <div class="modal">
-      <div class="modal-header">
-        <h3 id="modalTitle">Novo Vendedor</h3>
-        <ion-icon name="close-outline" style="font-size: 24px; cursor: pointer;" onclick="closeModal()"></ion-icon>
-      </div>
-      <form id="userForm" onsubmit="saveUser(event)">
-        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; display: block;">NOME DE USUÁRIO (LOGIN)</label>
-        <input type="text" id="username" placeholder="ex: joao.silva" required>
-        
-        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; display: block;">NOME COMPLETO</label>
-        <input type="text" id="name" placeholder="ex: João Silva" required>
-        
-        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; display: block;">SENHA DE ACESSO</label>
-        <input type="text" id="password" placeholder="Defina uma senha..." required>
-        
-        <div class="modal-footer">
-          <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn-primary" id="saveBtn">Salvar Vendedor</button>
-        </div>
+      <div class="modal-header"><h3 id="modalTitle">Novo Vendedor</h3><ion-icon name="close-outline" style="font-size:24px;cursor:pointer;" onclick="closeModal('userModal')"></ion-icon></div>
+      <form onsubmit="saveUser(event)">
+        <label>Usuário</label><input type="text" id="username" required>
+        <label>Nome</label><input type="text" id="name" required>
+        <label>Senha</label><input type="text" id="password" required>
+        <button type="submit" class="full" style="background:var(--primary)">Salvar</button>
       </form>
     </div>
   </div>
 
   <script>
-    let users = [];
-    let contracts = [];
-    let isEditing = false;
+    let currentTab = 'users';
 
     async function login() {
-      const password = document.getElementById('masterPassword').value;
-      const btn = document.getElementById('loginBtn');
-      const error = document.getElementById('loginError');
-
-      if (!password) return;
-
-      btn.disabled = true;
-      btn.textContent = 'Autenticando...';
-      error.style.display = 'none';
-
-      try {
-        const res = await fetch('/api/users', {
-          headers: { 'Authorization': `Bearer ${password}` }
-        });
-
-        if (res.ok) {
-          localStorage.setItem('pop_admin_password', password);
-          users = await res.json();
-          renderUsers();
-          loadContracts(); // Pre-load contracts
-          document.getElementById('loginOverlay').style.display = 'none';
-          document.getElementById('app').style.display = 'block';
-        } else {
-          error.style.display = 'block';
-        }
-      } catch (e) {
-        alert('Erro ao conectar com o servidor.');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Acessar Painel';
-      }
+      const pwd = document.getElementById('masterPassword').value;
+      const res = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${pwd}` } });
+      if (res.ok) {
+        localStorage.setItem('pop_admin_password', pwd);
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        loadUsers();
+      } else { document.getElementById('loginError').style.display = 'block'; }
     }
 
-    function showTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    function showTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      
-      document.getElementById(`tab-${tabId}`).classList.add('active');
-      document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
-
-      if (tabId === 'contracts') loadContracts();
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      document.querySelector(`[onclick="showTab('${tab}')"]`).classList.add('active');
+      if (tab === 'users') loadUsers();
+      else if (tab === 'contracts') loadContracts('active');
+      else if (tab === 'archived') loadContracts('archived');
     }
 
-    function renderUsers() {
+    async function loadUsers() {
+      const pwd = localStorage.getItem('pop_admin_password');
+      const res = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${pwd}` } });
+      const users = await res.json();
       const tbody = document.querySelector('#userTable tbody');
-      const empty = document.getElementById('usersEmpty');
-      tbody.innerHTML = '';
+      tbody.innerHTML = users.map(u => `<tr><td>@${u.username}</td><td>${u.name}</td><td><button class="btn-icon delete" onclick="deleteUser('${u.username}')"><ion-icon name="trash-outline"></ion-icon></button></td></tr>`).join('');
+    }
+
+    async function loadContracts(status) {
+      const pwd = localStorage.getItem('pop_admin_password');
+      const res = await fetch(`/api/contracts?status=${status}`, { headers: { 'Authorization': `Bearer ${pwd}` } });
+      const list = await res.json();
+      const target = status === 'active' ? '#contractTable tbody' : '#archivedTable tbody';
+      const emptyMsg = status === 'active' ? 'activeEmpty' : 'archivedEmpty';
+      document.getElementById(emptyMsg).style.display = list.length === 0 ? 'block' : 'none';
       
-      if (users.length === 0) {
-        empty.style.display = 'block';
-        return;
-      }
-      
-      empty.style.display = 'none';
-      users.forEach(user => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><div class="user-handle">@${user.username}</div></td>
-          <td><div class="user-name">${user.name}</div></td>
-          <td>
-            <div class="actions">
-              <button class="btn-icon" onclick="editUser('${user.username}')" title="Editar"><ion-icon name="create-outline"></ion-icon></button>
-              <button class="btn-icon delete" onclick="deleteUser('${user.username}')" title="Excluir"><ion-icon name="trash-outline"></ion-icon></button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
+      document.querySelector(target).innerHTML = list.map(c => {
+        const date = new Date(c.submittedAt).toLocaleDateString('pt-BR');
+        const typeBadge = `<span class="badge ${c.type}">${c.type ? c.type.toUpperCase() : 'PJ'}</span>`;
+        const archiveBtn = status === 'active' ? 
+          `<button class="btn-icon" onclick="moveContract('${c.id}', 'archive')" title="Arquivar"><ion-icon name="archive-outline"></ion-icon></button>` :
+          `<button class="btn-icon" onclick="moveContract('${c.id}', 'restore')" title="Restaurar"><ion-icon name="refresh-outline"></ion-icon></button>`;
+        const deleteBtn = status === 'archived' ? 
+          `<button class="btn-icon delete" onclick="deletePerm('${c.id}')"><ion-icon name="trash-outline"></ion-icon></button>` : '';
+
+        return `<tr>
+          <td>${date}</td>
+          <td>${typeBadge}</td>
+          <td><span style="font-family:monospace;font-size:0.75rem">${c.document || c.cnpj}</span></td>
+          <td class="user-name">${c.companyName}</td>
+          <td><div class="actions">
+            <button class="btn-icon" onclick="viewDetails('${encodeURIComponent(JSON.stringify(c))}')"><ion-icon name="eye-outline"></ion-icon></button>
+            ${archiveBtn}
+            ${deleteBtn}
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function viewDetails(dataStr) {
+      const c = JSON.parse(decodeURIComponent(dataStr));
+      const content = document.getElementById('detailsContent');
+      const fields = [
+        ['Tipo', c.type?.toUpperCase() || 'PJ'], ['Documento', c.document || c.cnpj], ['Empresa/Nome', c.companyName],
+        ['Situação', c.status_cadastral || '-'], ['Email', c.email || '-'], ['Telefone', c.phone || '-'],
+        ['CEP', c.cep || '-'], ['Logradouro', c.logradouro || '-'], ['Número', c.numero || '-'],
+        ['Bairro', c.bairro || '-'], ['Cidade', c.cidade || '-'], ['UF', c.uf || '-'],
+        ['Enviado em', new Date(c.submittedAt).toLocaleString('pt-BR')]
+      ];
+      content.innerHTML = fields.map(f => `<div class="detail-item"><span class="detail-label">${f[0]}</span><span class="detail-val">${f[1]}</span></div>`).join('');
+      document.getElementById('detailsModal').style.display = 'flex';
+    }
+
+    async function moveContract(id, action) {
+      const pwd = localStorage.getItem('pop_admin_password');
+      await fetch('/api/contracts', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${pwd}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, id })
       });
+      loadContracts(action === 'archive' ? 'active' : 'archived');
     }
 
-    async function loadContracts() {
+    async function deletePerm(id) {
+      if (!confirm('Excluir permanentemente este registro?')) return;
       const pwd = localStorage.getItem('pop_admin_password');
-      try {
-        const res = await fetch('/api/contracts', {
-          headers: { 'Authorization': `Bearer ${pwd}` }
-        });
-        if (res.ok) {
-          contracts = await res.json();
-          renderContracts();
-        }
-      } catch (e) { console.error('Erro ao carregar contratos'); }
+      await fetch(`/api/contracts?id=${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${pwd}` } });
+      loadContracts('archived');
     }
 
-    function renderContracts() {
-      const tbody = document.querySelector('#contractTable tbody');
-      const empty = document.getElementById('contractsEmpty');
-      tbody.innerHTML = '';
-
-      if (contracts.length === 0) {
-        empty.style.display = 'block';
-        return;
-      }
-
-      empty.style.display = 'none';
-      contracts.forEach(c => {
-        const date = new Date(c.submittedAt).toLocaleString('pt-BR');
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><div style="font-size: 0.75rem; color: var(--text-light); font-family: monospace;">${date}</div></td>
-          <td><div class="badge">${c.cnpj}</div></td>
-          <td><div class="user-name">${c.companyName}</div></td>
-          <td>
-            <button class="btn-icon delete" onclick="deleteContract('${c.id}')" title="Arquivar">
-              <ion-icon name="archive-outline"></ion-icon>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function deleteContract(id) {
-       if (!confirm('Deseja arquivar/remover este registro de contrato?')) return;
-       const pwd = localStorage.getItem('pop_admin_password');
-       try {
-         const res = await fetch(`/api/contracts?id=${id}`, {
-           method: 'DELETE',
-           headers: { 'Authorization': `Bearer ${pwd}` }
-         });
-         if (res.ok) {
-           contracts = contracts.filter(c => c.id !== id);
-           renderContracts();
-         }
-       } catch (e) { alert('Erro ao remover contrato.'); }
-    }
-
-    // --- USER CRUD ---
-    function openUserModal() {
-      isEditing = false;
-      document.getElementById('modalTitle').textContent = 'Novo Vendedor';
-      document.getElementById('userForm').reset();
-      document.getElementById('username').disabled = false;
-      document.getElementById('userModal').style.display = 'flex';
-    }
-
-    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
-
-    function editUser(username) {
-      const user = users.find(u => u.username === username);
-      if (!user) return;
-      isEditing = true;
-      document.getElementById('modalTitle').textContent = 'Editar Vendedor';
-      document.getElementById('username').value = user.username;
-      document.getElementById('username').disabled = true;
-      document.getElementById('name').value = user.name;
-      document.getElementById('password').value = user.password;
-      document.getElementById('userModal').style.display = 'flex';
-    }
-
-    async function deleteUser(username) {
-      if (!confirm(`Tem certeza que deseja excluir o vendedor @${username}?`)) return;
-      const pwd = localStorage.getItem('pop_admin_password');
-      try {
-        const res = await fetch(`/api/users?username=${username}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${pwd}` }
-        });
-        if (res.ok) {
-          users = users.filter(u => u.username !== username);
-          renderUsers();
-        }
-      } catch (e) { alert('Erro ao excluir usuário.'); }
-    }
-
-    async function saveUser(e) {
-      e.preventDefault();
-      const pwd = localStorage.getItem('pop_admin_password');
-      const username = document.getElementById('username').value;
-      const name = document.getElementById('name').value;
-      const password = document.getElementById('password').value;
-      const btn = document.getElementById('saveBtn');
-
-      btn.disabled = true;
-      btn.textContent = 'Salvando...';
-
-      try {
-        const res = await fetch('/api/users', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${pwd}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, name, password })
-        });
-
-        if (res.ok) {
-          const updatedUsersRes = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${pwd}` } });
-          users = await updatedUsersRes.json();
-          renderUsers();
-          closeModal();
-        } else { alert('Erro ao salvar vendedor.'); }
-      } catch (error) { alert('Erro de conexão.'); } finally {
-        btn.disabled = false;
-        btn.textContent = 'Salvar Vendedor';
-      }
-    }
-
-    document.getElementById('masterPassword').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') login();
-    });
-
-    window.onload = () => {
-      const pwd = localStorage.getItem('pop_admin_password');
-      if (pwd) {
-        document.getElementById('masterPassword').value = pwd;
-        login();
-      }
-    };
+    function openUserModal() { document.getElementById('userModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    
+    // Auth persisted
+    window.onload = () => { if (localStorage.getItem('pop_admin_password')) login(); };
   </script>
 </body>
 </html>

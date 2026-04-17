@@ -2,6 +2,7 @@ export async function onRequest(context) {
   const { request, env } = context;
   const kv = env.NEWSMAKER_KV;
   const { method } = request;
+  const url = new URL(request.url);
 
   // 1. Auth check (Master Password for Admin)
   const authHeader = request.headers.get("Authorization");
@@ -13,14 +14,14 @@ export async function onRequest(context) {
     });
   }
 
-  // 2. GET: List all contracts
+  // 2. GET: List all contracts (active by default, or archived)
   if (method === "GET") {
-    // List keys with "contract:" prefix
-    const list = await kv.list({ prefix: "contract:" });
+    const status = url.searchParams.get("status") || "active";
+    const prefix = status === "archived" ? "archived:" : "contract:";
+    
+    const list = await kv.list({ prefix });
     const contracts = [];
     
-    // Cloudflare KV list is eventually consistent and limited to 1000 keys by default.
-    // For this use case, we'll fetch them all.
     for (const key of list.keys) {
       const data = await kv.get(key.name, "json");
       if (data) {
@@ -36,9 +37,37 @@ export async function onRequest(context) {
     });
   }
 
-  // 3. DELETE: Remove contract entry
+  // 3. POST: Archive or Restore
+  if (method === "POST") {
+    try {
+      const { action, id } = await request.json();
+      if (!action || !id) return new Response(JSON.stringify({ error: "Action and ID required" }), { status: 400 });
+
+      const data = await kv.get(id, "json");
+      if (!data) return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+
+      let newKey;
+      if (action === "archive") {
+        newKey = id.replace("contract:", "archived:");
+      } else if (action === "restore") {
+        newKey = id.replace("archived:", "contract:");
+      } else {
+        return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400 });
+      }
+
+      await kv.put(newKey, JSON.stringify(data));
+      await kv.delete(id);
+
+      return new Response(JSON.stringify({ success: true, newKey }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Process error" }), { status: 500 });
+    }
+  }
+
+  // 4. DELETE: Permanently Remove
   if (method === "DELETE") {
-    const url = new URL(request.url);
     const id = url.searchParams.get("id");
     if (!id) return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
     await kv.delete(id);

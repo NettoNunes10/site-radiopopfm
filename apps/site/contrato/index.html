@@ -11,85 +11,62 @@
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <style>
     :root {
-      --primary: #8b5cf6; /* Purple for contracts area */
+      --primary: #8b5cf6;
       --primary-dark: #7c3aed;
       --bg: #fdfeff;
-      --card-bg: #ffffff;
       --text: #1e293b;
       --text-light: #64748b;
       --border: #e2e8f0;
       --error: #ef4444;
+      --success: #10b981;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; overflow-x: hidden; }
 
-    /* Animated background gradient */
     body::before {
       content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);
       z-index: -1;
     }
 
-    /* Login Overlay */
-    .login-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: white; display: flex; align-items: center; justify-content: center; z-index: 1000;
-    }
-    .login-card {
-      background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-      border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center;
-    }
-    .login-logo {
-      margin-bottom: 24px; display: inline-flex; padding: 12px; background: #f5f3ff;
-      border-radius: 12px; color: var(--primary);
-    }
+    /* Login Area */
+    .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center; }
 
-    input, select, textarea {
-      width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px;
-      margin-bottom: 16px; font-size: 1rem; outline: none; transition: all 0.2s;
-      background: #f8fafc;
-    }
-    input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
-    
+    /* Form Layout */
+    .app-container { display: none; padding: 40px 20px; max-width: 800px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 32px; }
+    .header h1 { font-size: 1.75rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+
+    .contract-card { background: white; padding: 32px; border-radius: 24px; border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); }
+
+    .type-selector { display: flex; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 24px; }
+    .type-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; color: var(--text-light); background: transparent; }
+    .type-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .full-width { grid-column: span 2; }
+
     label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 0.9375rem; outline: none; transition: all 0.2s; background: #f8fafc; }
+    input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
+    input:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    button {
-      width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
-      border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    button:hover { background: var(--primary-dark); transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
+    .search-input-wrapper { position: relative; }
+    .search-input-wrapper .spinner { position: absolute; right: 12px; top: 40px; display: none; color: var(--primary); }
+    .spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-    /* Main Form */
-    .app-container { display: none; padding: 60px 20px; max-width: 600px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 40px; }
-    .header h1 { font-size: 2rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
-    .header p { color: var(--text-light); }
+    button.primary { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 1rem; }
+    button.primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
 
-    .contract-card {
-      background: white; padding: 40px; border-radius: 24px; border: 1px solid var(--border);
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05);
-    }
-    
-    .status-badge {
-      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
-      background: #f1f5f9; border-radius: 100px; font-size: 0.75rem; font-weight: 600;
-      color: var(--text-light); margin-bottom: 16px;
-    }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f1f5f9; border-radius: 100px; font-size: 0.75rem; font-weight: 600; color: var(--text-light); margin-bottom: 12px; }
 
-    /* Success state */
-    .success-panel {
-      display: none; text-align: center; padding: 60px 20px;
-    }
-    .success-icon {
-      font-size: 64px; color: #10b981; margin-bottom: 24px;
-    }
+    .success-panel { display: none; text-align: center; padding: 60px 20px; }
+    .success-icon { font-size: 64px; color: var(--success); margin-bottom: 24px; }
 
-    @media (max-width: 480px) {
-      .contract-card { padding: 24px; }
-    }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
   </style>
 </head>
 <body>
@@ -97,20 +74,11 @@
   <!-- Login Area -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
-      <div class="login-logo">
-        <ion-icon name="document-text" style="font-size: 32px;"></ion-icon>
-      </div>
+      <div style="margin-bottom: 24px; display: inline-flex; padding: 12px; background: #f5f3ff; border-radius: 12px; color: var(--primary);"><ion-icon name="document-text" style="font-size: 32px;"></ion-icon></div>
       <h1>Acesso Vendedor</h1>
       <p style="margin-bottom: 32px; font-size: 0.875rem; color: var(--text-light);">Identifique-se para inserir dados do contrato</p>
-      
-      <div style="text-align: left;">
-        <label>Usuário</label>
-        <input type="text" id="sellerUser" placeholder="Seu nome de usuário...">
-        <label>Senha</label>
-        <input type="password" id="sellerPass" placeholder="Sua senha...">
-      </div>
-      
-      <button onclick="loginSeller()" id="loginBtn">Entrar no Sistema</button>
+      <div style="text-align: left;"><label>Usuário</label><input type="text" id="sellerUser" ><label>Senha</label><input type="password" id="sellerPass"></div>
+      <button onclick="loginSeller()" id="loginBtn" class="primary">Entrar no Sistema</button>
       <div id="loginError" style="color: var(--error); font-size: 0.8125rem; margin-top: 16px; display: none;">Credenciais inválidas.</div>
     </div>
   </div>
@@ -118,82 +86,136 @@
   <!-- Form Area -->
   <div id="app" class="app-container">
     <div class="header">
-      <div class="status-badge">
-        <ion-icon name="person-outline"></ion-icon>
-        <span id="welcomeMsg">Vendedor Logado</span>
-      </div>
+      <div class="status-badge"><ion-icon name="person-outline"></ion-icon><span id="welcomeMsg">Vendedor</span></div>
       <h1>Novo Contrato</h1>
-      <p>Preencha os dados básicos da empresa</p>
+      <p>Preencha os dados cadastrais do cliente</p>
     </div>
 
     <div class="contract-card">
+      <div class="type-selector">
+        <button class="type-btn active" onclick="setType('pj')">Pessoa Jurídica</button>
+        <button class="type-btn" onclick="setType('pf')">Pessoa Física</button>
+      </div>
+
       <form id="contractForm" onsubmit="submitForm(event)">
-        <div style="margin-bottom: 24px;">
-          <label>CNPJ da Empresa</label>
-          <input type="text" id="cnpj" placeholder="00.000.000/0000-00" required>
+        <div class="grid">
+          <div class="search-input-wrapper">
+             <label id="docLabel">CNPJ</label>
+             <input type="text" id="document" placeholder="00.000.000/0000-00" required oninput="handleDocInput(this)">
+             <div class="spinner" id="docSpinner"><ion-icon name="sync-outline" class="spinning"></ion-icon></div>
+          </div>
+          
+          <div>
+            <label>Situação Cadastral</label>
+            <input type="text" id="sit_cadastral" placeholder="-" readonly>
+          </div>
+
+          <div class="full-width">
+            <label id="nameLabel">Razão Social / Nome Fantasia</label>
+            <input type="text" id="companyName" placeholder="Nome da empresa..." required>
+          </div>
+
+          <div style="grid-column: span 2; height: 1px; background: var(--border); margin: 12px 0;"></div>
+
+          <div class="full-width"><label>Email de Contato</label><input type="email" id="email" placeholder="email@exemplo.com"></div>
+          <div><label>Telefone</label><input type="text" id="phone" placeholder="(00) 0000-0000"></div>
+          <div><label>CEP</label><input type="text" id="cep" placeholder="00000-000"></div>
+          
+          <div class="full-width"><label>Logradouro / Rua</label><input type="text" id="logradouro" placeholder="Rua..."></div>
+          <div><label>Número</label><input type="text" id="numero" placeholder="123"></div>
+          <div><label>Bairro</label><input type="text" id="bairro" placeholder="Bairro..."></div>
+          <div><label>Cidade</label><input type="text" id="cidade" placeholder="Cidade..."></div>
+          <div><label>UF</label><input type="text" id="uf" placeholder="SP"></div>
         </div>
 
-        <div style="margin-bottom: 32px;">
-          <label>Nome Fantasia / Razão Social</label>
-          <input type="text" id="companyName" placeholder="Nome da empresa..." required>
-        </div>
-
-        <button type="submit" id="submitBtn">
-          <span>Enviar Dados</span>
+        <button type="submit" id="submitBtn" class="primary">
+          <span>Enviar Dados do Contrato</span>
           <ion-icon name="arrow-forward-outline"></ion-icon>
         </button>
       </form>
     </div>
 
     <div style="margin-top: 32px; text-align: center;">
-      <button onclick="logout()" style="background: none; color: var(--text-light); width: auto; font-size: 0.8125rem; font-weight: 500;">
+      <button onclick="logout()" style="background: none; color: var(--text-light); width: auto; font-size: 0.8125rem; font-weight: 500; border: none; cursor: pointer;">
         <ion-icon name="log-out-outline"></ion-icon> Sair da conta
       </button>
     </div>
   </div>
 
-  <!-- Success Panel -->
+  <!-- Success Area -->
   <div id="successPanel" class="success-panel">
     <div class="success-icon"><ion-icon name="checkmark-circle"></ion-icon></div>
-    <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 12px;">Dados Enviados!</h1>
-    <p style="color: var(--text-light); margin-bottom: 32px;">O contrato foi registrado e está pronto para processamento.</p>
-    <button onclick="location.reload()" style="max-width: 250px; margin: 0 auto; background: #e2e8f0; color: #1e293b;">Novo Lançamento</button>
+    <h1>Contrato Enviado!</h1>
+    <p style="color: var(--text-light); margin-bottom: 32px;">Os dados foram registrados com sucesso no sistema.</p>
+    <button onclick="location.reload()" class="primary" style="max-width: 250px; margin: 0 auto; background: #e2e8f0; color: #1e293b;">Novo Lançamento</button>
   </div>
 
   <script>
+    let contractType = 'pj';
+
+    function setType(type) {
+      contractType = type;
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[onclick="setType('${type}')"]`).classList.add('active');
+      
+      document.getElementById('docLabel').textContent = type === 'pj' ? 'CNPJ' : 'CPF';
+      document.getElementById('document').placeholder = type === 'pj' ? '00.000.000/0000-00' : '000.000.000-00';
+      document.getElementById('nameLabel').textContent = type === 'pj' ? 'Razão Social / Nome Fantasia' : 'Nome Completo';
+      
+      // Clear fields on switch
+      // document.getElementById('contractForm').reset(); 
+    }
+
+    async function handleDocInput(el) {
+      const val = el.value.replace(/\D/g, '');
+      if (contractType === 'pj' && val.length === 14) {
+        lookupCNPJ(val);
+      }
+    }
+
+    async function lookupCNPJ(cnpj) {
+      const spinner = document.getElementById('docSpinner');
+      spinner.style.display = 'block';
+      
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        document.getElementById('companyName').value = data.nome_fantasia || data.razao_social || '';
+        document.getElementById('sit_cadastral').value = data.descricao_situacao_cadastral || '';
+        document.getElementById('cep').value = data.cep || '';
+        document.getElementById('logradouro').value = data.logradouro || '';
+        document.getElementById('numero').value = data.numero || '';
+        document.getElementById('bairro').value = data.bairro || '';
+        document.getElementById('cidade').value = data.municipio || '';
+        document.getElementById('uf').value = data.uf || '';
+        document.getElementById('phone').value = data.ddd_telefone_1 || '';
+        document.getElementById('email').value = data.email || '';
+        
+      } catch (e) {
+        console.error('Erro na busca do CNPJ');
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+
     async function loginSeller() {
       const username = document.getElementById('sellerUser').value;
       const password = document.getElementById('sellerPass').value;
       const btn = document.getElementById('loginBtn');
-      const error = document.getElementById('loginError');
-
       if (!username || !password) return;
-
       btn.disabled = true;
-      btn.textContent = 'Verificando...';
-      error.style.display = 'none';
-
       try {
-        const res = await fetch('/api/auth-seller', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-
+        const res = await fetch('/api/auth-seller', { method: 'POST', body: JSON.stringify({ username, password }) });
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem('pop_seller_token', data.token);
           localStorage.setItem('pop_seller_name', data.user.name);
           showApp();
-        } else {
-          error.style.display = 'block';
-        }
-      } catch (e) {
-        alert('Erro ao conectar.');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Entrar no Sistema';
-      }
+        } else { document.getElementById('loginError').style.display = 'block'; }
+      } catch (e) { alert('Erro de conexão'); }
+      finally { btn.disabled = false; }
     }
 
     function showApp() {
@@ -202,50 +224,44 @@
       document.getElementById('welcomeMsg').textContent = `Vendedor: ${localStorage.getItem('pop_seller_name')}`;
     }
 
-    function logout() {
-      localStorage.removeItem('pop_seller_token');
-      localStorage.removeItem('pop_seller_name');
-      location.reload();
-    }
+    function logout() { localStorage.clear(); location.reload(); }
 
     async function submitForm(e) {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
-      const cnpj = document.getElementById('cnpj').value;
-      const companyName = document.getElementById('companyName').value;
       const token = localStorage.getItem('pop_seller_token');
+      
+      const payload = {
+        type: contractType,
+        document: document.getElementById('document').value,
+        status_cadastral: document.getElementById('sit_cadastral').value,
+        companyName: document.getElementById('companyName').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        cep: document.getElementById('cep').value,
+        logradouro: document.getElementById('logradouro').value,
+        numero: document.getElementById('numero').value,
+        bairro: document.getElementById('bairro').value,
+        cidade: document.getElementById('cidade').value,
+        uf: document.getElementById('uf').value
+      };
 
       btn.disabled = true;
-      btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Enviando...';
-
       try {
         const res = await fetch('/api/contract-submit', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ cnpj, companyName })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
         });
-
         if (res.ok) {
           document.getElementById('app').style.display = 'none';
           document.getElementById('successPanel').style.display = 'block';
-        } else {
-          throw new Error('Falha no envio');
-        }
-      } catch (error) {
-        alert('Erro ao enviar dados para o servidor.');
-        btn.disabled = false;
-        btn.innerHTML = '<span>Enviar Dados</span><ion-icon name="arrow-forward-outline"></ion-icon>';
-      }
+        } else { alert('Erro ao enviar'); }
+      } catch (e) { alert('Erro de conexão'); }
+      finally { btn.disabled = false; }
     }
 
-    window.onload = () => {
-      if (localStorage.getItem('pop_seller_token')) {
-        showApp();
-      }
-    };
+    window.onload = () => { if (localStorage.getItem('pop_seller_token')) showApp(); };
   </script>
 </body>
 </html>
