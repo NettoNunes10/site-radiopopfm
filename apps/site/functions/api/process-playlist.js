@@ -2,7 +2,7 @@
  * Cloudflare Pages Function - Processamento Automático de Playlists (.bil)
  * Agora 100% unificado usando o MusicEngine centralizado.
  */
-import { MusicEngine } from "../../admin/roteiro.js";
+import { MusicEngine } from "../../rede/roteiro.js";
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -51,6 +51,17 @@ export async function onRequestPost(context) {
     if (!dateMatch) return jsonResponse({ error: 'Date (YYYYMMDD) not found in filename.' }, 400);
     const dateStr = dateMatch[1];
     const date = new Date(`${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}T12:00:00`);
+
+    // Sunday check: 0 = Sunday. Massa playlists should never be generated or queued on Sundays.
+    if (date.getDay() === 0) {
+      return jsonResponse({
+        success: true,
+        message: 'Arquivos de DOMINGO nao sao processados para distribuicao.',
+        skipped: true,
+        date: dateStr,
+        fileName
+      });
+    }
 
     // Busca configurações no KV
     const fetchConfig = async (key) => {
