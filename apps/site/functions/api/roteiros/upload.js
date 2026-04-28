@@ -65,13 +65,31 @@ async function pruneManifestFiles(kv, files) {
   return checked.filter(Boolean);
 }
 
+function keepLatestPerDate(files) {
+  const byDate = new Map();
+  for (const item of files) {
+    if (!item?.date) continue;
+    const previous = byDate.get(item.date);
+    const currentTime = Date.parse(item.uploaded_at || "") || 0;
+    const previousTime = Date.parse(previous?.uploaded_at || "") || 0;
+    if (!previous || currentTime >= previousTime) {
+      byDate.set(item.date, item);
+    }
+  }
+  return Array.from(byDate.values()).sort((a, b) => {
+    const dateCompare = String(b.date || "").localeCompare(String(a.date || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return (Date.parse(b.uploaded_at || "") || 0) - (Date.parse(a.uploaded_at || "") || 0);
+  });
+}
+
 async function readManifest(kv, station) {
   const raw = await kv.get(`manifest:${station}`);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     const files = Array.isArray(parsed.files) ? parsed.files : [];
-    return pruneManifestFiles(kv, files);
+    return keepLatestPerDate(await pruneManifestFiles(kv, files));
   } catch {
     return [];
   }
@@ -156,8 +174,8 @@ export async function onRequestPost({ request, env }) {
     await kv.put(idKey, JSON.stringify(meta), { expirationTtl: ROTEIRO_TTL_SECONDS });
 
     const existing = await readManifest(kv, station);
-    const withoutDuplicate = existing.filter((item) => item.id !== id);
-    const manifest = await writeManifest(kv, station, [meta, ...withoutDuplicate]);
+    const withoutSameDate = existing.filter((item) => item.date !== date);
+    const manifest = await writeManifest(kv, station, keepLatestPerDate([meta, ...withoutSameDate]));
 
     return jsonResponse({ success: true, file: meta, manifest_count: manifest.files.length });
   } catch (error) {

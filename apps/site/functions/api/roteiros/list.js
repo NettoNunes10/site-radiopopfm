@@ -38,7 +38,7 @@ async function pruneManifest(kv, station, manifest) {
       return exists ? item : null;
     })
   );
-  const activeFiles = checked.filter(Boolean);
+  const activeFiles = keepLatestPerDate(checked.filter(Boolean));
   if (activeFiles.length !== files.length) {
     await kv.put(`manifest:${station}`, JSON.stringify({
       station,
@@ -51,6 +51,24 @@ async function pruneManifest(kv, station, manifest) {
     station,
     files: activeFiles,
   };
+}
+
+function keepLatestPerDate(files) {
+  const byDate = new Map();
+  for (const item of files) {
+    if (!item?.date) continue;
+    const previous = byDate.get(item.date);
+    const currentTime = Date.parse(item.uploaded_at || "") || 0;
+    const previousTime = Date.parse(previous?.uploaded_at || "") || 0;
+    if (!previous || currentTime >= previousTime) {
+      byDate.set(item.date, item);
+    }
+  }
+  return Array.from(byDate.values()).sort((a, b) => {
+    const dateCompare = String(b.date || "").localeCompare(String(a.date || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return (Date.parse(b.uploaded_at || "") || 0) - (Date.parse(a.uploaded_at || "") || 0);
+  });
 }
 
 export async function onRequestOptions() {
