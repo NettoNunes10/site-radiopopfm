@@ -52,7 +52,7 @@ export async function onRequestGet({ request, env, params }) {
     return jsonResponse({ error: "Metadata is corrupted." }, 500);
   }
 
-  const content = await kv.get(meta.file_key);
+  const content = await kv.get(meta.file_key, "arrayBuffer");
   if (content == null) return jsonResponse({ error: "File content not found." }, 404);
 
   return new Response(content, {
@@ -67,4 +67,3 @@ export async function onRequestGet({ request, env, params }) {
     },
   });
 }
-

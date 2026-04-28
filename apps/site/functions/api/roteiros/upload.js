@@ -47,9 +47,8 @@ function sanitizeFilename(value) {
     .trim();
 }
 
-async function sha256Hex(text) {
-  const bytes = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+async function sha256Hex(buffer) {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
@@ -121,7 +120,7 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse({ error: `File too large. Max ${MAX_BIL_BYTES} bytes.` }, 413);
     }
 
-    const content = await file.text();
+    const content = await file.arrayBuffer();
     const sha256 = await sha256Hex(content);
     const id = `${date.replace(/-/g, "")}-${sha256.slice(0, 12)}`;
     const fileKey = `roteiro:${station}:${date}:${id}:file`;
@@ -150,6 +149,7 @@ export async function onRequestPost({ request, env }) {
         date,
         filename,
         sha256,
+        content_type: "application/octet-stream",
       },
     });
     await kv.put(metaKey, JSON.stringify(meta), { expirationTtl: ROTEIRO_TTL_SECONDS });
