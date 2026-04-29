@@ -8,23 +8,23 @@ export async function onRequestGet(context) {
 
   // Se a senha esperada não estiver configurada no Cloudflare, bloqueia por padrão
   if (!expectedPassword || expectedPassword.trim() === '') {
-    return new Response(JSON.stringify({ error: 'System error: password not configured in Cloudflare' }), { 
-      status: 500, 
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+    return new Response(JSON.stringify({ error: 'System error: password not configured in Cloudflare' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 
   if (authHeader === `Bearer ${expectedPassword}`) {
-    return new Response(JSON.stringify({ success: true }), { 
-      status: 200, 
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 
   // Senha incorreta ou ausente
-  return new Response(JSON.stringify({ error: 'Unauthorized: senha incorreta' }), { 
-    status: 401, 
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+  return new Response(JSON.stringify({ error: 'Unauthorized: senha incorreta' }), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
   });
 }
 
@@ -36,11 +36,11 @@ export async function onRequestPost(context) {
 async function handleGenerate(request, env) {
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
   const expectedPassword = env.NEWSMAKER_PASSWORD;
-  
+
   if (!expectedPassword || expectedPassword.trim() === '' || authHeader !== `Bearer ${expectedPassword}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: senha incorreta' }), { 
-      status: 401, 
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } 
+    return new Response(JSON.stringify({ error: 'Unauthorized: senha incorreta' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 
@@ -94,6 +94,9 @@ Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
   "ITAPETININGA": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" }
 }
 
+6. LOCALIZACAO:
+Matérias que mencionem locais, quando o local for 'interior de São Paulo', cite o nome do local no lugar de 'interior de São Paulo'. 
+
 Mantenha fidelidade aos fatos.
 Nao invente dados e nao adicione contexto externo nao presente na entrada.`;
 
@@ -130,7 +133,7 @@ function countWords(text) {
 async function generateNotes(sections, apiKey, instructions) {
   const maxAttempts = 2;
   const expectedCount = 3;
-  
+
   let retryInstruction = '';
   let lastErrorMessage = '';
 
@@ -156,7 +159,7 @@ function buildUserPrompt(parsedInputs, retryInstruction = '') {
     });
     inputPayload[sectionName] = sectionObj;
   }
-  
+
   const retryBlock = retryInstruction ? `\nAJUSTE:\n${retryInstruction}\n` : '';
   return `${retryBlock}\nENTRADAS JSON:\n${JSON.stringify(inputPayload, null, 2)}\n\nRETORNE APENAS JSON.`;
 }
@@ -198,7 +201,7 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
 
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
-    
+
     if (start !== -1 && end !== -1 && end > start) {
       cleaned = cleaned.substring(start, end + 1);
     }
