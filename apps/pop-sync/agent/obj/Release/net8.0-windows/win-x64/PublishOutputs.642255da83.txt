@@ -1,2 +1,0 @@
-C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Release\net8.0-windows\win-x64\publish\PopSync.pdb
-C:\Users\netto\Documents\projetos\site-radiopopfm\apps\pop-sync\agent\bin\Release\net8.0-windows\win-x64\publish\PopSync.exe

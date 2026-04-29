@@ -95,7 +95,8 @@ Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
 }
 
 6. LOCALIZACAO:
-Matérias que mencionem locais, quando o local for 'interior de São Paulo', cite o nome do local no lugar de 'interior de São Paulo' e não adicionem menção ao interior de são Paulo. Então no lugar de 'isso aconteceu em Tiete, interior de São Paulo', coloque apenas: 'isso aconteceu em Tiete'.
+Matérias que mencionem locais, quando o local for "interior de São Paulo", cite o nome do local no lugar de "interior de São Paulo" e não adicionem menção ao interior de são Paulo. 
+Exemplo: no lugar de "isso aconteceu em Tiete, interior de São Paulo", coloque apenas: "isso aconteceu em Tiete".
 
 Mantenha fidelidade aos fatos.
 Nao invente dados e nao adicione contexto externo nao presente na entrada.`;

@@ -12,6 +12,7 @@ namespace PopSync
         private static SyncService? _syncService;
         private static AppConfig? _config;
         private static System.Windows.Forms.Timer? _syncTimer;
+        private static ContextMenuStrip? _contextMenu;
         private static string _basePath = AppDomain.CurrentDomain.BaseDirectory;
 
         [STAThread]
@@ -69,23 +70,22 @@ namespace PopSync
 
         private static void CreateTrayIcon()
         {
-            var menu = new ContextMenuStrip();
-            menu.Items.Add("PopSync - Ativo", null, (s, e) => { });
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Sincronizar Agora", null, async (s, e) => {
+            _contextMenu = new ContextMenuStrip();
+            _contextMenu.Items.Add("PopSync - Ativo", null, (s, e) => { });
+            _contextMenu.Items.Add(new ToolStripSeparator());
+            _contextMenu.Items.Add("Sincronizar Agora", null, async (s, e) => {
                 if (_syncService != null) await _syncService.RunSync();
             });
-            menu.Items.Add("Ver Logs", null, (s, e) => {
+            _contextMenu.Items.Add("Ver Logs", null, (s, e) => {
                 string logPath = Path.Combine(_basePath, "sync_log.txt");
                 if (File.Exists(logPath)) System.Diagnostics.Process.Start("notepad.exe", logPath);
             });
-            menu.Items.Add("Configurações", null, (s, e) => {
+            _contextMenu.Items.Add("Configurações", null, (s, e) => {
                 var configPath = Path.Combine(_basePath, "config.json");
                 using (var form = new FormConfig(_config!, configPath))
                 {
                     if (form.ShowDialog() == DialogResult.OK)
                     {
-                        // Reiniciar o serviço com nova config
                         StopSyncTimer();
                         _syncService = new SyncService(_config!);
                         StartSyncTimer();
@@ -93,15 +93,23 @@ namespace PopSync
                     }
                 }
             });
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Sair", null, Exit);
+            _contextMenu.Items.Add(new ToolStripSeparator());
+            _contextMenu.Items.Add("Sair", null, Exit);
 
             _trayIcon = new NotifyIcon
             {
                 Icon = SystemIcons.Information,
-                ContextMenuStrip = menu,
+                // Assign both legacy and modern menu properties for maximum compatibility
+                ContextMenuStrip = _contextMenu,
                 Text = "PopSync - Sincronizador Rádio Pop FM",
                 Visible = true
+            };
+
+            // Força a exibição do menu no clique com o botão direito (correção para falhas do WinForms)
+            _trayIcon.MouseUp += (s, e) => {
+                if (e.Button == MouseButtons.Right) {
+                    _contextMenu.Show(Cursor.Position);
+                }
             };
         }
 
