@@ -86,7 +86,11 @@ Use ordem direta nas frases.
 Evite frases longas.
 Transforme numeros exatos em aproximacoes amigaveis para radio quando fizer sentido editorial.
 
-5. FORMATO DE SAIDA OBRIGATORIO:
+5. DATA:
+Atente-se a qualquer data no corpo da notícia. Muitas vezes a notícia está com uma linguagem temporal do passado. Por exemplo, hoje é terça feira, 19 de maio de 2026.
+Se a notícia for do dia 18, ontem, dizendo: "acontecerá hoje, as 19h", então a noticia deve ser reecrita para: "aconteceu ontem, dia 18." Isso serve para qualquer situação. Sempre leia qualquer data que estiver no corpo da notícia e compare a temporalidade para adaptar ao dia atual.
+
+6. FORMATO DE SAIDA OBRIGATORIO:
 Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
 {
   "NACIONAL": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" },
@@ -94,7 +98,7 @@ Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
   "ITAPETININGA": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" }
 }
 
-6. LOCALIZACAO:
+7. LOCALIZACAO:
 Matérias que mencionem locais, quando o local for "interior de São Paulo", cite o nome do local no lugar de "interior de São Paulo" e não adicionem menção ao interior de são Paulo. 
 Exemplo: no lugar de "isso aconteceu em Tiete, interior de São Paulo", coloque apenas: "isso aconteceu em Tiete".
 
