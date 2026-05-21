@@ -1,4 +1,4 @@
-// Cloudflare Pages Function para o Gerador de Boletins (NewsMaker)
+﻿// Cloudflare Pages Function para o Gerador de Boletins (NewsMaker)
 // Respondendo em: /api/generate
 
 export async function onRequestGet(context) {
@@ -86,9 +86,17 @@ Use ordem direta nas frases.
 Evite frases longas.
 Transforme numeros exatos em aproximacoes amigaveis para radio quando fizer sentido editorial.
 
-5. DATA:
-Atente-se a qualquer data no corpo da notícia. Muitas vezes a notícia está com uma linguagem temporal do passado. Por exemplo, hoje é terça feira, 19 de maio de 2026.
-Se a notícia for do dia 18, ontem, dizendo: "acontecerá hoje, as 19h", então a noticia deve ser reecrita para: "aconteceu ontem, dia 18." Isso serve para qualquer situação. Sempre leia qualquer data que estiver no corpo da notícia e compare a temporalidade para adaptar ao dia atual.
+5. TEMPORALIDADE E DATAS:
+A data escolhida no painel e a DATA DE EXIBICAO/LOCUCAO do boletim.
+Use essa data como unica referencia para palavras como "hoje", "ontem", "amanha", "nesta quarta", "na ultima segunda" e semelhantes.
+So use "hoje" se o fato aconteceu exatamente na DATA DE EXIBICAO.
+So use "ontem" se o fato aconteceu exatamente no dia anterior a DATA DE EXIBICAO.
+Nao transforme datas explicitas do texto original em relativos se elas nao baterem com a DATA DE EXIBICAO.
+Leia todas as datas no corpo da noticia e compare com a DATA DE EXIBICAO antes de adaptar qualquer linguagem temporal.
+Se a noticia trouxer uma frase antiga como "acontecera hoje" ou "acontece hoje", reescreva para passado, presente ou futuro conforme a DATA DE EXIBICAO.
+Quando houver data explicita ou risco de ambiguidade, prefira: "na terca-feira, dia 19", "na quarta-feira, dia 20", "na segunda-feira, dia 18".
+Evite expressoes como "ultima segunda-feira" quando o texto traz o dia do mes.
+Ignore marcadores relativos do site, como "atualizado ha 8 horas", se eles conflitarem com a DATA DE EXIBICAO.
 
 6. FORMATO DE SAIDA OBRIGATORIO:
 Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
@@ -105,7 +113,7 @@ Exemplo: no lugar de "isso aconteceu em Tiete, interior de São Paulo", coloque 
 Mantenha fidelidade aos fatos.
 Nao invente dados e nao adicione contexto externo nao presente na entrada.`;
 
-    const notesBySection = await generateNotes(sections, apiKey, instructions);
+    const notesBySection = await generateNotes(sections, apiKey, instructions, date);
 
     const result = {
       date,
@@ -135,7 +143,7 @@ function countWords(text) {
 }
 
 
-async function generateNotes(sections, apiKey, instructions) {
+async function generateNotes(sections, apiKey, instructions, targetDate) {
   const maxAttempts = 2;
   const expectedCount = 3;
 
@@ -144,7 +152,7 @@ async function generateNotes(sections, apiKey, instructions) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const parsed = await callGemini(apiKey, instructions, buildUserPrompt(sections, retryInstruction));
+      const parsed = await callGemini(apiKey, instructions, buildUserPrompt(sections, targetDate, retryInstruction));
       return parseStructuredResponse(parsed, expectedCount);
     } catch (exc) {
       lastErrorMessage = exc.message;
@@ -155,7 +163,51 @@ async function generateNotes(sections, apiKey, instructions) {
   throw new Error(`Nao foi possivel obter resposta valida do Gemini. Detalhe: ${lastErrorMessage}`);
 }
 
-function buildUserPrompt(parsedInputs, retryInstruction = '') {
+function parseDateOnly(dateStr) {
+  const match = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!year || !month || !day) return null;
+
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+function formatDateBR(date) {
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function addDaysUTC(date, days) {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function buildTemporalContext(targetDate) {
+  const date = parseDateOnly(targetDate);
+  if (!date) {
+    return `DATA DE EXIBICAO/LOCUCAO: nao informada.
+Evite usar "hoje", "ontem" ou "amanha" quando a data do fato nao estiver absolutamente clara.`;
+  }
+
+  const weekdays = ['domingo', 'segunda-feira', 'terca-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sabado'];
+  const weekday = weekdays[date.getUTCDay()];
+  const yesterday = addDaysUTC(date, -1);
+  const tomorrow = addDaysUTC(date, 1);
+
+  return `DATA DE EXIBICAO/LOCUCAO: ${weekday}, ${formatDateBR(date)}.
+Nesta geracao, "hoje" significa somente ${formatDateBR(date)}.
+Nesta geracao, "ontem" significa somente ${formatDateBR(yesterday)}.
+Nesta geracao, "amanha" significa somente ${formatDateBR(tomorrow)}.
+Se o texto original citar outra data, escreva a data absoluta com dia da semana quando possivel.`;
+}
+
+function buildUserPrompt(parsedInputs, targetDate, retryInstruction = '') {
   const inputPayload = {};
   for (const [sectionKey, sectionName] of Object.entries(SECTION_LABELS)) {
     const sectionObj = {};
@@ -166,7 +218,8 @@ function buildUserPrompt(parsedInputs, retryInstruction = '') {
   }
 
   const retryBlock = retryInstruction ? `\nAJUSTE:\n${retryInstruction}\n` : '';
-  return `${retryBlock}\nENTRADAS JSON:\n${JSON.stringify(inputPayload, null, 2)}\n\nRETORNE APENAS JSON.`;
+  const temporalContext = buildTemporalContext(targetDate);
+  return `${retryBlock}\n${temporalContext}\n\nANTES DE RESPONDER: revise cada uso de "hoje", "ontem", "amanha", "nesta", "ultima" e similares contra a DATA DE EXIBICAO.\n\nENTRADAS JSON:\n${JSON.stringify(inputPayload, null, 2)}\n\nRETORNE APENAS JSON.`;
 }
 
 async function callGemini(apiKey, systemPrompt, userPrompt) {
