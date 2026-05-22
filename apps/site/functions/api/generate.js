@@ -94,8 +94,11 @@ So use "ontem" se o fato aconteceu exatamente no dia anterior a DATA DE EXIBICAO
 Nao transforme datas explicitas do texto original em relativos se elas nao baterem com a DATA DE EXIBICAO.
 Leia todas as datas no corpo da noticia e compare com a DATA DE EXIBICAO antes de adaptar qualquer linguagem temporal.
 Se a noticia trouxer uma frase antiga como "acontecera hoje" ou "acontece hoje", reescreva para passado, presente ou futuro conforme a DATA DE EXIBICAO.
-Quando houver data explicita ou risco de ambiguidade, prefira: "na terca-feira, dia 19", "na quarta-feira, dia 20", "na segunda-feira, dia 18".
-Evite expressoes como "ultima segunda-feira" quando o texto traz o dia do mes.
+Use dia da semana apenas quando a data for recente e isso ajudar a compreensao: "ontem", "nesta terca", "na ultima quarta, dia 20".
+Para datas mais distantes, evite dia da semana. Prefira "no dia 24 do mes passado", "dia 24 de abril" ou "em 24 de abril", conforme soar mais natural.
+Nao escreva "quarta-feira, dia 24 de abril" quando a data nao for recente. O dia da semana so deve aparecer quando houver proximidade temporal ou relevancia editorial clara.
+Quando houver data explicita ou risco de ambiguidade em data recente, prefira: "na terca-feira, dia 19", "na quarta-feira, dia 20", "na segunda-feira, dia 18".
+Evite expressoes como "ultima segunda-feira" quando o texto traz o dia do mes e a data nao for recente.
 Ignore marcadores relativos do site, como "atualizado ha 8 horas", se eles conflitarem com a DATA DE EXIBICAO.
 
 6. FORMATO DE SAIDA OBRIGATORIO:
