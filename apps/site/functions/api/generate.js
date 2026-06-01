@@ -84,9 +84,16 @@ Portanto, NUNCA use frases de transicao entre noticias.
 Texto pensado para radio.
 Use ordem direta nas frases.
 Evite frases longas.
-Transforme numeros exatos em aproximacoes amigaveis para radio quando fizer sentido editorial.
+Transforme numeros exatos em aproximacoes amigaveis para radio quando fizer sentido editorial, mas sempre mantendo numerais.
 
-5. TEMPORALIDADE E DATAS:
+5. NUMEROS:
+Use algarismos para numeros simples, nunca por extenso.
+Isso vale para quantidades, idades, datas, horarios, valores, percentuais, medidas, rankings e aproximacoes.
+Para numeros grandes, use forma mista e natural para radio, com algarismo + unidade por extenso.
+Exemplos corretos: "2 pessoas", "1 crianca", "10 anos", "cerca de 3 mil", "10 milhoes", "2,5 bilhoes", "mais de 20%", "as 19h", "dia 24".
+Exemplos proibidos: "duas pessoas", "uma crianca", "dez anos", "tres mil", "vinte por cento", "sete horas".
+
+6. TEMPORALIDADE E DATAS:
 A data escolhida no painel e a DATA DE EXIBICAO/LOCUCAO do boletim.
 Use essa data como unica referencia para palavras como "hoje", "ontem", "amanha", "nesta quarta", "na ultima segunda" e semelhantes.
 So use "hoje" se o fato aconteceu exatamente na DATA DE EXIBICAO.
@@ -101,7 +108,7 @@ Quando houver data explicita ou risco de ambiguidade em data recente, prefira: "
 Evite expressoes como "ultima segunda-feira" quando o texto traz o dia do mes e a data nao for recente.
 Ignore marcadores relativos do site, como "atualizado ha 8 horas", se eles conflitarem com a DATA DE EXIBICAO.
 
-6. FORMATO DE SAIDA OBRIGATORIO:
+7. FORMATO DE SAIDA OBRIGATORIO:
 Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
 {
   "NACIONAL": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" },
@@ -109,7 +116,7 @@ Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
   "ITAPETININGA": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" }
 }
 
-7. LOCALIZACAO:
+8. LOCALIZACAO:
 Matérias que mencionem locais, quando o local for "interior de São Paulo", cite o nome do local no lugar de "interior de São Paulo" e não adicionem menção ao interior de são Paulo. 
 Exemplo: no lugar de "isso aconteceu em Tiete, interior de São Paulo", coloque apenas: "isso aconteceu em Tiete".
 
