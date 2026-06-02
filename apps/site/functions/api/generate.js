@@ -123,7 +123,8 @@ Exemplo: no lugar de "isso aconteceu em Tiete, interior de São Paulo", coloque 
 Mantenha fidelidade aos fatos.
 Nao invente dados e nao adicione contexto externo nao presente na entrada.`;
 
-    const notesBySection = await generateNotes(sections, apiKey, instructions, date);
+    const model = getGeminiModel(env);
+    const notesBySection = await generateNotes(sections, apiKey, instructions, date, model);
 
     const result = {
       date,
@@ -153,7 +154,12 @@ function countWords(text) {
 }
 
 
-async function generateNotes(sections, apiKey, instructions, targetDate) {
+function getGeminiModel(env) {
+  const model = String(env.GEMINI_MODEL || '').trim();
+  return model || 'gemini-2.5-flash-lite';
+}
+
+async function generateNotes(sections, apiKey, instructions, targetDate, model) {
   const maxAttempts = 2;
   const expectedCount = 3;
 
@@ -162,7 +168,7 @@ async function generateNotes(sections, apiKey, instructions, targetDate) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const parsed = await callGemini(apiKey, instructions, buildUserPrompt(sections, targetDate, retryInstruction));
+      const parsed = await callGemini(apiKey, model, instructions, buildUserPrompt(sections, targetDate, retryInstruction));
       return parseStructuredResponse(parsed, expectedCount);
     } catch (exc) {
       lastErrorMessage = exc.message;
@@ -232,8 +238,9 @@ function buildUserPrompt(parsedInputs, targetDate, retryInstruction = '') {
   return `${retryBlock}\n${temporalContext}\n\nANTES DE RESPONDER: revise cada uso de "hoje", "ontem", "amanha", "nesta", "ultima" e similares contra a DATA DE EXIBICAO.\n\nENTRADAS JSON:\n${JSON.stringify(inputPayload, null, 2)}\n\nRETORNE APENAS JSON.`;
 }
 
-async function callGemini(apiKey, systemPrompt, userPrompt) {
-  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
+async function callGemini(apiKey, model, systemPrompt, userPrompt) {
+  const encodedModel = encodeURIComponent(model);
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodedModel + ':generateContent?key=' + apiKey, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

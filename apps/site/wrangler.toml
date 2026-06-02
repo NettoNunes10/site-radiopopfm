@@ -2,8 +2,10 @@ compatibility_date = "2026-04-03"
 
 [vars]
 ENVIRONMENT = "production"
-# As variáveis NEWSMAKER_PASSWORD e GEMINI_API_KEY devem ser 
+# As variaveis NEWSMAKER_PASSWORD e GEMINI_API_KEY devem ser
 # configuradas no painel do Cloudflare Pages (Settings > Functions).
+# GEMINI_MODEL pode ser configurada no painel; por padrao o sistema usa
+# gemini-2.5-flash-lite, indicado para manter o uso no tier gratuito.
 
 # KV Namespace para armazenar boletins de dispatch
 [[kv_namespaces]]
