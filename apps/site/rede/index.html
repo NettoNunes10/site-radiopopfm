@@ -455,6 +455,11 @@
   <script>
     const API_URL = '/api/generate';
     const sections = ['nacional', 'itapeva', 'itapetininga'];
+    const sectionLabels = {
+      nacional: 'Nacional',
+      itapeva: 'Regional: Itapeva',
+      itapetininga: 'Regional: Itapetininga'
+    };
 
     function setupMusic() {
       const password = sessionStorage.getItem('newsmaker_password');
@@ -627,13 +632,83 @@
     });
     document.getElementById('dateInput').addEventListener('change', saveState);
 
+    function renderEditablePreview(data) {
+      const resultBox = document.getElementById('resultBox');
+      resultBox.innerHTML = '';
+
+      sections.forEach(sec => {
+        const group = document.createElement('div');
+        group.className = 'preview-section';
+
+        const title = document.createElement('h5');
+        title.textContent = sectionLabels[sec] || sec.toUpperCase();
+        group.appendChild(title);
+
+        (data.notes[sec] || []).forEach((note, idx) => {
+          const field = document.createElement('div');
+          field.className = 'preview-field';
+
+          const label = document.createElement('label');
+          label.textContent = `Noticia ${idx + 1}`;
+
+          const textarea = document.createElement('textarea');
+          textarea.value = note.text || '';
+          textarea.dataset.newsSection = sec;
+          textarea.dataset.newsIndex = String(idx);
+          textarea.addEventListener('input', () => {
+            updateGeneratedNoteFromField(textarea);
+            const statusLabel = document.getElementById('statusLabel');
+            if (statusLabel) statusLabel.textContent = 'Previa editada. Pronta para envio.';
+          });
+
+          field.appendChild(label);
+          field.appendChild(textarea);
+          group.appendChild(field);
+        });
+
+        resultBox.appendChild(group);
+      });
+    }
+
+    function updateGeneratedNoteFromField(field) {
+      if (!window.lastGenerationData) return;
+      const sec = field.dataset.newsSection;
+      const idx = Number(field.dataset.newsIndex);
+      const sectionNotes = window.lastGenerationData.notes?.[sec];
+      if (!sectionNotes || !sectionNotes[idx]) return;
+      sectionNotes[idx].text = field.value;
+    }
+
+    function getEditableGenerationData() {
+      if (!window.lastGenerationData) return null;
+
+      const edited = JSON.parse(JSON.stringify(window.lastGenerationData));
+      edited.date = document.getElementById('dateInput').value || edited.date;
+
+      let hasEmpty = false;
+      document.querySelectorAll('#resultBox textarea[data-news-section]').forEach(field => {
+        const sec = field.dataset.newsSection;
+        const idx = Number(field.dataset.newsIndex);
+        const text = field.value.trim();
+        if (!text) hasEmpty = true;
+        if (edited.notes?.[sec]?.[idx]) edited.notes[sec][idx].text = text;
+      });
+
+      if (hasEmpty) {
+        showToast('Confira a previa: nenhuma noticia pode ficar vazia.', 'error');
+        return null;
+      }
+
+      window.lastGenerationData = edited;
+      return edited;
+    }
+
     async function generate() {
       const password = sessionStorage.getItem('newsmaker_password');
       if (!password) { location.reload(); return; }
 
       const btn = document.getElementById('generateBtn');
       const statusLabel = document.getElementById('statusLabel');
-      const resultBox = document.getElementById('resultBox');
       const resultArea = document.getElementById('resultArea');
 
       btn.disabled = true;
@@ -680,17 +755,9 @@
         document.getElementById('downloadBtn').style.display = 'inline-flex';
         document.getElementById('dispatchBtn').style.display = 'inline-flex';
 
-        let output = '';
-        sections.forEach(sec => {
-          output += `\n--- ${sec.toUpperCase()} ---\n`;
-          data.notes[sec].forEach((note, idx) => {
-            output += `\nNotícia ${idx + 1}:\n${note.text}\n`;
-          });
-        });
-
-        resultBox.textContent = output.trim();
+        renderEditablePreview(data);
         resultArea.style.display = 'block';
-        statusLabel.textContent = 'Sucesso! Arquivos preparados.';
+        statusLabel.textContent = 'Sucesso! Revise ou edite a previa antes do envio.';
         showToast('Notícias geradas com sucesso!', 'success');
 
       } catch (error) {
@@ -703,7 +770,8 @@
     }
 
     async function dispatchToStudios() {
-      if (!window.lastGenerationData) return;
+      const data = getEditableGenerationData();
+      if (!data) return;
       const password = sessionStorage.getItem('newsmaker_password');
       const btn = document.getElementById('dispatchBtn');
       btn.disabled = true;
@@ -717,8 +785,8 @@
             'Authorization': `Bearer ${password}`,
           },
           body: JSON.stringify({
-            date: window.lastGenerationData.date,
-            notes: window.lastGenerationData.notes,
+            date: data.date,
+            notes: data.notes,
           }),
         });
         if (!response.ok) throw new Error('Falha no envio');
@@ -787,9 +855,9 @@
     }
 
     async function downloadAllRTFs() {
-      if (!window.lastGenerationData) return;
+      const data = getEditableGenerationData();
+      if (!data) return;
       const zip = new JSZip();
-      const data = window.lastGenerationData;
       const dateVal = document.getElementById('dateInput').value;
       const dateObj = new Date(dateVal + 'T12:00:00');
       const weekdays = ["DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO"];

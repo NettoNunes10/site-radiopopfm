@@ -407,10 +407,62 @@ body {
   border: 1px dashed var(--border);
   padding: 16px;
   border-radius: 12px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.8125rem;
-  white-space: pre-wrap;
   color: #475569;
+}
+
+.preview-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.preview-section + .preview-section {
+  margin-top: 16px;
+}
+
+.preview-section h5 {
+  color: var(--text-main);
+  font-size: 0.875rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.preview-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preview-field + .preview-field {
+  margin-top: 12px;
+}
+
+.preview-field label {
+  color: var(--text-light);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.preview-field textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.preview-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 /* Login Screen */
