@@ -1545,10 +1545,18 @@
       const day = currentRuleDay;
       const cont = document.getElementById('rulesPrefixList');
       const options = ensurePrefixOptionsForDay(day);
+      const replacementMode = musicConfig.prefixes.replacement_mode || 'cycle';
       cont.innerHTML = `
         <div class="form-group">
           <label>Prefixo Alvo (Regex)</label>
           <input type="text" value="${musicConfig.prefixes.target_name || ''}" onchange="musicConfig.prefixes.target_name = this.value; saveMusicConfig('prefixes', musicConfig.prefixes);">
+        </div>
+        <div class="form-group">
+          <label>Modo de troca</label>
+          <select class="news-input" style="width: 100%;" onchange="musicConfig.prefixes.replacement_mode = this.value; saveMusicConfig('prefixes', musicConfig.prefixes);">
+            <option value="cycle" ${replacementMode === 'cycle' ? 'selected' : ''}>Alternar entre a lista</option>
+            <option value="all" ${replacementMode === 'all' ? 'selected' : ''}>Trocar todos pelo primeiro prefixo</option>
+          </select>
         </div>
         <div class="time-grid">
           ${options.map((p, i) => `
@@ -1699,6 +1707,7 @@
 
       const defaultPrefixes = {
         target_name: "ABERTURA HORA CHEIA - NEUTRO",
+        replacement_mode: "cycle",
         options_by_day: {
           dia_semana: ["ABERTURA HORA CHEIA - Outono (Geral) 1", "ABERTURA HORA CHEIA - Outono (Geral) 2"],
           sabado: ["ABERTURA HORA CHEIA - Outono (Fim de Semana) 1", "ABERTURA HORA CHEIA - Outono (Fim de Semana) 2"],

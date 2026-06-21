@@ -291,13 +291,15 @@ export const MusicEngine = {
       applySubstitutions(cityBlocks, substitutions, city, log);
 
       const prefOptions = prefixes.options_by_day?.[dayType] || prefixes.options_by_day?.['dia_semana'] || [];
+      const prefixReplacementMode = prefixes.replacement_mode === 'all' ? 'all' : 'cycle';
       if (prefOptions.length > 0) {
         let idx = 0;
         cityBlocks.forEach(b => {
           b.items.forEach((line, i) => {
             const match = line.match(HOUR_PREFIX_RE);
             if (match) {
-              b.items[i] = line.replace(match[1] + match[2], prefOptions[idx % prefOptions.length]);
+              const replacement = prefixReplacementMode === 'all' ? prefOptions[0] : prefOptions[idx % prefOptions.length];
+              b.items[i] = line.replace(match[1] + match[2], replacement);
               idx++;
             }
           });
