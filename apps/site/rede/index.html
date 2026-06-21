@@ -1544,7 +1544,7 @@
     function renderPrefixList() {
       const day = currentRuleDay;
       const cont = document.getElementById('rulesPrefixList');
-      const options = musicConfig.prefixes.options_by_day?.[day] || [];
+      const options = ensurePrefixOptionsForDay(day);
       cont.innerHTML = `
         <div class="form-group">
           <label>Prefixo Alvo (Regex)</label>
@@ -1562,6 +1562,26 @@
           </div>
         </div>
       `;
+    }
+
+    function ensurePrefixOptionsForDay(day) {
+      if (!musicConfig.prefixes) musicConfig.prefixes = {};
+      if (!musicConfig.prefixes.options_by_day) musicConfig.prefixes.options_by_day = {};
+      if (!Array.isArray(musicConfig.prefixes.options_by_day[day])) {
+        musicConfig.prefixes.options_by_day[day] = [];
+      }
+      return musicConfig.prefixes.options_by_day[day];
+    }
+
+    function addPrefixRule() {
+      const input = document.getElementById('newPrefixInput');
+      const prefix = input.value.trim();
+      if (!prefix) return;
+
+      const options = ensurePrefixOptionsForDay(currentRuleDay);
+      options.push(prefix);
+      saveMusicConfig('prefixes', musicConfig.prefixes);
+      renderPrefixList();
     }
 
     function renderVignetteList() {
@@ -1646,7 +1666,7 @@
     }
 
     function removePrefixRule(idx) {
-      musicConfig.prefixes.options_by_day[currentRuleDay].splice(idx, 1);
+      ensurePrefixOptionsForDay(currentRuleDay).splice(idx, 1);
       saveMusicConfig('prefixes', musicConfig.prefixes);
       renderPrefixList();
     }
