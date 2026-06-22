@@ -1554,7 +1554,7 @@
         <div class="form-group">
           <label>Modo de troca</label>
           <select class="news-input" style="width: 100%;" onchange="musicConfig.prefixes.replacement_mode = this.value; saveMusicConfig('prefixes', musicConfig.prefixes);">
-            <option value="cycle" ${replacementMode === 'cycle' ? 'selected' : ''}>Alternar entre a lista</option>
+            <option value="cycle" ${replacementMode === 'cycle' ? 'selected' : ''}>Alternar lista + alvo original</option>
             <option value="all" ${replacementMode === 'all' ? 'selected' : ''}>Trocar todos pelo primeiro prefixo</option>
           </select>
         </div>

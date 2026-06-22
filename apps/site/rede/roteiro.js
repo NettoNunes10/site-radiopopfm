@@ -301,14 +301,22 @@ export const MusicEngine = {
       const prefOptions = prefixes.options_by_day?.[dayType] || prefixes.options_by_day?.['dia_semana'] || [];
       const prefixReplacementMode = prefixes.replacement_mode === 'all' ? 'all' : 'cycle';
       const hourPrefixRe = getHourPrefixRe(prefixes);
-      if (prefOptions.length > 0) {
+      const replacementOptions = prefOptions.map(normalizePrefixReplacement);
+      if (replacementOptions.length > 0) {
         let idx = 0;
         cityBlocks.forEach(b => {
           b.items.forEach((line, i) => {
             const match = line.match(hourPrefixRe);
             if (match) {
-              const replacement = prefixReplacementMode === 'all' ? prefOptions[0] : prefOptions[idx % prefOptions.length];
-              b.items[i] = line.replace(match[1], normalizePrefixReplacement(replacement));
+              const originalPrefix = match[1];
+              let replacement = replacementOptions[0];
+              if (prefixReplacementMode === 'cycle') {
+                const hasOriginalOption = replacementOptions.some(option => option.toLowerCase() === originalPrefix.toLowerCase());
+                const cycleLength = replacementOptions.length + (hasOriginalOption ? 0 : 1);
+                const cycleIdx = idx % cycleLength;
+                replacement = cycleIdx < replacementOptions.length ? replacementOptions[cycleIdx] : originalPrefix;
+              }
+              b.items[i] = line.replace(match[1], replacement);
               idx++;
             }
           });
