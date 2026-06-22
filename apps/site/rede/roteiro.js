@@ -45,7 +45,15 @@ const stringToCP1252 = (str) => {
 const HEADER_RE = /^([0-2][0-9]:[0-5][0-9])\s+\/m:/;
 const COMM_START_RE = /\/o:3\b/;
 const COMM_END_RE = /\/o:4\b/;
-const HOUR_PREFIX_RE = /(ABERTURA HORA CHEIA - )(.+?)(\.(?:wav|mp3))/i;
+const DEFAULT_HOUR_PREFIX_RE = /(ABERTURA HORA CHEIA - .+?)(\.(?:wav|mp3))/i;
+const AUDIO_EXT_RE = /\.(?:wav|mp3)$/i;
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const getHourPrefixRe = (prefixes) => {
+  const target = (prefixes.target_name || '').trim();
+  if (!target) return DEFAULT_HOUR_PREFIX_RE;
+  return new RegExp(`(${escapeRegExp(target)})(\\.(?:wav|mp3))`, 'i');
+};
+const normalizePrefixReplacement = (value) => value.replace(AUDIO_EXT_RE, '');
 
 class Block {
   constructor(time, header, items = []) {
@@ -292,14 +300,15 @@ export const MusicEngine = {
 
       const prefOptions = prefixes.options_by_day?.[dayType] || prefixes.options_by_day?.['dia_semana'] || [];
       const prefixReplacementMode = prefixes.replacement_mode === 'all' ? 'all' : 'cycle';
+      const hourPrefixRe = getHourPrefixRe(prefixes);
       if (prefOptions.length > 0) {
         let idx = 0;
         cityBlocks.forEach(b => {
           b.items.forEach((line, i) => {
-            const match = line.match(HOUR_PREFIX_RE);
+            const match = line.match(hourPrefixRe);
             if (match) {
               const replacement = prefixReplacementMode === 'all' ? prefOptions[0] : prefOptions[idx % prefOptions.length];
-              b.items[i] = line.replace(match[1] + match[2], replacement);
+              b.items[i] = line.replace(match[1], normalizePrefixReplacement(replacement));
               idx++;
             }
           });

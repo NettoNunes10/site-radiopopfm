@@ -1548,7 +1548,7 @@
       const replacementMode = musicConfig.prefixes.replacement_mode || 'cycle';
       cont.innerHTML = `
         <div class="form-group">
-          <label>Prefixo Alvo (Regex)</label>
+          <label>Prefixo alvo no roteiro</label>
           <input type="text" value="${musicConfig.prefixes.target_name || ''}" onchange="musicConfig.prefixes.target_name = this.value; saveMusicConfig('prefixes', musicConfig.prefixes);">
         </div>
         <div class="form-group">
