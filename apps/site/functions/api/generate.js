@@ -83,12 +83,11 @@ Use ordem direta nas frases.
 Evite frases longas.
 Transforme numeros exatos em aproximacoes amigaveis para radio quando fizer sentido editorial, mas sempre mantendo numerais.
 
-5. NUMEROS:
+5. NUMEROS E ASPAS:
 Use algarismos para numeros simples, nunca por extenso.
 Isso vale para quantidades, idades, datas, horarios, valores, percentuais, medidas, rankings e aproximacoes.
-Para numeros grandes, use forma mista e natural para radio, com algarismo + unidade por extenso.
-Exemplos corretos: "2 pessoas", "1 crianca", "10 anos", "cerca de 3 mil", "10 milhoes", "2,5 bilhoes", "mais de 20%", "as 19h", "dia 24".
-Exemplos proibidos: "duas pessoas", "uma crianca", "dez anos", "tres mil", "vinte por cento", "sete horas".
+Para numeros grandes, use forma mista e natural para radio, com algarismo + unidade por extenso (ex: "2 pessoas", "1 crianca", "10 anos", "cerca de 3 mil", "10 milhoes", "2,5 bilhoes", "mais de 20%", "as 19h", "dia 24").
+NUNCA USE ASPAS DUPLAS NO CORPO DO TEXTO DAS NOTÍCIAS. Para nomes de filmes, músicas, termos, títulos, apelidos ou falas/citações, use SEMPRE aspas simples '...' (exemplo: 'Dona Rosinha', 'Monga, a Mulher Gorila'). Isso é obrigatório para não quebrar a formatação JSON.
 
 6. TEMPORALIDADE E DATAS:
 A data escolhida no painel e a DATA DE EXIBICAO/LOCUCAO do boletim.
@@ -338,6 +337,49 @@ async function callGeminiSingle(apiKey, model, systemPrompt, userPrompt) {
   const reason = candidate?.finishReason || candidate?.finish_reason;
   if (!text) throw new Error(`Resposta vazia do Gemini. Motivo da parada: ${reason || 'desconhecido'}`);
 
+  function fixInternalUnescapedQuotes(jsonStr) {
+    // Corrige aspas internas não escapadas nos valores de cada notícia
+    return jsonStr.replace(/(["']?(?:[123]|NACIONAL|ITAPEVA|ITAPETININGA)["']?\s*:\s*)"([\s\S]*?)"(?=\s*(?:,\s*["']?(?:[123]|NACIONAL|ITAPEVA|ITAPETININGA)["']?|[\}\]]))/gi, (match, prefix, content) => {
+      const sanitizedContent = content.replace(/(?<!\\)"/g, "'");
+      return `${prefix}"${sanitizedContent}"`;
+    });
+  }
+
+  function extractNotesRegex(rawText) {
+    const result = {};
+    const sectionNames = ['NACIONAL', 'ITAPEVA', 'ITAPETININGA'];
+
+    for (const section of sectionNames) {
+      result[section] = {};
+      const sectionRegex = new RegExp(`["']?${section}["']?\\s*:\\s*\\{([\\s\\S]*?)(?:\\}\\s*[,\\}]|$)`, 'i');
+      const sectionMatch = rawText.match(sectionRegex);
+      const sectionBody = sectionMatch ? sectionMatch[1] : '';
+
+      for (let i = 1; i <= 3; i++) {
+        const nextKeys = i === 1 ? '2|3' : (i === 2 ? '3' : '$');
+        const itemRegex = new RegExp(`["']?${i}["']?\\s*:\\s*["']?([\\s\\S]*?)(?:["']?\\s*,\\s*["']?(?:${nextKeys})["']?|["']?\\s*$)`, 'i');
+        const itemMatch = sectionBody.match(itemRegex);
+        if (itemMatch && itemMatch[1]) {
+          let val = itemMatch[1].trim();
+          val = val.replace(/^["']|["']$/g, '').trim();
+          result[section][String(i)] = val;
+        }
+      }
+    }
+
+    let count = 0;
+    for (const sec of sectionNames) {
+      for (let i = 1; i <= 3; i++) {
+        if (result[sec] && result[sec][String(i)]) count++;
+      }
+    }
+
+    if (count === 9) {
+      return result;
+    }
+    return null;
+  }
+
   function parseRobustJSON(str) {
     let cleaned = str.trim()
       .replace(/[\u201c\u201d]/g, '"')
@@ -355,14 +397,27 @@ async function callGeminiSingle(apiKey, model, systemPrompt, userPrompt) {
 
     cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
 
+    // 1. Tentar parse padrão
     try {
       return JSON.parse(cleaned);
-    } catch (e) {
+    } catch (e1) {
+      // 2. Tentar reparar aspas duplas internas não escapadas
       try {
-        const escaped = cleaned.replace(/(?<!\\)\n/g, '\\n');
-        return JSON.parse(escaped);
+        const repaired = fixInternalUnescapedQuotes(cleaned);
+        return JSON.parse(repaired);
       } catch (e2) {
-        throw new Error(`JSON malformado do Gemini. Detalhe: ${e.message}. Texto retornado: ${cleaned.slice(0, 300)}`);
+        // 3. Tentar sanitizar quebras de linha e tentar novamente
+        try {
+          const escaped = cleaned.replace(/(?<!\\)\n/g, '\\n');
+          return JSON.parse(escaped);
+        } catch (e3) {
+          // 4. Fallback: extração direta por Regex dos campos das notícias
+          const regexExtracted = extractNotesRegex(cleaned);
+          if (regexExtracted) {
+            return regexExtracted;
+          }
+          throw new Error(`JSON malformado do Gemini. Detalhe: ${e1.message}. Texto retornado: ${cleaned.slice(0, 300)}`);
+        }
       }
     }
   }
