@@ -734,7 +734,7 @@
       if (hasEmpty) {
         showToast('Preencha todas as 9 notícias!', 'error');
         btn.disabled = false;
-        btn.innerHTML = '<ion-icon name="flash-outline"></ion-icon> <span>Gerar Noticias</span>';
+        btn.innerHTML = '<ion-icon name="flash-outline"></ion-icon> <span>Gerar Notícias</span>';
         return;
       }
 
@@ -761,11 +761,12 @@
         showToast('Notícias geradas com sucesso!', 'success');
 
       } catch (error) {
+        console.error('Erro na geração de notícias:', error);
         showToast(error.message, 'error');
-        statusLabel.textContent = 'Erro na geração.';
+        statusLabel.textContent = `Erro na geração: ${error.message}`;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<ion-icon name="flash-outline"></ion-icon> <span>Gerar Noticias</span>';
+        btn.innerHTML = '<ion-icon name="flash-outline"></ion-icon> <span>Gerar Notícias</span>';
       }
     }
 

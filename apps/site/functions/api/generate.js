@@ -1,6 +1,3 @@
-﻿// Cloudflare Pages Function para o Gerador de Boletins (NewsMaker)
-// Respondendo em: /api/generate
-
 export async function onRequestGet(context) {
   const { request, env } = context;
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
@@ -74,7 +71,7 @@ Receba o texto da noticia e reescreva para radio.
 
 2. TAMANHO E METRICA:
 O texto final de cada noticia deve ter meta de 95 palavras.
-Margem estrita: nunca menos de 80 palavras e nunca mais de 110 palavras.
+Margem estrita: nunca menos de 80 palavras e nunca mais de 110 palavras (exceto quando a entrada for um marcador de sem noticia).
 
 3. TOTAL INDEPENDENCIA:
 As notas nao serao necessariamente lidas em sequencia.
@@ -109,7 +106,7 @@ Evite expressoes como "ultima segunda-feira" quando o texto traz o dia do mes e 
 Ignore marcadores relativos do site, como "atualizado ha 8 horas", se eles conflitarem com a DATA DE EXIBICAO.
 
 7. FORMATO DE SAIDA OBRIGATORIO:
-Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
+Retorne APENAS JSON valido no formato:
 {
   "NACIONAL": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" },
   "ITAPEVA": { "1": "Noticia 1", "2": "Noticia 2", "3": "Noticia 3" },
@@ -117,8 +114,11 @@ Retorne APENAS JSON valido, sem markdown e sem texto extra, no formato:
 }
 
 8. LOCALIZACAO:
-Matérias que mencionem locais, quando o local for "interior de São Paulo", cite o nome do local no lugar de "interior de São Paulo" e não adicionem menção ao interior de são Paulo. 
+Matérias que mencionem locais, quando o local for "interior de São Paulo", cite o nome do local no lugar de "interior de São Paulo" e não adicione menção ao interior de São Paulo.
 Exemplo: no lugar de "isso aconteceu em Tiete, interior de São Paulo", coloque apenas: "isso aconteceu em Tiete".
+
+9. MARCADORES DE SEM NOTÍCIA:
+Se a entrada de qualquer notícia for apenas um marcador como "SEM NOTICIA", "SEM NOTÍCIA", "N/A" ou texto equivalente indicando falta de matéria, retorne exatamente "SEM NOTÍCIA" para aquele item, sem inventar fatos fictícios e sem aplicar a meta de 95 palavras.
 
 Mantenha fidelidade aos fatos.
 Nao invente dados e nao adicione contexto externo nao presente na entrada.`;
@@ -153,7 +153,6 @@ function countWords(text) {
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
-
 function getGeminiModel(env) {
   const model = String(env.GEMINI_MODEL || '').trim();
   return model || 'gemini-2.5-flash-lite';
@@ -168,11 +167,11 @@ async function generateNotes(sections, apiKey, instructions, targetDate, model) 
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const parsed = await callGemini(apiKey, model, instructions, buildUserPrompt(sections, targetDate, retryInstruction));
+      const parsed = await callGeminiWithFallback(apiKey, model, instructions, buildUserPrompt(sections, targetDate, retryInstruction));
       return parseStructuredResponse(parsed, expectedCount);
     } catch (exc) {
       lastErrorMessage = exc.message;
-      retryInstruction = 'Sua resposta anterior nao seguiu o JSON/schema exigido. Corrija para objeto com NACIONAL, ITAPEVA e ITAPETININGA.';
+      retryInstruction = 'Sua resposta anterior nao seguiu o JSON/schema exigido. Corrija para objeto JSON com chaves NACIONAL, ITAPEVA e ITAPETININGA, cada qual contendo chaves "1", "2", "3".';
     }
   }
 
@@ -238,7 +237,38 @@ function buildUserPrompt(parsedInputs, targetDate, retryInstruction = '') {
   return `${retryBlock}\n${temporalContext}\n\nANTES DE RESPONDER: revise cada uso de "hoje", "ontem", "amanha", "nesta", "ultima" e similares contra a DATA DE EXIBICAO.\n\nENTRADAS JSON:\n${JSON.stringify(inputPayload, null, 2)}\n\nRETORNE APENAS JSON.`;
 }
 
-async function callGemini(apiKey, model, systemPrompt, userPrompt) {
+async function callGeminiWithFallback(apiKey, preferredModel, systemPrompt, userPrompt) {
+  const candidateModels = [
+    preferredModel,
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash'
+  ].filter((v, i, a) => v && a.indexOf(v) === i);
+
+  let lastError = null;
+
+  for (const model of candidateModels) {
+    try {
+      return await callGeminiSingle(apiKey, model, systemPrompt, userPrompt);
+    } catch (err) {
+      lastError = err;
+      const isRecoverable = err.message.includes('(404)') || 
+                            err.message.includes('(400)') || 
+                            err.message.includes('(503)') || 
+                            err.message.includes('not found') ||
+                            err.message.includes('unsupported');
+      if (isRecoverable) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError || new Error('Nenhum modelo Gemini respondeu.');
+}
+
+async function callGeminiSingle(apiKey, model, systemPrompt, userPrompt) {
   const encodedModel = encodeURIComponent(model);
   const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodedModel + ':generateContent?key=' + apiKey, {
     method: 'POST',
@@ -248,31 +278,73 @@ async function callGemini(apiKey, model, systemPrompt, userPrompt) {
       contents: [{ parts: [{ text: userPrompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            NACIONAL: {
+              type: 'OBJECT',
+              properties: {
+                '1': { type: 'STRING' },
+                '2': { type: 'STRING' },
+                '3': { type: 'STRING' }
+              },
+              required: ['1', '2', '3']
+            },
+            ITAPEVA: {
+              type: 'OBJECT',
+              properties: {
+                '1': { type: 'STRING' },
+                '2': { type: 'STRING' },
+                '3': { type: 'STRING' }
+              },
+              required: ['1', '2', '3']
+            },
+            ITAPETININGA: {
+              type: 'OBJECT',
+              properties: {
+                '1': { type: 'STRING' },
+                '2': { type: 'STRING' },
+                '3': { type: 'STRING' }
+              },
+              required: ['1', '2', '3']
+            }
+          },
+          required: ['NACIONAL', 'ITAPEVA', 'ITAPETININGA']
+        },
         temperature: 0.4,
         topP: 0.95,
-        maxOutputTokens: 8192, // Aumentado significativamente
+        maxOutputTokens: 8192
       }
     })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+    throw new Error(`Gemini API error [${model}] (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
   const candidate = data.candidates?.[0];
-  let text = candidate?.content?.parts?.[0]?.text;
-  const reason = candidate?.finish_reason;
+  const parts = candidate?.content?.parts || [];
+  
+  // Extrai as partes que contêm o texto da resposta (filtrando pensamentos/raciocínio interno em modelos com thinking)
+  const nonThoughtParts = parts.filter(p => !p.thought && typeof p.text === 'string');
+  let text = nonThoughtParts.map(p => p.text).join('').trim();
 
-  if (!text) throw new Error(`Resposta vazia. Motivo da parada: ${reason}`);
+  if (!text) {
+    text = parts.map(p => p.text || '').join('').trim();
+  }
+
+  const reason = candidate?.finishReason || candidate?.finish_reason;
+  if (!text) throw new Error(`Resposta vazia do Gemini. Motivo da parada: ${reason || 'desconhecido'}`);
 
   function parseRobustJSON(str) {
-    // Normalização de caracteres
     let cleaned = str.trim()
       .replace(/[\u201c\u201d]/g, '"')
       .replace(/[\u2018\u2019]/g, "'")
       .replace(/\r/g, "");
+
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
@@ -287,22 +359,19 @@ async function callGemini(apiKey, model, systemPrompt, userPrompt) {
       return JSON.parse(cleaned);
     } catch (e) {
       try {
-        const escaped = cleaned.replace(/\n/g, "\\n");
+        const escaped = cleaned.replace(/(?<!\\)\n/g, '\\n');
         return JSON.parse(escaped);
       } catch (e2) {
-        throw new Error(`JSON incompleto ou malformado. Motivo parada: ${reason}. Detalhe: ${e.message}. Texto: ${cleaned}`);
+        throw new Error(`JSON malformado do Gemini. Detalhe: ${e.message}. Texto retornado: ${cleaned.slice(0, 300)}`);
       }
     }
   }
 
-  try {
-    return parseRobustJSON(text);
-  } catch (err) {
-    throw new Error(`Falha no processamento. ${err.message}`);
-  }
+  return parseRobustJSON(text);
 }
 
 function getCaseInsensitiveKey(obj, targetKey) {
+  if (!obj || typeof obj !== 'object') return null;
   const target = targetKey.toUpperCase();
   for (const [key, value] of Object.entries(obj)) {
     if (key.toUpperCase() === target) return value;
@@ -317,18 +386,37 @@ function parseStructuredResponse(payload, expectedCount = 3) {
 
   const parsed = {};
   for (const [sectionKey, sectionName] of Object.entries(SECTION_LABELS)) {
-    const sectionObj = getCaseInsensitiveKey(payload, sectionName);
+    let sectionObj = getCaseInsensitiveKey(payload, sectionName);
+    if (!sectionObj) {
+      sectionObj = payload[sectionKey] || payload[sectionKey.toLowerCase()];
+    }
+
     if (!sectionObj || typeof sectionObj !== 'object') {
-      throw new Error(`Secao ${sectionName} ausente ou invalida.`);
+      throw new Error(`Secao ${sectionName} ausente ou invalida no retorno do Gemini.`);
     }
 
     const notes = [];
     for (let index = 1; index <= expectedCount; index++) {
-      const value = sectionObj[String(index)] || sectionObj[index];
+      let value;
+      if (Array.isArray(sectionObj)) {
+        value = sectionObj[index - 1];
+      } else {
+        value = sectionObj[String(index)] ?? sectionObj[index];
+      }
+
+      if (typeof value === 'object' && value !== null) {
+        value = value.text || value.noticia || value.conteudo || value.nota || JSON.stringify(value);
+      }
+
       if (typeof value !== 'string') {
         throw new Error(`Secao ${sectionName} item ${index} ausente ou invalido.`);
       }
-      notes.push({ title: `${sectionName} ${index}`, text: value, word_count: countWords(value) });
+
+      notes.push({
+        title: `${sectionName} ${index}`,
+        text: value.trim(),
+        word_count: countWords(value)
+      });
     }
     parsed[sectionKey] = notes;
   }
