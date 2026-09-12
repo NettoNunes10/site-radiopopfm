@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/rede/admin.css?v=20260912_contratos_v2">
   <style id="contracts-custom-styles">
     /* ==========================================================================
-       CONTRATOS POP FM - STYLES & PRINT / PDF
+       CONTRATOS POP FM - STYLES & PRINT / PDF - HIGH FIDELITY CORPORATE REDESIGN
        ========================================================================== */
     .contracts-toolbar {
       display: flex;
@@ -201,7 +201,7 @@
       color: #6b21a8;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin: 20px 0 10px 0;
+      margin: 18px 0 10px 0;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -263,193 +263,213 @@
     }
 
     /* -------------------------------------------------------------
-       POP FM OFFICIAL CONTRACT A4 TEMPLATE
+       POP FM OFFICIAL CONTRACT A4 TEMPLATE - CORPORATE PRECISION
        ------------------------------------------------------------- */
     .contract-paper-wrapper {
-      background: #525659;
-      padding: 24px 12px;
+      background: #334155;
+      padding: 20px 10px;
       display: flex;
       justify-content: center;
       align-items: flex-start;
       overflow-y: auto;
-      max-height: calc(90vh - 120px);
+      max-height: calc(92vh - 80px);
     }
 
     .contract-paper {
       width: 210mm;
-      min-height: 297mm;
+      height: 295mm;
+      max-height: 295mm;
       background: white;
-      padding: 10mm 12mm 8mm 12mm;
+      padding: 6mm 8mm 6mm 8mm;
       box-sizing: border-box;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
       position: relative;
-      font-family: 'Inter', Arial, Helvetica, sans-serif;
-      color: #000;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
       display: flex;
       flex-direction: column;
+      overflow: hidden; /* STRICT SINGLE PAGE */
     }
 
     /* Outer Border Frame */
     .contract-frame {
-      border: 3.5px solid #290849;
-      border-radius: 16px;
-      padding: 8px 10px;
+      border: 2px solid #2e0854;
+      border-radius: 10px;
+      padding: 6px 8px;
       display: flex;
       flex-direction: column;
       flex: 1;
       background: #ffffff;
+      box-sizing: border-box;
+      overflow: hidden;
+      justify-content: space-between;
     }
 
-    /* Contract Header */
+    /* Compact Header */
     .contract-header {
-      background: linear-gradient(135deg, #1b0333 0%, #30085a 50%, #4c1186 100%);
-      border-radius: 12px;
-      padding: 10px 16px;
+      background: linear-gradient(135deg, #18032d 0%, #2e0854 60%, #46117d 100%);
+      border-radius: 6px;
+      padding: 5px 12px;
       color: white;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
       position: relative;
       overflow: hidden;
-    }
-
-    .contract-header::after {
-      content: '';
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 200px;
-      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
-      pointer-events: none;
     }
 
     .contract-header-logo-area {
       display: flex;
       align-items: center;
-      gap: 12px;
     }
 
     .contract-header-logo {
-      height: 52px;
+      height: 38px;
       object-fit: contain;
     }
 
     .contract-header-info {
       text-align: right;
-      font-size: 0.6875rem;
-      line-height: 1.35;
+      line-height: 1.25;
     }
 
     .contract-header-title {
       color: #facc15;
-      font-size: 1.35rem;
+      font-size: 1.1rem;
       font-weight: 900;
       letter-spacing: -0.02em;
-      margin-bottom: 2px;
       text-transform: uppercase;
+      margin-bottom: 1px;
     }
 
     .contract-header-sub {
       color: #ffffff;
-      font-weight: 700;
-      font-size: 0.72rem;
+      font-weight: 600;
+      font-size: 0.62rem;
+      letter-spacing: 0.01em;
     }
 
     .contract-header-socials {
       display: flex;
       justify-content: flex-end;
-      gap: 14px;
-      margin-top: 4px;
-      font-size: 0.6875rem;
+      gap: 10px;
+      margin-top: 3px;
+      font-size: 0.60rem;
       color: #e2e8f0;
     }
 
     .contract-header-socials span {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      background: rgba(255,255,255,0.12);
-      padding: 2px 8px;
+      gap: 3px;
+      background: rgba(255,255,255,0.15);
+      padding: 1px 6px;
       border-radius: 100px;
       font-weight: 500;
     }
 
-    /* Contract Title Pill */
+    /* Title Banner */
     .contract-title-banner {
       text-align: center;
-      margin: 6px 0 10px 0;
+      margin: 3px 0 5px 0;
     }
 
     .contract-title-banner h2 {
       display: inline-block;
-      font-size: 1.12rem;
+      font-size: 0.95rem;
       font-weight: 900;
-      color: #000;
+      color: #0f172a;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 2px solid #290849;
-      padding-bottom: 2px;
+      letter-spacing: 0.06em;
+      border-bottom: 2px solid #2e0854;
+      padding-bottom: 1px;
     }
 
-    /* Section Header Bar */
+    /* Section Header Capsule */
     .c-sec-header {
-      background: #2b084e;
+      background: #2e0854;
       color: white;
-      font-size: 0.75rem;
+      font-size: 0.66rem;
       font-weight: 800;
-      padding: 3px 12px;
-      border-radius: 12px;
+      padding: 2px 10px;
+      border-radius: 4px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       display: inline-block;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
-    /* Field Containers */
+    /* Professional Structured Box */
     .c-box {
-      background: #fdfefe;
-      border: 1px solid #2b084e;
-      border-radius: 8px;
-      padding: 6px 10px;
-      margin-bottom: 8px;
+      background: #ffffff;
+      border: 1px solid #2e0854;
+      border-radius: 6px;
+      padding: 5px 8px;
     }
 
-    .c-field-row {
+    .c-table-box {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .c-row {
       display: flex;
       align-items: baseline;
-      flex-wrap: wrap;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 3px 0;
-      font-size: 0.75rem;
+      gap: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 2px;
     }
 
-    .c-field-row:last-child {
+    .c-row:last-child {
       border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .c-col {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .c-label {
       font-weight: 800;
-      color: #000;
+      color: #475569;
       text-transform: uppercase;
-      margin-right: 6px;
-      font-size: 0.72rem;
+      font-size: 0.63rem;
       white-space: nowrap;
     }
 
     .c-val {
-      color: #1e3a8a;
-      font-weight: 700;
-      font-size: 0.78rem;
-      flex: 1;
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 0.70rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
+    .c-val-strong {
+      color: #1e1b4b;
+      font-weight: 800;
+      font-size: 0.72rem;
+      font-family: monospace;
+    }
+
+    .c-val-highlight {
+      color: #1e1b4b;
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+
+    /* Split 2-Cols */
     .c-split-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      margin-bottom: 8px;
+      margin: 4px 0;
     }
 
     /* Valor Box */
@@ -457,64 +477,99 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
-      padding: 4px 10px;
+      text-align: center;
+      padding: 2px 0;
     }
 
-    /* Signatures */
+    .c-valor-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .c-valor-amount {
+      font-size: 0.88rem;
+      font-weight: 900;
+      color: #1e1b4b;
+    }
+
+    /* Local e Data */
     .c-date-line {
       text-align: center;
-      font-size: 0.8rem;
+      font-size: 0.74rem;
       font-weight: 700;
-      margin: 10px 0 16px 0;
-      color: #000;
+      margin: 3px 0 5px 0;
+      color: #1e293b;
     }
 
-    .c-signatures {
+    /* Signatures - With Generous 55px Signature Space Above Line */
+    .c-signatures-wrapper {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 32px;
-      margin-bottom: 12px;
+      gap: 36px;
+      margin: 2px 0 6px 0;
       padding: 0 16px;
     }
 
     .c-sign-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
     }
 
+    .c-sign-space {
+      height: 52px; /* Espaço para assinar livremente acima da linha */
+      width: 100%;
+    }
+
     .c-sign-line {
-      border-top: 1.5px solid #000;
-      margin-bottom: 4px;
-      padding-top: 4px;
-      font-size: 0.72rem;
+      width: 100%;
+      border-top: 1.5px solid #0f172a;
+      margin-bottom: 3px;
+    }
+
+    .c-sign-title {
+      font-size: 0.67rem;
       font-weight: 800;
-      color: #000;
+      color: #0f172a;
       text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .c-sign-subtitle {
+      font-size: 0.60rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-top: 1px;
     }
 
     /* Clauses in Footer */
     .c-clauses-box {
-      border-top: 1px solid #2b084e;
-      padding-top: 6px;
-      font-size: 0.53rem;
+      border-top: 1.5px solid #2e0854;
+      padding-top: 3px;
+      font-size: 0.51rem;
       line-height: 1.25;
-      color: #111;
+      color: #1e293b;
       text-align: justify;
     }
 
     .c-clauses-intro {
       font-weight: 700;
       font-style: italic;
-      margin-bottom: 4px;
-      font-size: 0.55rem;
+      margin-bottom: 2px;
+      font-size: 0.52rem;
+      color: #0f172a;
     }
 
     .c-clause-item {
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .c-clause-item strong {
-      font-weight: 900;
-      color: #000;
+      font-weight: 800;
+      color: #0f172a;
     }
 
     /* Print Rules */
@@ -546,9 +601,12 @@
 
       .contract-paper {
         box-shadow: none !important;
-        padding: 8mm !important;
+        padding: 6mm 8mm !important;
         width: 210mm !important;
-        min-height: 297mm !important;
+        height: 295mm !important;
+        max-height: 295mm !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
       }
 
       @page {
@@ -3315,23 +3373,39 @@
     }
 
     function renderContractPreview(c) {
-      document.getElementById('pv_companyName').textContent = c.companyName || '_________________________________';
-      document.getElementById('pv_document').textContent = c.document || '________________________';
-      document.getElementById('pv_address').textContent = c.address || '___________________________';
-      document.getElementById('pv_number').textContent = c.addressNumber || '____';
-      document.getElementById('pv_complement').textContent = c.complement || '';
-      document.getElementById('pv_neighborhood').textContent = c.neighborhood || '______________';
-      document.getElementById('pv_city').textContent = c.city || '______________';
-      document.getElementById('pv_uf').textContent = c.uf || 'SP';
-      document.getElementById('pv_cep').textContent = c.cep || '________-___';
-      document.getElementById('pv_email').textContent = c.email || '________________________';
-      document.getElementById('pv_phone').textContent = c.phone || '________________________';
+      const cleanDoc = (c.document || '').trim();
+      const cleanPhone = (c.phone || '').trim();
+      const cleanEmail = (c.email || '').trim();
+      
+      document.getElementById('pv_companyName').textContent = c.companyName || 'NÃO INFORMADO';
+      document.getElementById('pv_document').textContent = cleanDoc || 'NÃO INFORMADO';
+      
+      // Endereço completo formatado e estruturado
+      const addrParts = [];
+      if (c.address) {
+        let st = c.address;
+        if (c.addressNumber) st += ', ' + c.addressNumber;
+        if (c.complement) st += ' (' + c.complement + ')';
+        addrParts.push(st);
+      }
+      if (c.neighborhood) addrParts.push(c.neighborhood);
+      if (c.cep) addrParts.push('CEP: ' + c.cep);
+      const fullAddress = addrParts.length > 0 ? addrParts.join(' - ') : 'Não informado';
+      const cityUf = [c.city, c.uf || 'SP'].filter(Boolean).join(' / ') || 'Não informado';
+
+      const elAddr = document.getElementById('pv_address_display');
+      if (elAddr) elAddr.textContent = fullAddress;
+      const elCityUf = document.getElementById('pv_city_uf_display');
+      if (elCityUf) elCityUf.textContent = cityUf;
+
+      document.getElementById('pv_email').textContent = cleanEmail || 'Não informado';
+      document.getElementById('pv_phone').textContent = cleanPhone || 'Não informado';
       
       document.getElementById('pv_serviceDescription').textContent = c.serviceDescription || '44 inserções de spots a serem distribuídos em horário comercial de segunda à sexta.';
       
-      document.getElementById('pv_dateStart').textContent = c.dateStart ? formatDateBR(c.dateStart) : '__/__/____';
-      document.getElementById('pv_dateEnd').textContent = c.dateEnd ? formatDateBR(c.dateEnd) : '__/__/____';
-      document.getElementById('pv_duration').textContent = c.duration || '';
+      document.getElementById('pv_dateStart').textContent = c.dateStart ? formatDateBR(c.dateStart) : '-';
+      document.getElementById('pv_dateEnd').textContent = c.dateEnd ? formatDateBR(c.dateEnd) : '-';
+      document.getElementById('pv_duration').textContent = c.duration || '1 MÊS';
       document.getElementById('pv_paymentMethod').textContent = c.paymentMethod || 'BOLETO OU PIX';
       
       document.getElementById('pv_obs').textContent = c.obs || 'Nenhuma observação informada.';
@@ -3343,6 +3417,11 @@
       document.getElementById('pv_issueDay').textContent = c.issueDay || String(new Date().getDate());
       document.getElementById('pv_issueMonth').textContent = c.issueMonth || MONTH_NAMES[new Date().getMonth()];
       document.getElementById('pv_issueYear').textContent = c.issueYear || String(new Date().getFullYear()).slice(-2);
+
+      const elSignCompany = document.getElementById('pv_sign_company');
+      if (elSignCompany) {
+        elSignCompany.textContent = (c.companyName || 'CONTRATANTE') + (cleanDoc ? ' — ' + cleanDoc : '');
+      }
     }
 
     function editCurrentPreviewContract() {
@@ -3358,9 +3437,9 @@
         return;
       }
       const element = document.getElementById('contractA4Paper');
-      const clientName = (currentContractData?.companyName || 'Contrato').replace(/[^a-zA-Z0-9]/g, '_');
+      const clientName = (currentContractData?.companyName || 'Contrato').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
       
-      showToast('Gerando PDF de alta qualidade...', 'success');
+      showToast('Gerando PDF em página única...', 'success');
       
       const opt = {
         margin: [0, 0, 0, 0],
@@ -3370,13 +3449,15 @@
           scale: 2,
           useCORS: true,
           letterRendering: true,
-          logging: false
+          logging: false,
+          scrollY: 0
         },
         jsPDF: {
           unit: 'mm',
           format: 'a4',
           orientation: 'portrait'
-        }
+        },
+        pagebreak: { mode: ['avoid-all'] }
       };
 
       html2pdf().set(opt).from(element).save().then(() => {
@@ -4087,18 +4168,13 @@
             <div class="contract-header">
               <div class="contract-header-logo-area">
                 <img src="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png/v1/fill/w_260,h_194,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/POP%20FM%201075.png" alt="POP FM 107,9" class="contract-header-logo">
-                <div id="popSvgLogoFallback" style="display: none; align-items: center;">
-                  <div style="background: #facc15; color: #1e0836; font-weight: 900; font-size: 1.5rem; padding: 2px 10px; border-radius: 8px; border: 2px solid #000; letter-spacing: -0.05em;">POP</div>
-                </div>
               </div>
               <div class="contract-header-info">
                 <div class="contract-header-title">RÁDIO POP FM 107,9</div>
-                <div class="contract-header-sub">CNPJ 49.522.587/0001-98</div>
-                <div class="contract-header-sub" style="font-size: 0.65rem;">RUA JOÃO OSVALDO LEIVA, 459 - NOVO CENTRO - TAQUARITUBA/SP</div>
+                <div class="contract-header-sub">CNPJ 49.522.587/0001-98 • RUA JOÃO OSVALDO LEIVA, 459 - NOVO CENTRO - TAQUARITUBA/SP</div>
                 <div class="contract-header-socials">
-                  <span><ion-icon name="logo-facebook"></ion-icon> popfmbrasil</span>
-                  <span><ion-icon name="globe-outline"></ion-icon> popfmbrasil.com</span>
-                  <span><ion-icon name="logo-instagram"></ion-icon> @popfmbrasil</span>
+                  <span>popfmbrasil.com</span>
+                  <span>@popfmbrasil</span>
                 </div>
               </div>
             </div>
@@ -4110,49 +4186,47 @@
 
             <!-- Bloco CONTRATANTE -->
             <div>
-              <span class="c-sec-header">CONTRATANTE:</span>
-              <div class="c-box">
-                <div class="c-field-row">
-                  <span class="c-label">RAZÃO SOCIAL/NOME COMPLETO:</span>
-                  <span id="pv_companyName" class="c-val"></span>
+              <span class="c-sec-header">CONTRATANTE</span>
+              <div class="c-box c-table-box">
+                <div class="c-row">
+                  <div class="c-col" style="flex: 2.2;">
+                    <span class="c-label">RAZÃO SOCIAL / NOME:</span>
+                    <span id="pv_companyName" class="c-val-highlight"></span>
+                  </div>
+                  <div class="c-col" style="flex: 1.1;">
+                    <span class="c-label">CNPJ / CPF:</span>
+                    <span id="pv_document" class="c-val-strong"></span>
+                  </div>
                 </div>
-                <div class="c-field-row">
-                  <span class="c-label">CNPJ/CPF:</span>
-                  <span id="pv_document" class="c-val"></span>
+                <div class="c-row">
+                  <div class="c-col" style="flex: 2.2;">
+                    <span class="c-label">ENDEREÇO:</span>
+                    <span id="pv_address_display" class="c-val"></span>
+                  </div>
+                  <div class="c-col" style="flex: 1.1;">
+                    <span class="c-label">CIDADE / UF:</span>
+                    <span id="pv_city_uf_display" class="c-val"></span>
+                  </div>
                 </div>
-                <div class="c-field-row">
-                  <span class="c-label">ENDEREÇO:</span>
-                  <span id="pv_address" class="c-val" style="margin-right: 12px;"></span>
-                  <span class="c-label">Nº:</span>
-                  <span id="pv_number" class="c-val" style="max-width: 60px; margin-right: 12px;"></span>
-                  <span class="c-label">COMPLEMENTO:</span>
-                  <span id="pv_complement" class="c-val"></span>
-                </div>
-                <div class="c-field-row">
-                  <span class="c-label">BAIRRO:</span>
-                  <span id="pv_neighborhood" class="c-val" style="margin-right: 12px;"></span>
-                  <span class="c-label">CIDADE:</span>
-                  <span id="pv_city" class="c-val" style="margin-right: 12px;"></span>
-                  <span class="c-label">UF:</span>
-                  <span id="pv_uf" class="c-val" style="max-width: 30px; margin-right: 12px;"></span>
-                  <span class="c-label">CEP:</span>
-                  <span id="pv_cep" class="c-val"></span>
-                </div>
-                <div class="c-field-row">
-                  <span class="c-label">CONTATO/ E-mail:</span>
-                  <span id="pv_email" class="c-val" style="margin-right: 16px;"></span>
-                  <span class="c-label">FONE:</span>
-                  <span id="pv_phone" class="c-val"></span>
+                <div class="c-row">
+                  <div class="c-col" style="flex: 1.5;">
+                    <span class="c-label">CONTATO / E-MAIL:</span>
+                    <span id="pv_email" class="c-val"></span>
+                  </div>
+                  <div class="c-col" style="flex: 1;">
+                    <span class="c-label">FONE / WHATSAPP:</span>
+                    <span id="pv_phone" class="c-val"></span>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- Bloco DESCRIÇÃO DO SERVIÇO -->
             <div>
-              <span class="c-sec-header">DESCRIÇÃO DO SERVIÇO:</span>
+              <span class="c-sec-header">DESCRIÇÃO DO SERVIÇO</span>
               <div class="c-box">
-                <div style="font-size: 0.77rem; line-height: 1.45; color: #000;">
-                  O presente contrato refere-se à veiculação <span id="pv_serviceDescription" style="color: #1e3a8a; font-weight: 700; text-decoration: underline;"></span>
+                <div style="font-size: 0.72rem; line-height: 1.35; color: #0f172a;">
+                  O presente contrato refere-se à veiculação: <span id="pv_serviceDescription" style="color: #1e1b4b; font-weight: 700;"></span>
                 </div>
               </div>
             </div>
@@ -4160,37 +4234,37 @@
             <!-- Bloco Split: PERÍODO DE VEICULAÇÃO & FORMA DE PAGAMENTO -->
             <div class="c-split-row">
               <div>
-                <span class="c-sec-header">PERÍODO DE VEICULAÇÃO:</span>
-                <div class="c-box" style="position: relative; min-height: 74px; display: flex; flex-direction: column; justify-content: center;">
-                  <div class="c-field-row">
-                    <span class="c-label">INÍCIO:</span>
-                    <span id="pv_dateStart" class="c-val"></span>
-                  </div>
-                  <div class="c-field-row">
-                    <span class="c-label">TÉRMINO:</span>
-                    <span id="pv_dateEnd" class="c-val"></span>
-                  </div>
-                  <div id="pv_duration" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-weight: 900; font-size: 0.92rem; color: #1e3a8a; letter-spacing: 0.05em;">
-                    1 MÊS
+                <span class="c-sec-header">PERÍODO DE VEICULAÇÃO</span>
+                <div class="c-box c-table-box" style="min-height: 46px; justify-content: center;">
+                  <div class="c-row" style="border-bottom: none;">
+                    <div class="c-col" style="flex: 1;">
+                      <span class="c-label">INÍCIO:</span>
+                      <span id="pv_dateStart" class="c-val-strong"></span>
+                    </div>
+                    <div class="c-col" style="flex: 1;">
+                      <span class="c-label">TÉRMINO:</span>
+                      <span id="pv_dateEnd" class="c-val-strong"></span>
+                    </div>
+                    <div class="c-col" style="flex: 0.8; justify-content: flex-end;">
+                      <span id="pv_duration" style="font-weight: 900; font-size: 0.75rem; color: #1e1b4b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #cbd5e1;"></span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <span class="c-sec-header">FORMA DE PAGAMENTO:</span>
-                <div class="c-box" style="display: flex; align-items: center; justify-content: center; min-height: 74px;">
-                  <div id="pv_paymentMethod" style="font-weight: 900; color: #1e3a8a; font-size: 0.88rem; text-align: center; text-transform: uppercase;">
-                    BOLETO OU PIX
-                  </div>
+                <span class="c-sec-header">FORMA DE PAGAMENTO</span>
+                <div class="c-box" style="display: flex; align-items: center; justify-content: center; min-height: 46px;">
+                  <div id="pv_paymentMethod" style="font-weight: 900; color: #1e1b4b; font-size: 0.82rem; text-align: center; text-transform: uppercase; letter-spacing: 0.03em;"></div>
                 </div>
               </div>
             </div>
 
             <!-- Bloco OBSERVAÇÕES -->
             <div>
-              <span class="c-sec-header">OBSERVAÇÕES:</span>
-              <div class="c-box" style="min-height: 48px;">
-                <div id="pv_obs" style="font-size: 0.77rem; color: #1e3a8a; font-weight: 700; line-height: 1.4;"></div>
+              <span class="c-sec-header">OBSERVAÇÕES</span>
+              <div class="c-box" style="min-height: 36px;">
+                <div id="pv_obs" style="font-size: 0.70rem; color: #1e1b4b; font-weight: 600; line-height: 1.3;"></div>
               </div>
             </div>
 
@@ -4199,13 +4273,13 @@
               <span class="c-sec-header">VALOR DO CONTRATO</span>
               <div class="c-box">
                 <div class="c-valor-grid">
-                  <div>
-                    <span class="c-label">MENSAL: R$</span>
-                    <span id="pv_valMonthly" style="color: #1e3a8a; font-weight: 900; font-size: 0.88rem; text-decoration: underline;">936,00</span>
+                  <div class="c-valor-item">
+                    <span class="c-label" style="font-size: 0.70rem;">VALOR MENSAL:</span>
+                    <span class="c-valor-amount">R$ <span id="pv_valMonthly">0,00</span></span>
                   </div>
-                  <div>
-                    <span class="c-label">TOTAL: R$</span>
-                    <span id="pv_valTotal" style="color: #1e3a8a; font-weight: 900; font-size: 0.88rem; text-decoration: underline;">936,00</span>
+                  <div class="c-valor-item">
+                    <span class="c-label" style="font-size: 0.70rem;">VALOR TOTAL:</span>
+                    <span class="c-valor-amount">R$ <span id="pv_valTotal">0,00</span></span>
                   </div>
                 </div>
               </div>
@@ -4213,16 +4287,22 @@
 
             <!-- Local e Data -->
             <div class="c-date-line">
-              <span id="pv_issueCity">Taquarituba</span>, <span id="pv_issueDay" style="text-decoration: underline; padding: 0 4px;">11</span> de <span id="pv_issueMonth" style="text-decoration: underline; padding: 0 8px;">setembro</span> de 20<span id="pv_issueYear" style="text-decoration: underline; padding: 0 4px;">26</span>
+              <span id="pv_issueCity">Taquarituba</span>, <span id="pv_issueDay"></span> de <span id="pv_issueMonth"></span> de 20<span id="pv_issueYear"></span>.
             </div>
 
-            <!-- Assinaturas -->
-            <div class="c-signatures">
+            <!-- Assinaturas com espaço de 52px acima da linha para assinar -->
+            <div class="c-signatures-wrapper">
               <div class="c-sign-box">
-                <div class="c-sign-line">ASSINATURA CONTRATANTE</div>
+                <div class="c-sign-space"></div>
+                <div class="c-sign-line"></div>
+                <div class="c-sign-title">ASSINATURA CONTRATANTE</div>
+                <div id="pv_sign_company" class="c-sign-subtitle"></div>
               </div>
               <div class="c-sign-box">
-                <div class="c-sign-line">ASSINATURA CONTRATADO</div>
+                <div class="c-sign-space"></div>
+                <div class="c-sign-line"></div>
+                <div class="c-sign-title">ASSINATURA CONTRATADO</div>
+                <div class="c-sign-subtitle">RÁDIO POP FM 107,9 — CNPJ 49.522.587/0001-98</div>
               </div>
             </div>
 
