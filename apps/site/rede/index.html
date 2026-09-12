@@ -11,7 +11,552 @@
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <link rel="stylesheet" href="/rede/admin.css">
+  <link rel="stylesheet" href="/rede/admin.css?v=20260912_contratos_v2">
+  <style id="contracts-custom-styles">
+    /* ==========================================================================
+       CONTRATOS POP FM - STYLES & PRINT / PDF
+       ========================================================================== */
+    .contracts-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .contracts-filters {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .filter-btn.active {
+      background: #7c3aed;
+      color: white;
+      box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+    }
+
+    .contracts-search {
+      position: relative;
+      min-width: 280px;
+    }
+
+    .contracts-search input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      outline: none;
+      background: white;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+
+    .contracts-search input:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .contracts-search ion-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    .contracts-table-card {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    .contracts-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .contracts-table th {
+      background: #f8fafc;
+      padding: 14px 18px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .contracts-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.875rem;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    .contracts-table tr:hover {
+      background-color: #fcfaff;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-tag.active {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    .status-tag.archived {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .table-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 18px;
+    }
+
+    .action-btn:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .action-btn.pdf:hover {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #2563eb;
+    }
+
+    .action-btn.edit:hover {
+      background: #f5f3ff;
+      border-color: #8b5cf6;
+      color: #7c3aed;
+    }
+
+    .action-btn.delete:hover {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #dc2626;
+    }
+
+    /* Modal Form Styles */
+    .form-section-title {
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: #6b21a8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 20px 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #f3e8ff;
+      padding-bottom: 6px;
+    }
+
+    .form-section-title:first-of-type {
+      margin-top: 0;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid-4 {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid-2, .form-grid-3, .form-grid-4 {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    .contract-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      background: #f8fafc;
+      transition: all 0.2s;
+      color: #1e293b;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    .contract-input:focus {
+      background: white;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    }
+
+    textarea.contract-input {
+      min-height: 70px;
+      line-height: 1.45;
+    }
+
+    /* -------------------------------------------------------------
+       POP FM OFFICIAL CONTRACT A4 TEMPLATE
+       ------------------------------------------------------------- */
+    .contract-paper-wrapper {
+      background: #525659;
+      padding: 24px 12px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-y: auto;
+      max-height: calc(90vh - 120px);
+    }
+
+    .contract-paper {
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      padding: 10mm 12mm 8mm 12mm;
+      box-sizing: border-box;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      position: relative;
+      font-family: 'Inter', Arial, Helvetica, sans-serif;
+      color: #000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Outer Border Frame */
+    .contract-frame {
+      border: 3.5px solid #290849;
+      border-radius: 16px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      background: #ffffff;
+    }
+
+    /* Contract Header */
+    .contract-header {
+      background: linear-gradient(135deg, #1b0333 0%, #30085a 50%, #4c1186 100%);
+      border-radius: 12px;
+      padding: 10px 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contract-header::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 200px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .contract-header-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .contract-header-logo {
+      height: 52px;
+      object-fit: contain;
+    }
+
+    .contract-header-info {
+      text-align: right;
+      font-size: 0.6875rem;
+      line-height: 1.35;
+    }
+
+    .contract-header-title {
+      color: #facc15;
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .contract-header-sub {
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.72rem;
+    }
+
+    .contract-header-socials {
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+      margin-top: 4px;
+      font-size: 0.6875rem;
+      color: #e2e8f0;
+    }
+
+    .contract-header-socials span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255,255,255,0.12);
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-weight: 500;
+    }
+
+    /* Contract Title Pill */
+    .contract-title-banner {
+      text-align: center;
+      margin: 6px 0 10px 0;
+    }
+
+    .contract-title-banner h2 {
+      display: inline-block;
+      font-size: 1.12rem;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 2px solid #290849;
+      padding-bottom: 2px;
+    }
+
+    /* Section Header Bar */
+    .c-sec-header {
+      background: #2b084e;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    /* Field Containers */
+    .c-box {
+      background: #fdfefe;
+      border: 1px solid #2b084e;
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+    }
+
+    .c-field-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 3px 0;
+      font-size: 0.75rem;
+    }
+
+    .c-field-row:last-child {
+      border-bottom: none;
+    }
+
+    .c-label {
+      font-weight: 800;
+      color: #000;
+      text-transform: uppercase;
+      margin-right: 6px;
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .c-val {
+      color: #1e3a8a;
+      font-weight: 700;
+      font-size: 0.78rem;
+      flex: 1;
+    }
+
+    .c-split-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* Valor Box */
+    .c-valor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 4px 10px;
+    }
+
+    /* Signatures */
+    .c-date-line {
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin: 10px 0 16px 0;
+      color: #000;
+    }
+
+    .c-signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-bottom: 12px;
+      padding: 0 16px;
+    }
+
+    .c-sign-box {
+      text-align: center;
+    }
+
+    .c-sign-line {
+      border-top: 1.5px solid #000;
+      margin-bottom: 4px;
+      padding-top: 4px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #000;
+      text-transform: uppercase;
+    }
+
+    /* Clauses in Footer */
+    .c-clauses-box {
+      border-top: 1px solid #2b084e;
+      padding-top: 6px;
+      font-size: 0.53rem;
+      line-height: 1.25;
+      color: #111;
+      text-align: justify;
+    }
+
+    .c-clauses-intro {
+      font-weight: 700;
+      font-style: italic;
+      margin-bottom: 4px;
+      font-size: 0.55rem;
+    }
+
+    .c-clause-item {
+      margin-bottom: 3px;
+    }
+
+    .c-clause-item strong {
+      font-weight: 900;
+      color: #000;
+    }
+
+    /* Print Rules */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      
+      #contractPrintArea, #contractPrintArea * {
+        visibility: visible;
+      }
+
+      #contractPrintArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 210mm;
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+
+      .contract-paper-wrapper {
+        background: transparent !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        max-height: none !important;
+      }
+
+      .contract-paper {
+        box-shadow: none !important;
+        padding: 8mm !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+    }
+  </style>
   <script type="module" src="/rede/roteiro.js"></script>
 </head>
 <body>
@@ -2574,6 +3119,8 @@
       document.getElementById('c_issueYear').value = String(today.getFullYear()).slice(-2);
 
       openModal('contractEditorModal');
+      const mb1 = document.querySelector('#contractEditorModal .modal-body');
+      if (mb1) mb1.scrollTop = 0;
     }
 
     function editContract(id) {
@@ -2609,6 +3156,8 @@
       document.getElementById('c_issueYear').value = contract.issueYear || '';
 
       openModal('contractEditorModal');
+      const mb2 = document.querySelector('#contractEditorModal .modal-body');
+      if (mb2) mb2.scrollTop = 0;
     }
 
     async function saveContract() {
