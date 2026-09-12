@@ -37,10 +37,32 @@ export async function onRequest(context) {
     });
   }
 
-  // 3. POST: Archive or Restore
+  // 3. POST: Save (Create/Update), Archive or Restore
   if (method === "POST") {
     try {
-      const { action, id } = await request.json();
+      const body = await request.json();
+      const { action } = body;
+
+      if (action === "save") {
+        const contract = body.contract;
+        if (!contract) return new Response(JSON.stringify({ error: "Contract data required" }), { status: 400 });
+
+        let id = contract.id;
+        const now = new Date().toISOString();
+        if (!id) {
+          id = `contract:${Date.now()}`;
+          contract.id = id;
+          contract.submittedAt = now;
+        }
+        contract.updatedAt = now;
+
+        await kv.put(id, JSON.stringify(contract));
+        return new Response(JSON.stringify({ success: true, contract }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const { id } = body;
       if (!action || !id) return new Response(JSON.stringify({ error: "Action and ID required" }), { status: 400 });
 
       const data = await kv.get(id, "json");
@@ -62,7 +84,7 @@ export async function onRequest(context) {
         headers: { "Content-Type": "application/json" }
       });
     } catch (e) {
-      return new Response(JSON.stringify({ error: "Process error" }), { status: 500 });
+      return new Response(JSON.stringify({ error: "Process error: " + e.message }), { status: 500 });
     }
   }
 

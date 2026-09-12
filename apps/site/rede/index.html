@@ -10,6 +10,7 @@
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="/rede/admin.css">
   <script type="module" src="/rede/roteiro.js"></script>
 </head>
@@ -84,6 +85,12 @@
           <a class="nav-link" onclick="showTab('pop-generator')" id="nav-pop-generator">
             <ion-icon name="flash-outline"></ion-icon>
             <span>Gerador & Painel Pop</span>
+          </a>
+        </div>
+        <div class="nav-item">
+          <a class="nav-link" onclick="showTab('contracts')" id="nav-contracts">
+            <ion-icon name="document-text-outline"></ion-icon>
+            <span>Contratos</span>
           </a>
         </div>
 
@@ -420,6 +427,72 @@
           </div>
         </div>
 
+        <!-- Tab: Contracts / Contratos -->
+        <div id="tab-contracts" class="tab-content">
+          <div class="page-header">
+            <div>
+              <h2>Gestão de Contratos</h2>
+              <p style="color: var(--text-light); font-size: 0.875rem; margin-top: 4px;">Criação, armazenamento e emissão de contratos publicitários da Rádio POP FM</p>
+            </div>
+            <div class="editor-toolbar">
+              <button class="btn btn-primary" onclick="openNewContractModal()">
+                <ion-icon name="add-circle-outline"></ion-icon>
+                <span>Novo Contrato</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Toolbar: Filters & Search -->
+          <div class="contracts-toolbar">
+            <div class="contracts-filters">
+              <button class="filter-btn active" id="filterActiveBtn" onclick="filterContracts('active')">
+                <ion-icon name="document-text-outline"></ion-icon> Ativos (<span id="countActive">0</span>)
+              </button>
+              <button class="filter-btn" id="filterArchivedBtn" onclick="filterContracts('archived')">
+                <ion-icon name="archive-outline"></ion-icon> Arquivados (<span id="countArchived">0</span>)
+              </button>
+            </div>
+
+            <div class="contracts-search">
+              <ion-icon name="search-outline"></ion-icon>
+              <input type="text" id="contractSearchInput" placeholder="Buscar por cliente, CNPJ/CPF..." oninput="handleContractSearch()">
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="contracts-table-card">
+            <div style="overflow-x: auto;">
+              <table class="contracts-table" id="contractsTable">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Emissora</th>
+                    <th>Contratante</th>
+                    <th>CNPJ / CPF</th>
+                    <th>Período</th>
+                    <th>Valor Total</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="contractsTableBody">
+                  <!-- Linhas renderizadas via JS -->
+                </tbody>
+              </table>
+            </div>
+            <div id="contractsEmptyState" style="padding: 48px 24px; text-align: center; display: none;">
+              <ion-icon name="documents-outline" style="font-size: 48px; color: #cbd5e1; margin-bottom: 12px;"></ion-icon>
+              <h4 style="color: var(--text-main); font-weight: 700; margin-bottom: 4px;">Nenhum contrato encontrado</h4>
+              <p style="color: var(--text-light); font-size: 0.875rem; margin-bottom: 16px;">Clique no botão "Novo Contrato" para criar o primeiro contrato.</p>
+              <button class="btn btn-primary btn-sm" onclick="openNewContractModal()">+ Criar Contrato</button>
+            </div>
+            <div id="contractsLoadingState" style="padding: 48px 24px; text-align: center;">
+              <ion-icon name="sync-outline" style="font-size: 32px; color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 8px;"></ion-icon>
+              <p style="color: var(--text-light); font-size: 0.875rem;">Carregando contratos...</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -481,7 +554,7 @@
       const targetNav = document.getElementById('nav-' + tabId);
       if (targetNav) targetNav.classList.add('active');
 
-      if (tabId === 'pop-generator') {
+      if (tabId === 'pop-generator' || tabId === 'contracts') {
         document.body.setAttribute('data-theme', 'pop');
       } else {
         document.body.removeAttribute('data-theme');
@@ -494,6 +567,10 @@
       const backdrop = document.getElementById('sidebarBackdrop');
       if (sidebar) sidebar.classList.remove('open');
       if (backdrop) backdrop.classList.remove('show');
+
+      if (tabId === 'contracts') {
+        loadContracts();
+      }
     }
 
     function toggleSidebar() {
@@ -2318,6 +2395,467 @@
       } catch (e) { showToast('Erro ao salvar.', 'error'); }
     }
 
+    // =========================================================================
+    // --- GESTÃO DE CONTRATOS PUBLICITÁRIOS (POP FM) ---
+    // =========================================================================
+    let contractsList = [];
+    let currentContractFilter = 'active';
+    let currentContractData = null;
+
+    const MONTH_NAMES = [
+      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+    ];
+
+    async function loadContracts() {
+      const password = sessionStorage.getItem('newsmaker_password');
+      const tableBody = document.getElementById('contractsTableBody');
+      const emptyState = document.getElementById('contractsEmptyState');
+      const loadingState = document.getElementById('contractsLoadingState');
+
+      if (loadingState) loadingState.style.display = 'block';
+      if (emptyState) emptyState.style.display = 'none';
+      if (tableBody) tableBody.innerHTML = '';
+
+      try {
+        const [activeRes, archivedRes] = await Promise.all([
+          fetch('/api/contracts?status=active', { headers: { 'Authorization': `Bearer ${password}` } }),
+          fetch('/api/contracts?status=archived', { headers: { 'Authorization': `Bearer ${password}` } })
+        ]);
+
+        let activeContracts = activeRes.ok ? await activeRes.json() : [];
+        let archivedContracts = archivedRes.ok ? await archivedRes.json() : [];
+
+        activeContracts = activeContracts.map(c => ({ ...c, status: 'active' }));
+        archivedContracts = archivedContracts.map(c => ({ ...c, status: 'archived' }));
+
+        contractsList = [...activeContracts, ...archivedContracts];
+        localStorage.setItem('pop_contracts_cache', JSON.stringify(contractsList));
+      } catch (err) {
+        console.warn('Erro ao carregar contratos do servidor, buscando cache local:', err);
+        const cached = localStorage.getItem('pop_contracts_cache');
+        if (cached) {
+          try { contractsList = JSON.parse(cached); } catch(e) {}
+        }
+      } finally {
+        if (loadingState) loadingState.style.display = 'none';
+        updateContractCounts();
+        renderContractsTable();
+      }
+    }
+
+    function updateContractCounts() {
+      const activeCount = contractsList.filter(c => c.status !== 'archived').length;
+      const archivedCount = contractsList.filter(c => c.status === 'archived').length;
+      const countActEl = document.getElementById('countActive');
+      const countArcEl = document.getElementById('countArchived');
+      if (countActEl) countActEl.textContent = activeCount;
+      if (countArcEl) countArcEl.textContent = archivedCount;
+    }
+
+    function filterContracts(status) {
+      currentContractFilter = status;
+      const actBtn = document.getElementById('filterActiveBtn');
+      const arcBtn = document.getElementById('filterArchivedBtn');
+      if (actBtn) actBtn.classList.toggle('active', status === 'active');
+      if (arcBtn) arcBtn.classList.toggle('active', status === 'archived');
+      renderContractsTable();
+    }
+
+    function handleContractSearch() {
+      renderContractsTable();
+    }
+
+    function renderContractsTable() {
+      const tableBody = document.getElementById('contractsTableBody');
+      const emptyState = document.getElementById('contractsEmptyState');
+      if (!tableBody) return;
+
+      const searchInput = document.getElementById('contractSearchInput');
+      const search = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+      let filtered = contractsList.filter(c => {
+        if (currentContractFilter === 'active' && c.status === 'archived') return false;
+        if (currentContractFilter === 'archived' && c.status !== 'archived') return false;
+
+        if (search) {
+          const matchCompany = (c.companyName || '').toLowerCase().includes(search);
+          const matchDoc = (c.document || '').toLowerCase().includes(search);
+          const matchCity = (c.city || '').toLowerCase().includes(search);
+          if (!matchCompany && !matchDoc && !matchCity) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+      }
+
+      if (emptyState) emptyState.style.display = 'none';
+      tableBody.innerHTML = filtered.map(c => {
+        const dateStr = c.submittedAt ? new Date(c.submittedAt).toLocaleDateString('pt-BR') : '-';
+        const radioName = c.radio || 'POP FM 107,9';
+        const companyName = escapeHtml(c.companyName || 'Sem nome');
+        const doc = escapeHtml(c.document || '-');
+        const period = (c.dateStart && c.dateEnd) ? `${formatDateBR(c.dateStart)} a ${formatDateBR(c.dateEnd)}` : (c.duration || '-');
+        const totalVal = c.valTotal ? `R$ ${c.valTotal}` : '-';
+        const isArchived = c.status === 'archived';
+
+        return `
+          <tr>
+            <td style="white-space: nowrap; font-size: 0.8125rem; color: var(--text-light);">${dateStr}</td>
+            <td><span class="badge" style="background:#ede9fe; color:#7c3aed; font-weight:700;">${radioName}</span></td>
+            <td><strong>${companyName}</strong></td>
+            <td style="font-family: monospace; font-size: 0.8125rem;">${doc}</td>
+            <td style="font-size: 0.8125rem;">${period}</td>
+            <td style="font-weight: 700; color: #059669;">${totalVal}</td>
+            <td>
+              <span class="status-tag ${isArchived ? 'archived' : 'active'}">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: ${isArchived ? '#94a3b8' : '#10b981'};"></span>
+                ${isArchived ? 'Arquivado' : 'Ativo'}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <div class="table-actions" style="justify-content: flex-end;">
+                <button class="action-btn pdf" onclick="previewContract('${c.id}')" title="Visualizar / Exportar PDF">
+                  <ion-icon name="document-text-outline"></ion-icon>
+                </button>
+                <button class="action-btn edit" onclick="editContract('${c.id}')" title="Editar Contrato">
+                  <ion-icon name="create-outline"></ion-icon>
+                </button>
+                <button class="action-btn" onclick="toggleArchiveContract('${c.id}', '${c.status}')" title="${isArchived ? 'Restaurar' : 'Arquivar'}">
+                  <ion-icon name="${isArchived ? 'refresh-outline' : 'archive-outline'}"></ion-icon>
+                </button>
+                <button class="action-btn delete" onclick="deleteContract('${c.id}')" title="Excluir">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openNewContractModal() {
+      currentContractData = null;
+      document.getElementById('c_modalTitle').textContent = 'Novo Contrato Publicitário';
+      document.getElementById('c_id').value = '';
+      document.getElementById('c_radio').value = 'POP FM 107,9';
+      document.getElementById('c_companyName').value = '';
+      document.getElementById('c_document').value = '';
+      document.getElementById('c_address').value = '';
+      document.getElementById('c_number').value = '';
+      document.getElementById('c_complement').value = '';
+      document.getElementById('c_neighborhood').value = '';
+      document.getElementById('c_city').value = '';
+      document.getElementById('c_uf').value = 'SP';
+      document.getElementById('c_cep').value = '';
+      document.getElementById('c_email').value = '';
+      document.getElementById('c_phone').value = '';
+      document.getElementById('c_serviceDescription').value = '44 inserções de spots a serem distribuídos em horário comercial de segunda à sexta.';
+      
+      const today = new Date();
+      const nextMonth = new Date(today);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      
+      document.getElementById('c_dateStart').value = today.toISOString().split('T')[0];
+      document.getElementById('c_dateEnd').value = nextMonth.toISOString().split('T')[0];
+      document.getElementById('c_duration').value = '1 MÊS';
+      document.getElementById('c_paymentMethod').value = 'BOLETO OU PIX';
+      document.getElementById('c_obs').value = 'Bonificação: 2 inserções extras aos fins de semana (sábado e domingo), totalizando 8 inserções bonificadas.';
+      document.getElementById('c_valMonthly').value = '936,00';
+      document.getElementById('c_valTotal').value = '936,00';
+      
+      document.getElementById('c_issueCity').value = 'Taquarituba';
+      document.getElementById('c_issueDay').value = String(today.getDate()).padStart(2, '0');
+      document.getElementById('c_issueMonth').value = MONTH_NAMES[today.getMonth()];
+      document.getElementById('c_issueYear').value = String(today.getFullYear()).slice(-2);
+
+      openModal('contractEditorModal');
+    }
+
+    function editContract(id) {
+      const contract = contractsList.find(c => c.id === id);
+      if (!contract) return;
+      currentContractData = contract;
+
+      document.getElementById('c_modalTitle').textContent = 'Editar Contrato';
+      document.getElementById('c_id').value = contract.id || '';
+      document.getElementById('c_radio').value = contract.radio || 'POP FM 107,9';
+      document.getElementById('c_companyName').value = contract.companyName || '';
+      document.getElementById('c_document').value = contract.document || '';
+      document.getElementById('c_address').value = contract.address || '';
+      document.getElementById('c_number').value = contract.addressNumber || '';
+      document.getElementById('c_complement').value = contract.complement || '';
+      document.getElementById('c_neighborhood').value = contract.neighborhood || '';
+      document.getElementById('c_city').value = contract.city || '';
+      document.getElementById('c_uf').value = contract.uf || 'SP';
+      document.getElementById('c_cep').value = contract.cep || '';
+      document.getElementById('c_email').value = contract.email || '';
+      document.getElementById('c_phone').value = contract.phone || '';
+      document.getElementById('c_serviceDescription').value = contract.serviceDescription || '';
+      document.getElementById('c_dateStart').value = contract.dateStart || '';
+      document.getElementById('c_dateEnd').value = contract.dateEnd || '';
+      document.getElementById('c_duration').value = contract.duration || '1 MÊS';
+      document.getElementById('c_paymentMethod').value = contract.paymentMethod || 'BOLETO OU PIX';
+      document.getElementById('c_obs').value = contract.obs || '';
+      document.getElementById('c_valMonthly').value = contract.valMonthly || '';
+      document.getElementById('c_valTotal').value = contract.valTotal || '';
+      document.getElementById('c_issueCity').value = contract.issueCity || 'Taquarituba';
+      document.getElementById('c_issueDay').value = contract.issueDay || '';
+      document.getElementById('c_issueMonth').value = contract.issueMonth || '';
+      document.getElementById('c_issueYear').value = contract.issueYear || '';
+
+      openModal('contractEditorModal');
+    }
+
+    async function saveContract() {
+      const companyName = document.getElementById('c_companyName').value.trim();
+      const documentVal = document.getElementById('c_document').value.trim();
+      if (!companyName || !documentVal) {
+        showToast('Preencha a Razão Social e CNPJ/CPF.', 'error');
+        return;
+      }
+
+      const saveBtn = document.getElementById('saveContractBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Salvando...';
+
+      const contract = {
+        id: document.getElementById('c_id').value || null,
+        radio: document.getElementById('c_radio').value,
+        companyName: companyName.toUpperCase(),
+        document: documentVal,
+        address: document.getElementById('c_address').value.trim().toUpperCase(),
+        addressNumber: document.getElementById('c_number').value.trim(),
+        complement: document.getElementById('c_complement').value.trim().toUpperCase(),
+        neighborhood: document.getElementById('c_neighborhood').value.trim().toUpperCase(),
+        city: document.getElementById('c_city').value.trim().toUpperCase(),
+        uf: document.getElementById('c_uf').value.trim().toUpperCase(),
+        cep: document.getElementById('c_cep').value.trim(),
+        email: document.getElementById('c_email').value.trim().toLowerCase(),
+        phone: document.getElementById('c_phone').value.trim(),
+        serviceDescription: document.getElementById('c_serviceDescription').value.trim(),
+        dateStart: document.getElementById('c_dateStart').value,
+        dateEnd: document.getElementById('c_dateEnd').value,
+        duration: document.getElementById('c_duration').value.trim(),
+        paymentMethod: document.getElementById('c_paymentMethod').value.trim().toUpperCase(),
+        obs: document.getElementById('c_obs').value.trim(),
+        valMonthly: document.getElementById('c_valMonthly').value.trim(),
+        valTotal: document.getElementById('c_valTotal').value.trim(),
+        issueCity: document.getElementById('c_issueCity').value.trim() || 'Taquarituba',
+        issueDay: document.getElementById('c_issueDay').value.trim(),
+        issueMonth: document.getElementById('c_issueMonth').value.trim(),
+        issueYear: document.getElementById('c_issueYear').value.trim()
+      };
+
+      const password = sessionStorage.getItem('newsmaker_password');
+      try {
+        const res = await fetch('/api/contracts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${password}`
+          },
+          body: JSON.stringify({ action: 'save', contract })
+        });
+
+        if (res.ok) {
+          showToast('Contrato gravado com sucesso!', 'success');
+          closeModal('contractEditorModal');
+          await loadContracts();
+        } else {
+          showToast('Erro ao gravar no servidor Cloudflare.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao salvar contrato.', 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Gravar Contrato';
+      }
+    }
+
+    async function toggleArchiveContract(id, currentStatus) {
+      const action = currentStatus === 'archived' ? 'restore' : 'archive';
+      const actionLabel = action === 'restore' ? 'Restaurar' : 'Arquivar';
+      const password = sessionStorage.getItem('newsmaker_password');
+
+      try {
+        const res = await fetch('/api/contracts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${password}`
+          },
+          body: JSON.stringify({ action, id })
+        });
+
+        if (res.ok) {
+          showToast(`Contrato ${action === 'restore' ? 'restaurado' : 'arquivado'}!`, 'success');
+          await loadContracts();
+        } else {
+          showToast(`Erro ao ${actionLabel.toLowerCase()} contrato.`, 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão.', 'error');
+      }
+    }
+
+    async function deleteContract(id) {
+      if (!confirm('Deseja excluir definitivamente este contrato? Esta ação não pode ser desfeita.')) return;
+      const password = sessionStorage.getItem('newsmaker_password');
+
+      try {
+        const res = await fetch(`/api/contracts?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${password}` }
+        });
+
+        if (res.ok) {
+          showToast('Contrato excluído com sucesso!', 'success');
+          await loadContracts();
+        } else {
+          showToast('Erro ao excluir contrato.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão.', 'error');
+      }
+    }
+
+    function previewContract(id) {
+      const contract = contractsList.find(c => c.id === id);
+      if (!contract) return;
+      currentContractData = contract;
+      renderContractPreview(contract);
+      openModal('contractPreviewModal');
+    }
+
+    function previewFromEditor() {
+      const contract = {
+        id: document.getElementById('c_id').value || 'temp',
+        radio: document.getElementById('c_radio').value,
+        companyName: document.getElementById('c_companyName').value.trim().toUpperCase(),
+        document: document.getElementById('c_document').value.trim(),
+        address: document.getElementById('c_address').value.trim().toUpperCase(),
+        addressNumber: document.getElementById('c_number').value.trim(),
+        complement: document.getElementById('c_complement').value.trim().toUpperCase(),
+        neighborhood: document.getElementById('c_neighborhood').value.trim().toUpperCase(),
+        city: document.getElementById('c_city').value.trim().toUpperCase(),
+        uf: document.getElementById('c_uf').value.trim().toUpperCase(),
+        cep: document.getElementById('c_cep').value.trim(),
+        email: document.getElementById('c_email').value.trim().toLowerCase(),
+        phone: document.getElementById('c_phone').value.trim(),
+        serviceDescription: document.getElementById('c_serviceDescription').value.trim(),
+        dateStart: document.getElementById('c_dateStart').value,
+        dateEnd: document.getElementById('c_dateEnd').value,
+        duration: document.getElementById('c_duration').value.trim(),
+        paymentMethod: document.getElementById('c_paymentMethod').value.trim().toUpperCase(),
+        obs: document.getElementById('c_obs').value.trim(),
+        valMonthly: document.getElementById('c_valMonthly').value.trim(),
+        valTotal: document.getElementById('c_valTotal').value.trim(),
+        issueCity: document.getElementById('c_issueCity').value.trim() || 'Taquarituba',
+        issueDay: document.getElementById('c_issueDay').value.trim(),
+        issueMonth: document.getElementById('c_issueMonth').value.trim(),
+        issueYear: document.getElementById('c_issueYear').value.trim()
+      };
+      currentContractData = contract;
+      renderContractPreview(contract);
+      openModal('contractPreviewModal');
+    }
+
+    function renderContractPreview(c) {
+      document.getElementById('pv_companyName').textContent = c.companyName || '_________________________________';
+      document.getElementById('pv_document').textContent = c.document || '________________________';
+      document.getElementById('pv_address').textContent = c.address || '___________________________';
+      document.getElementById('pv_number').textContent = c.addressNumber || '____';
+      document.getElementById('pv_complement').textContent = c.complement || '';
+      document.getElementById('pv_neighborhood').textContent = c.neighborhood || '______________';
+      document.getElementById('pv_city').textContent = c.city || '______________';
+      document.getElementById('pv_uf').textContent = c.uf || 'SP';
+      document.getElementById('pv_cep').textContent = c.cep || '________-___';
+      document.getElementById('pv_email').textContent = c.email || '________________________';
+      document.getElementById('pv_phone').textContent = c.phone || '________________________';
+      
+      document.getElementById('pv_serviceDescription').textContent = c.serviceDescription || '44 inserções de spots a serem distribuídos em horário comercial de segunda à sexta.';
+      
+      document.getElementById('pv_dateStart').textContent = c.dateStart ? formatDateBR(c.dateStart) : '__/__/____';
+      document.getElementById('pv_dateEnd').textContent = c.dateEnd ? formatDateBR(c.dateEnd) : '__/__/____';
+      document.getElementById('pv_duration').textContent = c.duration || '';
+      document.getElementById('pv_paymentMethod').textContent = c.paymentMethod || 'BOLETO OU PIX';
+      
+      document.getElementById('pv_obs').textContent = c.obs || 'Nenhuma observação informada.';
+      
+      document.getElementById('pv_valMonthly').textContent = c.valMonthly || '0,00';
+      document.getElementById('pv_valTotal').textContent = c.valTotal || '0,00';
+      
+      document.getElementById('pv_issueCity').textContent = c.issueCity || 'Taquarituba';
+      document.getElementById('pv_issueDay').textContent = c.issueDay || String(new Date().getDate());
+      document.getElementById('pv_issueMonth').textContent = c.issueMonth || MONTH_NAMES[new Date().getMonth()];
+      document.getElementById('pv_issueYear').textContent = c.issueYear || String(new Date().getFullYear()).slice(-2);
+    }
+
+    function editCurrentPreviewContract() {
+      closeModal('contractPreviewModal');
+      if (currentContractData && currentContractData.id && currentContractData.id !== 'temp') {
+        editContract(currentContractData.id);
+      }
+    }
+
+    function downloadContractPDF() {
+      if (!window.html2pdf) {
+        showToast('Biblioteca de PDF carregando... Aguarde um instante.', 'error');
+        return;
+      }
+      const element = document.getElementById('contractA4Paper');
+      const clientName = (currentContractData?.companyName || 'Contrato').replace(/[^a-zA-Z0-9]/g, '_');
+      
+      showToast('Gerando PDF de alta qualidade...', 'success');
+      
+      const opt = {
+        margin: [0, 0, 0, 0],
+        filename: `Contrato_POPFM_${clientName}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        showToast('Download do PDF concluído!', 'success');
+      }).catch(err => {
+        console.error('Erro ao gerar PDF:', err);
+        showToast('Erro ao exportar PDF. Tente usar a opção Imprimir.', 'error');
+      });
+    }
+
+    function printContract() {
+      window.print();
+    }
+
+    function formatDateBR(isoStr) {
+      if (!isoStr) return '';
+      const parts = isoStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return isoStr;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // --- AUTO INITIALIZATION ---
     window.addEventListener('DOMContentLoaded', () => {
       const savedPass = sessionStorage.getItem('newsmaker_password');
@@ -2791,6 +3329,387 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="saveTemplateMapping()">Gravar Escala</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editor de Contrato -->
+  <div id="contractEditorModal" class="modal-overlay">
+    <div class="modal" style="max-width: 860px; width: 95%;">
+      <div class="modal-header">
+        <h3 id="c_modalTitle">Novo Contrato Publicitário</h3>
+        <button class="btn btn-secondary" onclick="closeModal('contractEditorModal')"><ion-icon name="close"></ion-icon></button>
+      </div>
+      <div class="modal-body" style="padding: 24px; overflow-y: auto; max-height: calc(85vh - 120px);">
+        <input type="hidden" id="c_id">
+
+        <!-- Rádio -->
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Emissora do Contrato</label>
+          <select id="c_radio" class="contract-input" style="font-weight: 600;">
+            <option value="POP FM 107,9">RÁDIO POP FM 107,9 (Taquarituba/SP)</option>
+            <option value="Massa FM Itapeva">Rede Massa FM - Itapeva 104.1</option>
+            <option value="Massa FM Itapetininga">Rede Massa FM - Itapetininga 106.5</option>
+          </select>
+        </div>
+
+        <!-- Dados do Contratante -->
+        <div class="form-section-title">
+          <ion-icon name="business-outline"></ion-icon> Dados do Contratante
+        </div>
+        <div class="form-grid-2">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Razão Social / Nome Completo *</label>
+            <input type="text" id="c_companyName" class="contract-input" placeholder="Ex: ALEA ELETRO COMERCIAL LTDA" required>
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">CNPJ / CPF *</label>
+            <input type="text" id="c_document" class="contract-input" placeholder="Ex: 93.720.464/0230-13" required>
+          </div>
+        </div>
+
+        <div class="form-grid-4" style="margin-top: 12px;">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Endereço</label>
+            <input type="text" id="c_address" class="contract-input" placeholder="Ex: AV. DR. DOMINGOS TEODORO GALLO">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Nº</label>
+            <input type="text" id="c_number" class="contract-input" placeholder="Ex: 223">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Compl.</label>
+            <input type="text" id="c_complement" class="contract-input" placeholder="Sala, Bloco...">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Bairro</label>
+            <input type="text" id="c_neighborhood" class="contract-input" placeholder="Ex: CENTRO">
+          </div>
+        </div>
+
+        <div class="form-grid-3" style="margin-top: 12px;">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Cidade</label>
+            <input type="text" id="c_city" class="contract-input" placeholder="Ex: PIRAJU">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">UF</label>
+            <input type="text" id="c_uf" class="contract-input" placeholder="Ex: SP" maxlength="2">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">CEP</label>
+            <input type="text" id="c_cep" class="contract-input" placeholder="Ex: 18800-053">
+          </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-top: 12px;">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Contato / E-mail</label>
+            <input type="email" id="c_email" class="contract-input" placeholder="Ex: maria.zanon@aleavivo.com.br">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Telefone / WhatsApp</label>
+            <input type="text" id="c_phone" class="contract-input" placeholder="Ex: (54) 9645-8499">
+          </div>
+        </div>
+
+        <!-- Descrição do Serviço -->
+        <div class="form-section-title">
+          <ion-icon name="megaphone-outline"></ion-icon> Descrição do Serviço
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 6px;">
+          Texto complementar que aparecerá após "O presente contrato refere-se à veiculação...":
+        </p>
+        <textarea id="c_serviceDescription" class="contract-input" rows="2" style="resize: vertical;" placeholder="Ex: 44 inserções de spots a serem distribuídos em horário comercial de segunda à sexta."></textarea>
+
+        <!-- Período & Pagamento -->
+        <div class="form-section-title">
+          <ion-icon name="calendar-outline"></ion-icon> Período de Veiculação & Pagamento
+        </div>
+        <div class="form-grid-4">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Data Início</label>
+            <input type="date" id="c_dateStart" class="contract-input">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Data Término</label>
+            <input type="date" id="c_dateEnd" class="contract-input">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Duração</label>
+            <input type="text" id="c_duration" class="contract-input" placeholder="Ex: 1 MÊS">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Forma de Pagamento</label>
+            <input type="text" id="c_paymentMethod" class="contract-input" placeholder="Ex: BOLETO OU PIX">
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="form-section-title">
+          <ion-icon name="information-circle-outline"></ion-icon> Observações & Bonificações
+        </div>
+        <textarea id="c_obs" class="contract-input" rows="2" style="resize: vertical;" placeholder="Ex: Bonificação: 2 inserções extras aos fins de semana (sábado e domingo), totalizando 8 inserções bonificadas."></textarea>
+
+        <!-- Valores do Contrato -->
+        <div class="form-section-title">
+          <ion-icon name="cash-outline"></ion-icon> Valores do Contrato
+        </div>
+        <div class="form-grid-2">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Valor Mensal (R$)</label>
+            <input type="text" id="c_valMonthly" class="contract-input" placeholder="Ex: 936,00">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Valor Total (R$)</label>
+            <input type="text" id="c_valTotal" class="contract-input" placeholder="Ex: 936,00">
+          </div>
+        </div>
+
+        <!-- Local e Data de Assinatura -->
+        <div class="form-section-title">
+          <ion-icon name="location-outline"></ion-icon> Local e Data da Emissão
+        </div>
+        <div class="form-grid-4">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Cidade</label>
+            <input type="text" id="c_issueCity" class="contract-input" value="Taquarituba">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Dia</label>
+            <input type="text" id="c_issueDay" class="contract-input" placeholder="Ex: 11">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Mês</label>
+            <input type="text" id="c_issueMonth" class="contract-input" placeholder="Ex: setembro">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">Ano (2 dígitos)</label>
+            <input type="text" id="c_issueYear" class="contract-input" placeholder="Ex: 26">
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #f8fafc; border-top: 1px solid var(--border);">
+        <button class="btn btn-secondary" onclick="closeModal('contractEditorModal')">Cancelar</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" onclick="previewFromEditor()">
+            <ion-icon name="eye-outline"></ion-icon> Pré-visualizar
+          </button>
+          <button class="btn btn-primary" id="saveContractBtn" onclick="saveContract()">
+            <ion-icon name="save-outline"></ion-icon> Gravar Contrato
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Pré-visualização & Exportação PDF -->
+  <div id="contractPreviewModal" class="modal-overlay">
+    <div class="modal" style="max-width: 960px; width: 95%; max-height: 94vh;">
+      <div class="modal-header" style="background: white; border-bottom: 1px solid var(--border); padding: 14px 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <ion-icon name="document-text" style="font-size: 24px; color: #7c3aed;"></ion-icon>
+          <h3 style="margin: 0; font-size: 1.1rem;">Contrato de Veiculação Publicitária</h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-accent btn-sm" onclick="downloadContractPDF()" title="Baixar arquivo PDF">
+            <ion-icon name="download-outline"></ion-icon> Baixar .PDF
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="printContract()" title="Imprimir documento">
+            <ion-icon name="print-outline"></ion-icon> Imprimir
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="editCurrentPreviewContract()" title="Editar campos deste contrato">
+            <ion-icon name="create-outline"></ion-icon> Editar
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="closeModal('contractPreviewModal')">
+            <ion-icon name="close"></ion-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Paper Container -->
+      <div class="contract-paper-wrapper" id="contractPrintArea">
+        <!-- A4 Page Target for PDF / Print -->
+        <div class="contract-paper" id="contractA4Paper">
+          <div class="contract-frame">
+            
+            <!-- Header Oficial POP FM -->
+            <div class="contract-header">
+              <div class="contract-header-logo-area">
+                <img src="https://static.wixstatic.com/media/5e0eab_163ac2e855594ac9a761a192eb61e399~mv2.png/v1/fill/w_260,h_194,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/POP%20FM%201075.png" alt="POP FM 107,9" class="contract-header-logo">
+                <div id="popSvgLogoFallback" style="display: none; align-items: center;">
+                  <div style="background: #facc15; color: #1e0836; font-weight: 900; font-size: 1.5rem; padding: 2px 10px; border-radius: 8px; border: 2px solid #000; letter-spacing: -0.05em;">POP</div>
+                </div>
+              </div>
+              <div class="contract-header-info">
+                <div class="contract-header-title">RÁDIO POP FM 107,9</div>
+                <div class="contract-header-sub">CNPJ 49.522.587/0001-98</div>
+                <div class="contract-header-sub" style="font-size: 0.65rem;">RUA JOÃO OSVALDO LEIVA, 459 - NOVO CENTRO - TAQUARITUBA/SP</div>
+                <div class="contract-header-socials">
+                  <span><ion-icon name="logo-facebook"></ion-icon> popfmbrasil</span>
+                  <span><ion-icon name="globe-outline"></ion-icon> popfmbrasil.com</span>
+                  <span><ion-icon name="logo-instagram"></ion-icon> @popfmbrasil</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Título do Contrato -->
+            <div class="contract-title-banner">
+              <h2>CONTRATO DE VEICULAÇÃO PUBLICITÁRIA</h2>
+            </div>
+
+            <!-- Bloco CONTRATANTE -->
+            <div>
+              <span class="c-sec-header">CONTRATANTE:</span>
+              <div class="c-box">
+                <div class="c-field-row">
+                  <span class="c-label">RAZÃO SOCIAL/NOME COMPLETO:</span>
+                  <span id="pv_companyName" class="c-val"></span>
+                </div>
+                <div class="c-field-row">
+                  <span class="c-label">CNPJ/CPF:</span>
+                  <span id="pv_document" class="c-val"></span>
+                </div>
+                <div class="c-field-row">
+                  <span class="c-label">ENDEREÇO:</span>
+                  <span id="pv_address" class="c-val" style="margin-right: 12px;"></span>
+                  <span class="c-label">Nº:</span>
+                  <span id="pv_number" class="c-val" style="max-width: 60px; margin-right: 12px;"></span>
+                  <span class="c-label">COMPLEMENTO:</span>
+                  <span id="pv_complement" class="c-val"></span>
+                </div>
+                <div class="c-field-row">
+                  <span class="c-label">BAIRRO:</span>
+                  <span id="pv_neighborhood" class="c-val" style="margin-right: 12px;"></span>
+                  <span class="c-label">CIDADE:</span>
+                  <span id="pv_city" class="c-val" style="margin-right: 12px;"></span>
+                  <span class="c-label">UF:</span>
+                  <span id="pv_uf" class="c-val" style="max-width: 30px; margin-right: 12px;"></span>
+                  <span class="c-label">CEP:</span>
+                  <span id="pv_cep" class="c-val"></span>
+                </div>
+                <div class="c-field-row">
+                  <span class="c-label">CONTATO/ E-mail:</span>
+                  <span id="pv_email" class="c-val" style="margin-right: 16px;"></span>
+                  <span class="c-label">FONE:</span>
+                  <span id="pv_phone" class="c-val"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco DESCRIÇÃO DO SERVIÇO -->
+            <div>
+              <span class="c-sec-header">DESCRIÇÃO DO SERVIÇO:</span>
+              <div class="c-box">
+                <div style="font-size: 0.77rem; line-height: 1.45; color: #000;">
+                  O presente contrato refere-se à veiculação <span id="pv_serviceDescription" style="color: #1e3a8a; font-weight: 700; text-decoration: underline;"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco Split: PERÍODO DE VEICULAÇÃO & FORMA DE PAGAMENTO -->
+            <div class="c-split-row">
+              <div>
+                <span class="c-sec-header">PERÍODO DE VEICULAÇÃO:</span>
+                <div class="c-box" style="position: relative; min-height: 74px; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="c-field-row">
+                    <span class="c-label">INÍCIO:</span>
+                    <span id="pv_dateStart" class="c-val"></span>
+                  </div>
+                  <div class="c-field-row">
+                    <span class="c-label">TÉRMINO:</span>
+                    <span id="pv_dateEnd" class="c-val"></span>
+                  </div>
+                  <div id="pv_duration" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-weight: 900; font-size: 0.92rem; color: #1e3a8a; letter-spacing: 0.05em;">
+                    1 MÊS
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <span class="c-sec-header">FORMA DE PAGAMENTO:</span>
+                <div class="c-box" style="display: flex; align-items: center; justify-content: center; min-height: 74px;">
+                  <div id="pv_paymentMethod" style="font-weight: 900; color: #1e3a8a; font-size: 0.88rem; text-align: center; text-transform: uppercase;">
+                    BOLETO OU PIX
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco OBSERVAÇÕES -->
+            <div>
+              <span class="c-sec-header">OBSERVAÇÕES:</span>
+              <div class="c-box" style="min-height: 48px;">
+                <div id="pv_obs" style="font-size: 0.77rem; color: #1e3a8a; font-weight: 700; line-height: 1.4;"></div>
+              </div>
+            </div>
+
+            <!-- Bloco VALOR DO CONTRATO -->
+            <div>
+              <span class="c-sec-header">VALOR DO CONTRATO</span>
+              <div class="c-box">
+                <div class="c-valor-grid">
+                  <div>
+                    <span class="c-label">MENSAL: R$</span>
+                    <span id="pv_valMonthly" style="color: #1e3a8a; font-weight: 900; font-size: 0.88rem; text-decoration: underline;">936,00</span>
+                  </div>
+                  <div>
+                    <span class="c-label">TOTAL: R$</span>
+                    <span id="pv_valTotal" style="color: #1e3a8a; font-weight: 900; font-size: 0.88rem; text-decoration: underline;">936,00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Local e Data -->
+            <div class="c-date-line">
+              <span id="pv_issueCity">Taquarituba</span>, <span id="pv_issueDay" style="text-decoration: underline; padding: 0 4px;">11</span> de <span id="pv_issueMonth" style="text-decoration: underline; padding: 0 8px;">setembro</span> de 20<span id="pv_issueYear" style="text-decoration: underline; padding: 0 4px;">26</span>
+            </div>
+
+            <!-- Assinaturas -->
+            <div class="c-signatures">
+              <div class="c-sign-box">
+                <div class="c-sign-line">ASSINATURA CONTRATANTE</div>
+              </div>
+              <div class="c-sign-box">
+                <div class="c-sign-line">ASSINATURA CONTRATADO</div>
+              </div>
+            </div>
+
+            <!-- Cláusulas Contratuais (Rodapé) -->
+            <div class="c-clauses-box">
+              <div class="c-clauses-intro">
+                Contratante e contratada, através de seus representantes, abaixo assinado, responsabilizam-se pelo cumprimento das cláusulas que seguem.
+              </div>
+              <div class="c-clause-item">
+                <strong>PRIMEIRA:</strong> A contratante autoriza a contratada a veicular o nome de seu estabelecimento, seguindo texto previamente aprovado, conforme as regras e normas estabelecidas em lei. As quantidades e frequência de veiculação estão estabelecidas nesse contrato, apresentado acima, aprovado pelas partes. O custo do spot é R$ 40,00, que será pago no primeiro mês, caso houver qualquer mudança no mesmo, o contratante pagará pelo serviço novamente.
+              </div>
+              <div class="c-clause-item">
+                <strong>SEGUNDA:</strong> O presente contrato tem validade enquanto vigorar o período de veiculação.
+              </div>
+              <div class="c-clause-item">
+                <strong>TERCEIRA:</strong> Uma vez que a contratada é a POPFM, a contratante pagará pelo presente contrato a importância especificada neste contrato, conforme legislação vigente, que será cobrada conforme estabelecido nesse contrato.
+              </div>
+              <div class="c-clause-item">
+                <strong>QUARTA:</strong> O presente contrato é irrevogável e irretratável.
+              </div>
+              <div class="c-clause-item">
+                <strong>QUINTA:</strong> As alterações de frequência e programação de veiculação, deverão ser apresentadas com prazo mínimo de 2(dois) dias. As alterações serão aceitas mediante disponibilidade de horário e espaço na programação. Alterações de textos deverão ser apresentadas com prazo de 2(dois) dias de antecedência, com prazo de 1(um) dia do veiculação para aprovação. Todos os textos deverão ser aprovados antes de sua veiculação.
+              </div>
+              <div class="c-clause-item">
+                <strong>SEXTA:</strong> A contratante se responsabiliza por todas as informações e conteúdo dos textos por ela aprovados. A contratada não se responsabiliza pela veracidade dos anúncios, sendo a mesma uma responsabilidade da contratante.
+              </div>
+              <div class="c-clause-item">
+                <strong>SÉTIMA:</strong> O presente contrato passa a ter valor a partir da aprovação de cadastro, mediante consulta feita junta aos órgãos de análise de crédito (serasa, equifaxm spc). O presente contrato poderá ser suspenso ou rescindido por falta de pagamento.
+              </div>
+              <div class="c-clause-item">
+                <strong>OITAVA:</strong> Fica eleito o Fórum da Comarca de Itapeva São Paulo, com renúncia de qualquer outro por mais privilegiado que seja, para dirimir dúvidas do presente contrato.
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
   </div>
