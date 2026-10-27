@@ -30,7 +30,8 @@ const GRADE_DOMINGO = [
 const STREAM_URL = 'https://sonicpanel.oficialserver.com:8134/stream';
 const SUPABASE_URL = 'https://uvesuhizitwlkbizjxlc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZXN1aGl6aXR3bGtiaXpqeGxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTAwNzksImV4cCI6MjA5MDY2NjA3OX0.MPmV_TuX3z_i0_91VNRUwSMVeGBqDzGXNwMMeFOhF9w';
-const CAPA_PADRAO = 'public/capa-album.jpg';
+const CAPA_PADRAO = 'public/capa-padrao.jpg';
+const CAPA_API = '/api/capa';
 const NOW_PLAYING_INTERVALO = 10000;
 
 const NOMES_DIAS =['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -385,15 +386,45 @@ function initTocandoAgora() {
   const capa = document.querySelector('[data-cover]');
 
   capa.addEventListener('error', () => {
+    capaBuscada = null;
     if (!capa.src.endsWith(CAPA_PADRAO)) capa.src = CAPA_PADRAO;
   });
+
+  const trocarCapa = (novaCapa) => {
+    if (capa.getAttribute('src') !== novaCapa) capa.src = novaCapa;
+  };
+
+  // Guarda a última música consultada para buscar a capa só quando ela muda
+  let ultimaMusica = '';
+  let capaBuscada = null;
 
   const atualizar = () => supabase('now_playing?select=*&order=created_at.desc&limit=1')
     .then(([atual]) => {
       faixa.textContent = atual?.music || 'Rádio Pop FM';
       artista.textContent = atual?.artist || 'A melhor programação';
-      const novaCapa = atual?.cover || CAPA_PADRAO;
-      if (capa.getAttribute('src') !== novaCapa) capa.src = novaCapa;
+
+      if (atual?.cover || !atual?.music || !atual?.artist) {
+        trocarCapa(atual?.cover || CAPA_PADRAO);
+        return;
+      }
+
+      const chave = `${atual.artist}|${atual.music}`;
+      if (chave === ultimaMusica) {
+        trocarCapa(capaBuscada || CAPA_PADRAO);
+        return;
+      }
+      ultimaMusica = chave;
+      capaBuscada = null;
+      trocarCapa(CAPA_PADRAO);
+
+      const params = new URLSearchParams({ artist: atual.artist, music: atual.music });
+      return fetch(`${CAPA_API}?${params}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((dados) => {
+          if (chave !== ultimaMusica || !dados?.cover) return;
+          capaBuscada = dados.cover;
+          trocarCapa(capaBuscada);
+        });
     })
     .catch((e) => console.error('Erro ao buscar a música atual:', e));
 
