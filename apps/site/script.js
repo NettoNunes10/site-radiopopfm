@@ -37,7 +37,7 @@ const NOW_PLAYING_INTERVALO = 10000;
 const NOMES_DIAS =['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0];
 
-const RING_TARGET_DEG = 324; // 90% de 360°
+const RING_TARGET_DEG = 360; // anel cheio: rádio Classe A
 const RING_TRACK = 'rgba(246,243,236,.12)';
 const COUNT_DURATION = 1400;
 const GRADE_STEP = 350;
@@ -252,14 +252,9 @@ function animarAnel(ring) {
   requestAnimationFrame(passo);
 }
 
-function preencherBarra(el) {
-  el.style.height = `${el.dataset.bar}%`;
-}
-
 function aplicarEstadoFinal(el) {
   el.querySelectorAll('[data-count]').forEach((c) => { c.textContent = c.dataset.count; });
-  el.querySelectorAll('[data-bar]').forEach(preencherBarra);
-  const ring = el.querySelector('#ring-confianca');
+  const ring = el.querySelector('#ring-classe');
   if (ring) pintarAnel(ring, RING_TARGET_DEG);
 }
 
@@ -278,8 +273,7 @@ function initReveal() {
       e.target.style.opacity = '1';
       e.target.style.translate = '0 0';
       e.target.querySelectorAll('[data-count]').forEach(animarContador);
-      e.target.querySelectorAll('[data-bar]').forEach(preencherBarra);
-      const ring = e.target.querySelector('#ring-confianca');
+      const ring = e.target.querySelector('#ring-classe');
       if (ring) animarAnel(ring);
     });
   }, { threshold: 0.18 });
@@ -400,8 +394,8 @@ function initTocandoAgora() {
 
   const atualizar = () => supabase('now_playing?select=*&order=created_at.desc&limit=1')
     .then(([atual]) => {
-      faixa.textContent = atual?.music || 'Rádio Pop FM';
-      artista.textContent = atual?.artist || 'A melhor programação';
+      faixa.textContent = atual?.music || 'Pop FM 107,9';
+      artista.textContent = atual?.artist || 'Mais que uma rádio!';
 
       if (atual?.cover || !atual?.music || !atual?.artist) {
         trocarCapa(atual?.cover || CAPA_PADRAO);
