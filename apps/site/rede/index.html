@@ -3141,6 +3141,70 @@
       }).join('');
     }
 
+    // --- Preenchimento automático pelo CNPJ ---
+    let lastCnpjLookup = '';
+
+    function setCnpjStatus(text, color) {
+      const el = document.getElementById('c_cnpjStatus');
+      el.textContent = text;
+      el.style.color = color || 'var(--text-light)';
+    }
+
+    function onContractDocumentInput() {
+      const input = document.getElementById('c_document');
+      const digits = input.value.replace(/\D/g, '');
+      if (digits.length === 14) {
+        input.value = digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        if (digits !== lastCnpjLookup) lookupContractCnpj(false);
+      } else {
+        setCnpjStatus('');
+      }
+    }
+
+    async function lookupContractCnpj(manual) {
+      const digits = document.getElementById('c_document').value.replace(/\D/g, '');
+      if (digits.length !== 14) {
+        if (manual) setCnpjStatus(digits.length === 11 ? 'CPF não tem consulta automática: preencha os dados à mão.' : 'Digite um CNPJ com 14 dígitos.', '#b45309');
+        return;
+      }
+      lastCnpjLookup = digits;
+      const btn = document.getElementById('c_cnpjLookupBtn');
+      btn.disabled = true;
+      setCnpjStatus('Consultando a Receita Federal...');
+      try {
+        const password = sessionStorage.getItem('newsmaker_password');
+        const res = await fetch(`/api/cnpj?cnpj=${digits}`, { headers: { 'Authorization': `Bearer ${password}` } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Falha na consulta.');
+        // Ignora a resposta se o CNPJ foi trocado enquanto a consulta rodava
+        if (document.getElementById('c_document').value.replace(/\D/g, '') !== digits) return;
+
+        const fill = (id, value) => { if (value) document.getElementById(id).value = value; };
+        fill('c_companyName', data.razaoSocial);
+        fill('c_address', data.endereco);
+        fill('c_number', data.numero);
+        fill('c_complement', data.complemento);
+        fill('c_neighborhood', data.bairro);
+        fill('c_city', data.cidade);
+        fill('c_uf', data.uf);
+        fill('c_cep', data.cep);
+        fill('c_email', data.email);
+        fill('c_phone', data.telefone);
+
+        const nome = data.nomeFantasia ? ` (${data.nomeFantasia})` : '';
+        if (data.situacao && data.situacao !== 'ATIVA') {
+          setCnpjStatus(`Atenção: situação na Receita é ${data.situacao}${nome}. Dados preenchidos, confira.`, '#dc2626');
+        } else {
+          setCnpjStatus(`Dados preenchidos pela Receita${nome}. Confira e-mail e telefone.`, '#059669');
+        }
+      } catch (err) {
+        lastCnpjLookup = '';
+        setCnpjStatus(err.message, '#dc2626');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     function openNewContractModal() {
       currentContractData = null;
       document.getElementById('c_modalTitle').textContent = 'Novo Contrato Publicitário';
@@ -3148,6 +3212,7 @@
       document.getElementById('c_radio').value = 'POP FM 107,9';
       document.getElementById('c_companyName').value = '';
       document.getElementById('c_document').value = '';
+      lastCnpjLookup = ''; setCnpjStatus('');
       document.getElementById('c_address').value = '';
       document.getElementById('c_number').value = '';
       document.getElementById('c_complement').value = '';
@@ -3191,6 +3256,7 @@
       document.getElementById('c_radio').value = contract.radio || 'POP FM 107,9';
       document.getElementById('c_companyName').value = contract.companyName || '';
       document.getElementById('c_document').value = contract.document || '';
+      lastCnpjLookup = (contract.document || '').replace(/\D/g, ''); setCnpjStatus('');
       document.getElementById('c_address').value = contract.address || '';
       document.getElementById('c_number').value = contract.addressNumber || '';
       document.getElementById('c_complement').value = contract.complement || '';
@@ -3994,7 +4060,13 @@
           </div>
           <div>
             <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block;">CNPJ / CPF *</label>
-            <input type="text" id="c_document" class="contract-input" placeholder="Ex: 93.720.464/0230-13" required>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="c_document" class="contract-input" placeholder="Ex: 93.720.464/0230-13" required oninput="onContractDocumentInput()" style="flex: 1; min-width: 0;">
+              <button type="button" id="c_cnpjLookupBtn" onclick="lookupContractCnpj(true)" title="Buscar dados da empresa pelo CNPJ" style="flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc; color: #1e293b; font-weight: 700; font-size: 0.8125rem; cursor: pointer;">
+                <ion-icon name="search-outline"></ion-icon> Buscar
+              </button>
+            </div>
+            <div id="c_cnpjStatus" style="font-size: 0.75rem; margin-top: 4px; min-height: 1em;"></div>
           </div>
         </div>
 
