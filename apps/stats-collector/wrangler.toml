@@ -1,0 +1,16 @@
+name = "popfm-stats-collector"
+main = "src/index.js"
+workers_dev = false
+compatibility_date = "2026-04-03"
+
+# Le os ouvintes do Shoutcast a cada 5 minutos e grava no D1.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+STATS_URL = "https://sonicpanel.oficialserver.com:8134/stats?sid=1&json=1"
+
+[[d1_databases]]
+binding = "STATS_DB"
+database_name = "popfm-estatisticas"
+database_id = "8de04db9-df01-4e21-9bc1-ede99d2c87aa"

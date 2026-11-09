@@ -11,3 +11,8 @@ ENVIRONMENT = "production"
 [[kv_namespaces]]
 binding = "NEWSMAKER_KV"
 id = "51d818ce7a344ae79aa97b8dd5ab8b40"
+
+# Historico de ouvintes: banco D1 "popfm-estatisticas" (id 8de04db9-df01-4e21-9bc1-ede99d2c87aa),
+# gravado pelo Worker apps/stats-collector a cada 5 min. Como este arquivo nao tem
+# pages_build_output_dir, o Pages ignora os bindings daqui: o STATS_DB foi ligado no
+# painel (Settings > Bindings) e, no teste local, entra pelo --d1 do launch.json.
