@@ -55,24 +55,25 @@ export async function onRequestGet({ request, env }) {
   const db = env.STATS_DB;
   if (!db) return jsonResponse({ erro: 'Banco de estatisticas nao configurado' }, 500, 0);
 
+  // O D1 recebe numeros do JS como REAL, por isso os CAST: sem eles a divisao nao arredonda.
   // Baldes alinhados ao horario de Brasilia, para "por dia" virar meia-noite local.
   const [agora, serie, porHora, porDiaSemana, resumo, recorde, inicio] = await Promise.all([
     lerAgora(),
     db.prepare(
-      `SELECT ((ts + ?1) / ?2) * ?2 - ?1 AS t,
+      `SELECT (CAST((ts + ?1) / ?2 AS INTEGER) * ?2) - ?1 AS t,
               ROUND(AVG(ouvintes), 1) AS media,
               MAX(ouvintes) AS maximo
          FROM amostras WHERE ts >= ?3
         GROUP BY t ORDER BY t`
     ).bind(FUSO, balde, desde).all(),
     db.prepare(
-      `SELECT ((ts + ?1) % 86400) / 3600 AS hora, ROUND(AVG(ouvintes), 1) AS media
+      `SELECT CAST(((ts + ?1) % 86400) / 3600 AS INTEGER) AS hora, ROUND(AVG(ouvintes), 1) AS media
          FROM amostras WHERE ts >= ?2 AND no_ar = 1
         GROUP BY hora ORDER BY hora`
     ).bind(FUSO, desde30d).all(),
     // 01/01/1970 foi quinta-feira: (dias + 4) % 7 da 0 = domingo
     db.prepare(
-      `SELECT (((ts + ?1) / 86400) + 4) % 7 AS dia, ROUND(AVG(ouvintes), 1) AS media
+      `SELECT (CAST((ts + ?1) / 86400 AS INTEGER) + 4) % 7 AS dia, ROUND(AVG(ouvintes), 1) AS media
          FROM amostras WHERE ts >= ?2 AND no_ar = 1
         GROUP BY dia ORDER BY dia`
     ).bind(FUSO, desde30d).all(),
